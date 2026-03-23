@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 13.3%;
+    --primary: 0 72% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --border: 0 0% 91%;
+    --card-border: 0 0% 91%;
+    --ring: 0 72% 50%;
+    --radius: 1.5rem;
+    
+    /* Cores da promoção */
+    --promo-success: 120 40% 95%;
+    --promo-success-border: 120 40% 75%;
+    --promo-warning: 45 100% 95%;
+    --promo-warning-border: 45 100% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-25%); } 
+}
+.animate-marquee {
+  width: max-content;
+  animation: marquee 35s linear infinite;
+  will-change: transform;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Fix Sonner Mobile Position to Right - Ultra stable version */
+@media (max-width: 640px) {
+  [data-sonner-toaster] {
+    right: 16px !important;
+    left: 16px !important;
+    width: auto !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    pointer-events: none !important;
+  }
+  [data-sonner-toaster] [data-sonner-toast] {
+    width: 100% !important;
+    max-width: 360px !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+    pointer-events: auto !important;
+  }
+}
+
+/* Adjust Sonner Desktop Position to be closer to edges */
+@media (min-width: 1024px) {
+  [data-sonner-toaster] {
+    top: 10px !important;
+    right: 10px !important;
+  }
+}
+
+/* Hide Scrollbar Cross Browser */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
