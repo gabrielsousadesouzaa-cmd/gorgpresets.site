@@ -74,7 +74,7 @@ export function TestimonialsSection() {
   }, [emblaApi]);
 
   return (
-    <section className="pt-6 md:pt-10 pb-0 relative w-full overflow-hidden">
+    <section className="pt-4 md:pt-6 pb-16 relative w-full overflow-hidden">
       <div className="md:container md:mx-auto px-4 md:px-8 flex justify-center text-center mb-8">
         <div className="relative inline-block">
           <h2 className="text-xl md:text-2xl font-bold tracking-tight uppercase text-[#333] pb-1">
@@ -92,8 +92,8 @@ export function TestimonialsSection() {
 
       <div className="md:container px-0 md:px-8 relative">
         {/* Carrossel */}
-        <div className="overflow-visible py-4" ref={emblaRef}>
-          <div className="flex cursor-grab active:cursor-grabbing">
+        <div className="overflow-hidden py-12 -my-12 px-8 -mx-8" ref={emblaRef}>
+          <div className="flex cursor-grab active:cursor-grabbing px-4">
             {testimonials.map((testimonial, idx) => (
               <div
                 key={idx}

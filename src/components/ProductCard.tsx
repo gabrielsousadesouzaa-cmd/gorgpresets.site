@@ -30,7 +30,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
@@ -39,14 +39,14 @@ export function ProductCard({ product }: ProductCardProps) {
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className="group relative flex flex-col bg-white rounded-[2rem] border border-black/5 shadow-lg hover:shadow-2xl transition-shadow duration-500 h-full"
     >
-      
+
       {/* Badge de Desconto - Calculado automaticamente */}
       {(product.originalPrice && product.originalPrice > product.price && product.price > 0) ? (() => {
         const discountPct = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
         return discountPct > 0 ? (
           <div className="absolute top-4 left-4 z-20 bg-[#d82828] text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-0.5 shadow-lg shadow-red-500/20">
-             <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-             {discountPct}%
+            <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+            {discountPct}%
           </div>
         ) : null;
       })() : null}
@@ -73,36 +73,35 @@ export function ProductCard({ product }: ProductCardProps) {
         <Link to={`/product/${product.id}`}>
           <h3 className="text-[15px] md:text-[15px] font-bold mb-2 md:mb-3 tracking-tight text-gray-950 uppercase line-clamp-1 leading-tight">{product.name}</h3>
         </Link>
-        
+
         <div className="flex flex-col gap-0.5 mb-4 md:mb-6">
-           <div className="flex items-baseline gap-1.5 md:gap-2">
-              <span className="text-xl md:text-2xl font-bold text-[#d82828]">
-                {formatCurrency(product.price)}
+          <div className="flex items-baseline gap-1.5 md:gap-2">
+            <span className="text-xl md:text-2xl font-bold text-[#d82828]">
+              {formatCurrency(product.price)}
+            </span>
+            {product.originalPrice && (
+              <span className="text-[10px] md:text-xs font-semibold text-gray-300 line-through">
+                {formatCurrency(product.originalPrice)}
               </span>
-              {product.originalPrice && (
-                <span className="text-[10px] md:text-xs font-semibold text-gray-300 line-through">
-                  {formatCurrency(product.originalPrice)}
-                </span>
-              )}
-           </div>
-           <div className="text-[9px] md:text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
-              ou 12x de <span className="text-gray-900">{formatCurrency(product.price / 12)}</span>
-           </div>
+            )}
+          </div>
+          <div className="text-[9px] md:text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+            ou 12x de <span className="text-gray-900">{formatCurrency(product.price / 12)}</span>
+          </div>
         </div>
 
         {/* Botões de Ação - Responsivos */}
         <div className="flex flex-col gap-1.5 md:gap-2 mt-auto">
           {settings.integration.isCartEnabled ? (
-            <button 
+            <button
               onClick={handleAddToCart}
-              className={`w-full py-4 md:py-4 rounded-full font-bold text-[11px] md:text-[10px] uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 ${
-                isAdded ? 'bg-green-500 text-white' : 'bg-[#d82828] text-white hover:bg-black hover:shadow-xl'
-              }`}
+              className={`w-full py-4 md:py-4 rounded-full font-bold text-[11px] md:text-[10px] uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 ${isAdded ? 'bg-green-500 text-white' : 'bg-[#d82828] text-white hover:bg-black hover:shadow-xl'
+                }`}
             >
               {isAdded ? "ADICIONADO!" : "ADD AO CARRINHO"}
             </button>
           ) : (
-            <Link 
+            <Link
               to={`/product/${product.id}`}
               className="w-full py-4 md:py-4 rounded-full font-bold text-[11px] md:text-[10px] uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 bg-[#d82828] text-white hover:bg-black hover:shadow-xl"
             >

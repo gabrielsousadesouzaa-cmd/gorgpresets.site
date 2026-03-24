@@ -9,6 +9,7 @@ import { CurrencyModal } from "@/components/CurrencyModal";
 import { CurrencySuggester } from "@/components/CurrencySuggester";
 import { Layout } from "@/components/Layout";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { MenuProvider } from "@/store/MenuContext";
 import { lazy, Suspense } from "react";
 
 const Index = lazy(() => import("./pages/Index"));
@@ -34,33 +35,45 @@ function App() {
             <CartProvider>
               <Toaster position="top-right" expand={true} richColors />
               <BrowserRouter>
-                <ScrollToTop />
-                <CurrencySuggester />
-                <CurrencyModal />
-                <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}>
+                <MenuProvider>
+                  <ScrollToTop />
+                  <CurrencySuggester />
+                  <CurrencyModal />
                   <Routes>
-                    {/* Rota do Admin - sem Layout do site */}
-                    <Route path="/admin" element={<Admin />} />
+                    {/* Admin sem Layout */}
+                    <Route 
+                      path="/admin" 
+                      element={
+                        <Suspense fallback={<div className="min-h-screen bg-white" />}>
+                          <Admin />
+                        </Suspense>
+                      } 
+                    />
 
-                    {/* Rotas do site com Layout (Header + Footer) */}
-                    <Route path="/*" element={
-                      <Layout>
-                        <Routes>
-                          <Route path="/" element={<Index />} />
-                          <Route path="/catalog" element={<Catalog />} />
-                          <Route path="/product/:id" element={<ProductDetail />} />
-                          <Route path="/faq" element={<FAQ />} />
-                          <Route path="/contact" element={<Contact />} />
-                          <Route path="/terms" element={<Terms />} />
-                          <Route path="/shipping" element={<Shipping />} />
-                          <Route path="/refund" element={<Refund />} />
-                          <Route path="/privacy" element={<Privacy />} />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </Layout>
-                    } />
+                    {/* Site Geral com Layout fixo e estático */}
+                    <Route 
+                      path="*" 
+                      element={
+                        <Layout>
+                          <Suspense fallback={<div className="h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-[#d82828] border-t-transparent rounded-full animate-spin" /></div>}>
+                            <Routes>
+                              <Route path="/" element={<Index />} />
+                              <Route path="/catalog" element={<Catalog />} />
+                              <Route path="/product/:id" element={<ProductDetail />} />
+                              <Route path="/faq" element={<FAQ />} />
+                              <Route path="/contact" element={<Contact />} />
+                              <Route path="/terms" element={<Terms />} />
+                              <Route path="/shipping" element={<Shipping />} />
+                              <Route path="/refund" element={<Refund />} />
+                              <Route path="/privacy" element={<Privacy />} />
+                              <Route path="*" element={<NotFound />} />
+                            </Routes>
+                          </Suspense>
+                        </Layout>
+                      } 
+                    />
                   </Routes>
-                </Suspense>
+                </MenuProvider>
               </BrowserRouter>
             </CartProvider>
           </TooltipProvider>

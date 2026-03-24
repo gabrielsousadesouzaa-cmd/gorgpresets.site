@@ -73,7 +73,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     allPresets: [],
   },
   integration: {
-    checkoutBaseUrl: "https://checkout.gorgpresets.com/pay/gorgpresets",
+    checkoutBaseUrl: "https://www.ggcheckout.com/s/F3LEikOi-0/cart",
     isCartEnabled: true,
   },
   shopTheLook: [

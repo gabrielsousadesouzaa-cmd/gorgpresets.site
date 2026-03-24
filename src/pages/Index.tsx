@@ -45,7 +45,7 @@ export default function Index() {
       <HeroSection />
 
       {/* 1. NOVIDADES EXCLUSIVAS */}
-      <div id="novidades" className="scroll-mt-20">
+      <div id="novidades" className="scroll-mt-20 mt-8 md:mt-18">
         <ProductCarousel
           title={t("newArrivals")}
           products={newProducts}

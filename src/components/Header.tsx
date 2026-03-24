@@ -1,19 +1,20 @@
-import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "@/store/cartStore";
 import { useLanguage } from "@/store/languageStore";
 import { useCurrency } from "@/store/currencyStore";
+import { useMenu } from "@/store/MenuContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { ShoppingBag, Search, Menu, X, Instagram, ChevronDown, UserCheck, ArrowRight, Sparkles } from "lucide-react";
+import { ShoppingBag, Search, Menu, X, Instagram, ChevronDown, ChevronRight, UserCheck, ArrowRight, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { items, openCart } = useCart();
   const { settings } = useSiteSettings();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { isMenuOpen, setIsMenuOpen, isSearchOpen, setIsSearchOpen } = useMenu();
   const [navQuery, setNavQuery] = useState("");
   const { language, setLanguage, t } = useLanguage();
   const { currency, setCurrency, formatCurrency } = useCurrency();
@@ -32,6 +33,12 @@ export function Header() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+  
+  // Fechar menus sincronamente ao trocar de URL (Blindagem Máxima)
+  useLayoutEffect(() => {
+    setIsMenuOpen(false);
+    setIsSearchOpen(false);
+  }, [location.pathname, location.search, location.key]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +63,7 @@ export function Header() {
   ];
 
   return (
-    <div className="flex flex-col w-full relative z-50">
+    <div className="flex flex-col w-full relative z-[2500]">
       {/* Red Announcement Bar */}
       <div className="w-full bg-[#d82828] text-white py-2 text-center text-[10px] md:text-sm font-semibold uppercase tracking-[0.2em]">
         {settings.promoBar[language] || t("promoBar")}
@@ -117,18 +124,22 @@ export function Header() {
       <AnimatePresence>
         {isSearchOpen && (
           <motion.div 
+            key="search-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-white/95 backdrop-blur-xl z-[100] flex flex-col pt-6 md:pt-20 px-4 md:px-12 overflow-y-auto custom-scrollbar"
+            className="fixed inset-0 bg-white/95 backdrop-blur-xl z-[1500] flex flex-col pt-6 md:pt-20 px-4 md:px-12 overflow-y-auto custom-scrollbar"
           >
             <div className="container mx-auto max-w-5xl w-full relative">
               <button 
-                onClick={() => setIsSearchOpen(false)}
-                className="absolute -top-4 md:top-0 -right-2 p-3 text-black hover:text-[#d82828] hover:scale-110 active:scale-95 transition-all z-[110]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsSearchOpen(false);
+                }}
+                className="absolute top-0 right-1 md:top-0 md:-right-2 p-2.5 md:p-3 bg-black/5 hover:bg-black/10 rounded-full text-black hover:text-[#d82828] hover:scale-110 active:scale-95 transition-all z-[1510] group"
                 aria-label="Close Search"
               >
-                <X size={32} strokeWidth={2.5} />
+                <X strokeWidth={2.5} className="w-5 h-5 md:w-8 md:h-8 group-hover:rotate-90 transition-transform duration-300" />
               </button>
 
               <div className="pt-12 md:pt-8">
@@ -224,142 +235,119 @@ export function Header() {
       </AnimatePresence>
 
 
-      {/* Side Menu Overlay */}
+      {/* Side Menu Overlay - Versão Simples e Direta */}
       <AnimatePresence>
         {isMenuOpen && (
           <>
+            {/* Fundo Escuro que Fecha */}
             <motion.div 
+              key="menu-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMenuOpen(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000] cursor-pointer"
             />
+            
+            {/* Barra Lateral Branca */}
             <motion.div 
+              key="menu-sidebar"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed inset-y-0 left-0 h-[100dvh] min-h-screen w-[85%] max-w-[400px] bg-white/40 backdrop-blur-2xl z-50 shadow-[0_0_100px_rgba(0,0,0,0.15)] border-r border-white/20 flex flex-col pt-0 overflow-hidden rounded-r-[2.5rem]"
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="fixed inset-y-0 left-0 w-[85%] max-w-[400px] bg-white z-[3000] shadow-2xl flex flex-col pt-0 rounded-r-[2rem] overflow-hidden"
             >
-              {/* Menu Header */}
-              <div className="flex items-center justify-between p-7 border-b border-white/10">
-                <img src="/logo.png" alt="Logo" className="h-12 w-auto object-contain" />
-                <button 
-                  onClick={() => setIsMenuOpen(false)}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors text-black"
-                >
-                  <X size={20} />
-                </button>
+              {/* Botão X Absoluto no Topo Direito */}
+              <button 
+                onClick={() => setIsMenuOpen(false)}
+                className="absolute top-6 right-6 p-4 bg-black/5 hover:bg-black/10 rounded-full transition-all text-black z-[3010] active:scale-95"
+                aria-label="Close"
+              >
+                <X size={24} strokeWidth={2.5} />
+              </button>
+
+              {/* Logo no Topo */}
+              <div className="p-8 border-b border-black/5">
+                <Link to="/" onClick={() => setIsMenuOpen(false)}>
+                  <img src="/logo.png" alt="Logo" className="h-12 w-auto object-contain" />
+                </Link>
               </div>
-              {/* Navigation Links */}
-              <nav className="flex flex-col p-8 gap-5 overflow-y-auto flex-grow">
+
+              {/* Links de Navegação Simples */}
+              <nav className="flex flex-col p-8 gap-1 overflow-y-auto flex-grow h-full custom-scrollbar">
                 {navLinks.map((link, idx) => (
                   <Link 
                     key={idx}
                     to={link.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className="block"
+                    className="w-full flex items-center justify-between group py-5 border-b border-black/5 last:border-0 hover:pl-2 transition-all"
                   >
-                    <motion.span 
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 + (idx * 0.05), duration: 0.4, ease: "easeOut" }}
-                      className="text-3xl font-bold uppercase tracking-tighter hover:text-[#d82828] transition-colors text-black"
-                    >
+                    <span className="text-2xl font-black uppercase tracking-tighter group-hover:text-[#d82828] transition-colors text-black">
                       {link.label}
-                    </motion.span>
+                    </span>
+                    <ChevronRight size={18} className="text-gray-300 group-hover:text-[#d82828] transition-all" />
                   </Link>
                 ))}
 
-                {/* Área de Membros Especial Link */}
-                <motion.a
-                  href="https://membros.gorgpresets.com"
-                  target="_blank"
+                {/* Área de Membros Simples */}
+                <a 
+                  href="https://membros.gorgpresets.com" 
+                  target="_blank" 
                   rel="noopener noreferrer"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.5 }}
-                  className="mt-4 p-6 bg-black text-white rounded-[2rem] flex items-center justify-between group overflow-hidden relative shadow-2xl shadow-black/40 active:scale-95 transition-all"
                   onClick={() => setIsMenuOpen(false)}
+                  className="mt-6 p-6 bg-black text-white rounded-2xl flex items-center justify-between group active:scale-95 transition-all shadow-xl shadow-black/20"
                 >
-                   <div className="absolute top-0 right-0 w-24 h-24 bg-[#d82828]/20 blur-2xl rounded-full translate-x-5 -translate-y-5" />
-                   <div className="relative z-10">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-1">{t("memberAreaDesc")}</p>
-                      <h4 className="text-xl font-bold uppercase tracking-tighter">{t("memberArea")}</h4>
-                   </div>
-                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#d82828] transition-all relative z-10">
-                      <UserCheck size={18} />
-                   </div>
-                </motion.a>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-none mb-1">{t("memberAreaDesc")}</span>
+                    <span className="text-lg font-bold uppercase tracking-tight">{t("memberArea")}</span>
+                  </div>
+                  <UserCheck size={20} />
+                </a>
 
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.5 }}
-                  className="mt-8 pt-8 border-t border-white/10 flex gap-4"
-                >
-                  {/* Language Selector */}
-                  <div className="flex-1 space-y-3">
-                    <p className="text-[11px] font-semibold text-black uppercase tracking-[0.2em] ml-1">{t("languageLabel")}</p>
-                    <div className="relative group">
-                      <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value as any)}
-                        className="w-full bg-white/20 border-2 border-white/10 text-black/80 rounded-[1.4rem] px-5 py-4 font-semibold text-sm outline-none ring-0 focus:border-[#d82828] transition-all cursor-pointer appearance-none shadow-sm backdrop-blur-md"
-                      >
-                        <option value="PT">🇧🇷 PT</option>
-                        <option value="EN">🇺🇸 EN</option>
-                        <option value="ES">🇪🇸 ES</option>
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-black/40 group-hover:text-black/60 transition-colors">
-                        <ChevronDown size={14} strokeWidth={3} />
-                      </div>
+                {/* Seletores de Língua e Moeda Simples */}
+                <div className="mt-auto pt-8 flex flex-col gap-6">
+                  {/* Selectors grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("languageLabel")}</p>
+                       <select 
+                         value={language}
+                         onChange={(e) => setLanguage(e.target.value as any)}
+                         className="w-full bg-gray-50 border-2 border-transparent rounded-xl px-4 py-3 font-bold text-sm outline-none focus:border-[#d82828] transition-all appearance-none cursor-pointer"
+                       >
+                         <option value="PT">🇧🇷 PT</option>
+                         <option value="EN">🇺🇸 EN</option>
+                         <option value="ES">🇪🇸 ES</option>
+                       </select>
+                    </div>
+                    <div className="space-y-2">
+                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("currencyLabel")}</p>
+                       <select 
+                         value={currency}
+                         onChange={(e) => setCurrency(e.target.value as any)}
+                         className="w-full bg-gray-50 border-2 border-transparent rounded-xl px-4 py-3 font-bold text-sm outline-none focus:border-black transition-all appearance-none cursor-pointer"
+                       >
+                         <option value="BRL">{t("countryBR")}</option>
+                         <option value="USD">{t("countryUS")}</option>
+                         <option value="EUR">{t("countryPT")}</option>
+                       </select>
                     </div>
                   </div>
 
-                  {/* Currency Selector */}
-                  <div className="flex-1 space-y-3">
-                    <p className="text-[11px] font-semibold text-black uppercase tracking-[0.2em] ml-1">{t("currencyLabel")}</p>
-                    <div className="relative group">
-                      <select
-                        value={currency}
-                        onChange={(e) => setCurrency(e.target.value as any)}
-                        className="w-full bg-white/20 border-2 border-white/10 text-black/80 rounded-[1.4rem] px-5 py-4 font-semibold text-sm outline-none ring-0 focus:border-black transition-all cursor-pointer appearance-none shadow-sm backdrop-blur-md"
-                      >
-                        <option value="BRL">{t("countryBR")}</option>
-                        <option value="USD">{t("countryUS")}</option>
-                        <option value="EUR">{t("countryPT")}</option>
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-black/40 group-hover:text-black/60 transition-colors">
-                        <ChevronDown size={14} strokeWidth={3} />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              </nav>
-
-              {/* Social Footer */}
-              <div className="p-7 border-t border-white/10 bg-white/10 mt-auto">
-                 <div className="flex items-center gap-4">
-                    <a 
-                      href="https://www.instagram.com/gorgpresets" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="p-2 bg-white/30 rounded-full shadow-sm hover:text-[#d82828] transition-colors border border-white/20"
-                    >
-                       <Instagram size={17} strokeWidth={2.5} />
+                  {/* Redes Sociais no Fim */}
+                  <div className="flex items-center gap-4 border-t border-black/5 pt-8 mb-4">
+                    <a href="https://www.instagram.com/gorgpresets" target="_blank" rel="noopener noreferrer" className="p-3 bg-gray-50 rounded-full hover:text-[#d82828] transition-colors shadow-sm">
+                      <Instagram size={20} strokeWidth={2} />
                     </a>
-                 </div>
-                 <p className="mt-4 text-[9px] font-bold text-black uppercase tracking-[0.2em] px-0.5">
-                    © 2026 GORG PRESETS
-                 </p>
-              </div>
+                  </div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">© 2026 GORG PRESETS</p>
+                </div>
+              </nav>
             </motion.div>
           </>
         )}
       </AnimatePresence>
     </div>
-
   );
 }

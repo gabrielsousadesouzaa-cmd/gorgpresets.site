@@ -7,7 +7,7 @@ export function EditingBanner() {
   const { settings } = useSiteSettings();
 
   return (
-    <section className="container mx-auto px-4 md:px-8 py-8 overflow-hidden">
+    <section className="container mx-auto px-4 md:px-8 pt-0 pb-8 overflow-hidden">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         whileInView={{ opacity: 1, scale: 1 }}

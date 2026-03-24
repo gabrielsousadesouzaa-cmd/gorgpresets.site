@@ -28,7 +28,6 @@ interface ProductFormData {
   whatsIncluded: string[];
   idealFor: string[];
   checkoutUrl: string;
-  checkout_id?: string; // Added this line
   isNew: boolean;
   isBestseller: boolean;
   salesCount: number;
@@ -477,33 +476,6 @@ export default function Admin() {
             </div>
 
             <div className="grid grid-cols-1 gap-8">
-               <div className="bg-white p-10 rounded-[3rem] border border-black/5 shadow-xl space-y-8">
-                  <div className="flex items-center gap-3 border-b border-black/5 pb-4">
-                     <Check className="text-emerald-500" size={20} />
-                     <h3 className="text-xl font-bold uppercase tracking-tighter text-gray-900">Script SQL necessário</h3>
-                  </div>
-                  <p className="text-sm text-gray-500 font-medium">Execute este código no seu "SQL Editor" do Supabase para que a função de vendas automáticas funcione:</p>
-                  <pre className="bg-gray-900 text-emerald-400 p-8 rounded-3xl text-xs font-mono overflow-x-auto shadow-inner leading-relaxed">
-                    {`-- 1. SQL para criar a função de incremento
-CREATE OR REPLACE FUNCTION increment_sales(row_id bigint)
-RETURNS void AS $$
-BEGIN
-  UPDATE products SET sales_count = COALESCE(sales_count, 0) + 1 WHERE id = row_id;
-END; $$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 2. SQL para adicionar o campo de Token v3 no Banco
-ALTER TABLE products ADD COLUMN IF NOT EXISTS checkout_id TEXT;
-
--- 3. SQL para criar a tabela de Configurações do Site (Home, Banners, Ordenação)
-CREATE TABLE IF NOT EXISTS site_settings (
-  key TEXT PRIMARY KEY,
-  value JSONB NOT NULL
-);
-ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Acesso Publico" ON site_settings FOR ALL USING (true);`}
-                  </pre>
-               </div>
-
                <div className="bg-white p-10 rounded-[3rem] border border-black/5 shadow-xl space-y-8">
                   <div className="flex items-center gap-3 border-b border-black/5 pb-4">
                      <ImageIcon size={20} className="text-[#d82828]" />
@@ -1016,8 +988,6 @@ Deno.serve(async (req) => {
           );
         })()}
 
-      </main>
-
       {/* MODAL (Restored logic from original file) */}
       <AnimatePresence>
         {isModalOpen && (
@@ -1052,12 +1022,6 @@ Deno.serve(async (req) => {
                             <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Checkout URL (Fallback)</label>
                             <input name="checkoutUrl" value={formData.checkoutUrl} onChange={handleInputChange} className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none focus:bg-white border-2 border-transparent focus:border-[#d82828] transition-all font-bold" placeholder="https://..." />
                          </div>
-                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 flex items-center gap-1">
-                              <Zap size={10} /> Token Checkout v3
-                            </label>
-                            <input name="checkout_id" value={formData.checkout_id} onChange={handleInputChange} className="w-full h-14 bg-emerald-50/20 rounded-2xl px-6 outline-none focus:bg-white border-2 border-emerald-100 focus:border-emerald-500 transition-all font-mono text-xs" placeholder="lXTBcjdfiCtH8QL5ngRy" />
-                         </div>
                       </div>
                       <div className="space-y-6">
                          <div className="space-y-2">
@@ -1074,11 +1038,12 @@ Deno.serve(async (req) => {
                       <textarea name="detailedDescription" value={formData.detailedDescription} onChange={handleInputChange} className="w-full h-32 bg-gray-50 rounded-2xl p-6 outline-none focus:bg-white border-2 border-transparent focus:border-[#d82828] transition-all font-bold resize-none" />
                    </div>
                    <Button onClick={handleSubmit} className="w-full h-16 bg-[#d82828] text-white rounded-2xl font-bold uppercase tracking-[0.2em] shadow-xl shadow-red-500/20 active:scale-95 transition-all">Salvar Produto</Button>
-                </form>
-             </motion.div>
-          </div>
+                 </form>
+              </motion.div>
+           </div>
         )}
       </AnimatePresence>
-    </div>
-  );
+    </main>
+  </div>
+);
 }

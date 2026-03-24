@@ -63,7 +63,7 @@ export function CategoriesCarousel() {
   }, [products, t]);
 
   return (
-    <section className="py-8 w-full overflow-hidden">
+    <section className="pt-4 pb-16 w-full overflow-hidden">
       <div className="container mx-auto px-4 md:px-8">
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
@@ -88,7 +88,7 @@ export function CategoriesCarousel() {
       </div>
 
       <div className="md:container md:mx-auto px-0 md:px-8">
-        <div className="overflow-visible py-4 -my-4" ref={emblaRef}>
+        <div className="overflow-hidden py-14 -my-14 px-6 -mx-6" ref={emblaRef}>
           <motion.div 
             initial="hidden"
             whileInView="visible"
@@ -102,7 +102,7 @@ export function CategoriesCarousel() {
                 }
               }
             }}
-            className="flex pl-4 md:pl-0 md:justify-center"
+            className="flex pl-4 md:pl-0 md:justify-center px-3"
           >
             {categoriesWithProducts.map((cat, idx) => (
               <motion.div

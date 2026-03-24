@@ -32,15 +32,15 @@ export function ProductCarousel({
     ? { 
         align: "start" as const, 
         loop: false, 
-        dragFree: true, 
+        dragFree: false, 
         containScroll: "trimSnaps" as const, 
+        watchDrag: true,
         breakpoints: {
           '(min-width: 1024px)': { 
             align: "start" as const, 
             loop: false, 
             dragFree: true, 
             containScroll: "trimSnaps" as const, 
-            watchDrag: true 
           }
         }
       }
@@ -65,12 +65,12 @@ export function ProductCarousel({
   
   if (isBestSeller) {
     return (
-      <section id={id} className={`py-6 md:py-12 w-full ${bgClass || 'bg-white'} overflow-hidden`}>
+      <section id={id} className={`pt-6 pb-4 md:pt-12 md:pb-8 w-full ${bgClass || 'bg-white'} overflow-hidden`}>
         <div className="container mx-auto px-4 md:px-8">
-          <div className="bg-[#f7f7f7] rounded-[2.5rem] p-6 lg:p-14 flex flex-col lg:flex-row gap-8 lg:gap-12 lg:items-center overflow-visible lg:overflow-hidden">
+          <div className="bg-[#f7f7f7] rounded-[2.5rem] py-16 px-0 md:p-14 flex flex-col lg:flex-row gap-8 lg:gap-12 lg:items-center overflow-hidden">
             
             {/* Esquerda: Título/Desc (Mobile: Centralizado e no Topo) */}
-            <div className="w-full lg:w-1/4 text-center lg:text-left space-y-3 pb-4 lg:pb-0 flex-shrink-0">
+            <div className="w-full lg:w-1/4 text-center lg:text-left space-y-3 pb-4 lg:pb-0 px-6 md:px-0 flex-shrink-0">
               <h2 className="text-2xl md:text-3xl font-bold text-[#333] uppercase tracking-tight">
                 {title}
               </h2>
@@ -85,28 +85,18 @@ export function ProductCarousel({
               </div>
             </div>
 
-            {/* Direita: Carrossel Original Best Seller */}
-            <div className="w-full lg:w-3/4 relative min-w-0 lg:overflow-x-clip lg:overflow-y-visible group">
+            {/* Direita: Carrossel Best Seller Unificado */}
+            <div className="w-full lg:w-3/4 relative min-w-0">
               <div 
-                className="overflow-visible lg:overflow-hidden py-6 -my-6 lg:py-3 lg:-my-3" 
+                className="overflow-hidden py-16 -my-16 px-6 -mx-6" 
                 ref={emblaRef}
               >
-                <div className="flex -mx-3">
-                  {/* MOBILE: Apenas 3 produtos do Best Sellers (Animação de início/fim idêntica às outras seções) */}
-                  {products.slice(0, 3).map((product, idx) => (
-                    <div
-                      key={`bst-mb-${product.id}-${idx}`}
-                      className="flex-none lg:hidden px-3 w-[66%] sm:w-[50%]"
-                    >
-                      <ProductCard product={product} />
-                    </div>
-                  ))}
-
-                  {/* DESKTOP: Mostra todos os produtos originais sem loop */}
+                <div className="flex -mx-3 px-3">
+                  {/* Loop único para Mobile e Desktop */}
                   {products.map((product, idx) => (
                     <div
-                      key={`bst-dt-${product.id}-${idx}`}
-                      className="hidden lg:block flex-none px-3 w-[33.33%]"
+                      key={`bst-p-${product.id}-${idx}`}
+                      className={`flex-none px-3 w-[72%] sm:w-[50%] lg:w-[33.33%] transition-transform duration-300 ${idx >= 6 ? 'hidden lg:block' : ''}`}
                     >
                       <ProductCard product={product} />
                     </div>
@@ -122,7 +112,7 @@ export function ProductCarousel({
 
   // Seção Padrão (Fundo Branco, Título no Topo, Alinhado à Esquerda)
   return (
-    <section id={id} className={`pt-12 pb-6 md:pb-10 w-full ${bgClass} overflow-hidden`}>
+    <section id={id} className={`pt-4 pb-16 w-full ${bgClass} overflow-hidden`}>
       <div className="container mx-auto px-4 md:px-8">
         {/* Título Centralizado com Linha Vermelha */}
         <motion.div 
@@ -171,8 +161,8 @@ export function ProductCarousel({
             </div>
           )}
 
-          <div className="overflow-visible py-6 -my-6" ref={emblaRef}>
-            <div className="flex -mx-3">
+          <div className="overflow-hidden py-12 -my-12 px-6 -mx-6" ref={emblaRef}>
+            <div className="flex -mx-3 px-3">
               {products.map((product) => (
                 <div
                   key={product.id}
