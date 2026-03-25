@@ -11,7 +11,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 function TestimonialItem({ testimonial }: { testimonial: any }) {
   return (
     <div 
-      className="bg-card p-6 md:p-8 rounded-[2rem] shadow-md border border-border/50 h-full flex flex-col md:hover:shadow-xl transition-all duration-[400ms] hover:-translate-y-2 active:scale-[0.98] transform-gpu ease-out"
+      className="bg-card p-6 md:p-8 rounded-[2rem] shadow-md border border-border/50 h-full flex flex-col md:hover:shadow-xl transition-all duration-['400ms'] hover:-translate-y-2 active:scale-[0.98] transform-gpu ease-out"
     >
       <div className="flex gap-1 mb-4 text-yellow-400">
         {[1, 2, 3, 4, 5].map((star) => (
