@@ -84,8 +84,8 @@ export default function Index() {
              </p>
           </div>
           <BeforeAfterSlider 
-            beforeImage="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=1200&blur=1" 
-            afterImage="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=1200&auto=format&fit=crop" 
+            beforeImage={settings.magic.beforeUrl} 
+            afterImage={settings.magic.afterUrl} 
           />
         </div>
       </section>

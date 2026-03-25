@@ -17,6 +17,11 @@ export interface PromoBarSettings {
   ES: string;
 }
 
+export interface MagicSettings {
+  beforeUrl: string;
+  afterUrl: string;
+}
+
 export interface Testimonial {
   name: string;
   role: string;
@@ -50,6 +55,7 @@ export interface SiteSettings {
   integration: IntegrationSettings;
   shopTheLook: ShopTheLookItem[];
   promoBar: PromoBarSettings;
+  magic: MagicSettings;
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -88,6 +94,10 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     PT: "LEVE 3, PAGUE 2: ADICIONE 3 PRESETS E GANHE 1.",
     EN: "BUY 2, GET 1 FREE: ADD 3 PRESETS AND GET 1.",
     ES: "LLEVA 3, PAGA 2: AÑADE 3 PRESETS Y LLEVATE 1."
+  },
+  magic: {
+    beforeUrl: "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=1200",
+    afterUrl: "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=1200",
   }
 };
 
@@ -99,21 +109,32 @@ export function useSiteSettings() {
     async function fetchSettings() {
       if (!supabase) { setLoading(false); return; }
       try {
-        const { data, error } = await supabase
-          .from("site_settings")
-          .select("*");
-        if (error || !data) { setLoading(false); return; }
+        const [settingsRes, magicRes] = await Promise.all([
+          supabase.from("site_settings").select("*"),
+          supabase.from("sales_settings").select("*").eq("id", "main").single()
+        ]);
 
         const merged = { ...DEFAULT_SETTINGS };
-        for (const row of data) {
-          if (row.key === "hero" && row.value) merged.hero = { ...merged.hero, ...row.value };
-          if (row.key === "banner" && row.value) merged.banner = { ...merged.banner, ...row.value };
-          if (row.key === "testimonials" && row.value) merged.testimonials = row.value;
-          if (row.key === "homeSectionOrder" && row.value) merged.homeSectionOrder = { ...merged.homeSectionOrder, ...row.value };
-          if (row.key === "integration" && row.value) merged.integration = { ...merged.integration, ...row.value };
-          if (row.key === "shopTheLook" && row.value) merged.shopTheLook = row.value;
-          if (row.key === "promoBar" && row.value) merged.promoBar = { ...merged.promoBar, ...row.value };
+
+        if (settingsRes.data) {
+          for (const row of settingsRes.data) {
+            if (row.key === "hero" && row.value) merged.hero = { ...merged.hero, ...row.value };
+            if (row.key === "banner" && row.value) merged.banner = { ...merged.banner, ...row.value };
+            if (row.key === "testimonials" && row.value) merged.testimonials = row.value;
+            if (row.key === "homeSectionOrder" && row.value) merged.homeSectionOrder = { ...merged.homeSectionOrder, ...row.value };
+            if (row.key === "integration" && row.value) merged.integration = { ...merged.integration, ...row.value };
+            if (row.key === "shopTheLook" && row.value) merged.shopTheLook = row.value;
+            if (row.key === "promoBar" && row.value) merged.promoBar = { ...merged.promoBar, ...row.value };
+          }
         }
+
+        if (magicRes.data) {
+          merged.magic = {
+            beforeUrl: magicRes.data.magic_before_url || merged.magic.beforeUrl,
+            afterUrl: magicRes.data.magic_after_url || merged.magic.afterUrl
+          };
+        }
+
         setSettings(merged);
       } catch (e) {
         console.error("Settings fetch error:", e);
