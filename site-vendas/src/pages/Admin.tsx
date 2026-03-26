@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { 
   Plus, Trash2, Edit3, X, Save, Lock, LayoutDashboard, ShoppingBag, LogOut, 
   AlertCircle, Image as ImageIcon, Star, Users, GripVertical, LayoutList, 
   ChevronRight, Check, TrendingUp, DollarSign, Package, BarChart3, Bell, Zap,
-  Upload, Sparkles
+  Upload, Sparkles, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -62,10 +62,36 @@ export default function Admin() {
   const [formData, setFormData] = useState<ProductFormData>(initialForm);
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'hero' | 'banner' | 'testimonials' | 'order' | 'integration' | 'shopTheLook' | 'announcement' | 'magic'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'hero' | 'banner' | 'testimonials' | 'order' | 'integration' | 'shopTheLook' | 'promoBar' | 'magic'>('overview');
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  
+  const openAddModal = () => setIsModalOpen(true);
+  const openEditModal = (product: any) => {
+    setFormData({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      detailedDescription: product.detailedDescription,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      discount: product.discount,
+      image: product.image,
+      images: product.images || [],
+      category: product.category,
+      tags: product.tags || [],
+      whatsIncluded: product.whatsIncluded || [""],
+      idealFor: product.idealFor || [""],
+      checkoutUrl: product.checkoutUrl,
+      isNew: product.isNew,
+      isBestseller: product.isBestseller,
+      salesCount: product.salesCount
+    });
+    setIsEditing(true);
+    setIsModalOpen(true);
+  };
 
+ 
   // Statistics Calculation
   const totalProducts = products.length;
   const totalSalesCount = products.reduce((acc, p) => acc + (p.salesCount || 0), 0);
@@ -409,7 +435,7 @@ export default function Admin() {
             { key: 'shopTheLook', label: 'Mosaico', icon: ImageIcon },
             { key: 'order', label: 'Ordenação', icon: LayoutList },
             { key: 'integration', label: 'Integração', icon: Zap },
-            { key: 'announcement', label: 'Aviso Topo', icon: Bell },
+            { key: 'promoBar', label: 'Aviso Topo', icon: Bell },
           ].map(({ key, label, icon: Icon }) => (
             <button key={key} onClick={() => setActiveTab(key as any)} className={`flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${activeTab === key ? 'border-[#d82828] text-[#d82828]' : 'border-transparent text-gray-400 hover:text-gray-700'}`}>
               <Icon size={14} /> {label}
@@ -419,281 +445,480 @@ export default function Admin() {
       </header>
 
       <main className="container mx-auto px-6 py-12">
-        {/* TAB: MAGIC (A Mágica Acontece) */}
+        {/* OVERVIEW TAB */}
+        {activeTab === 'overview' && (
+          <div className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+               {[
+                 { label: 'Total de Vendas', value: totalSalesCount, icon: ShoppingBag, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                 { label: 'Receita Estimada', value: `R$ ${estimatedRevenue.toFixed(2)}`, icon: DollarSign, color: 'text-[#d82828]', bg: 'bg-red-50' },
+                 { label: 'Total de Produtos', value: totalProducts, icon: Package, color: 'text-blue-500', bg: 'bg-blue-50' },
+                 { label: 'Média por Pack', value: `R$ ${averagePrice.toFixed(2)}`, icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-50' },
+               ].map((stat, i) => (
+                 <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-black/5 shadow-sm">
+                    <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-6`}><stat.icon size={24} /></div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{stat.label}</p>
+                    <h3 className="text-3xl font-black tracking-tighter">{stat.value}</h3>
+                 </div>
+               ))}
+            </div>
+            <div className="bg-white p-10 rounded-[2.5rem] border border-black/5 flex items-center justify-between">
+               <div className="flex items-center gap-6">
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${siteSettings.integration.isCartEnabled ? 'bg-emerald-50 text-emerald-500' : 'bg-gray-100 text-gray-400'}`}><ShoppingBag size={28} /></div>
+                  <div><h3 className="text-xl font-bold uppercase tracking-tighter">Status do Carrinho</h3><p className="text-sm text-gray-400">{siteSettings.integration.isCartEnabled ? 'Ativo na Loja' : 'Ir direto ao Checkout'}</p></div>
+               </div>
+               <button onClick={async () => { const n = !siteSettings.integration.isCartEnabled; setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, isCartEnabled: n } })); await saveSetting('integration', { ...siteSettings.integration, isCartEnabled: n }); toast.success(`Carrinho ${n ? 'Habilitado' : 'Desativado'}`); }} className={`w-16 h-8 rounded-full relative transition-all ${siteSettings.integration.isCartEnabled ? 'bg-emerald-500' : 'bg-gray-300'}`}><div className={`w-6 h-6 bg-white rounded-full transition-all ${siteSettings.integration.isCartEnabled ? 'translate-x-8' : 'translate-x-0'}`} /></button>
+            </div>
+          </div>
+        )}
+
+        {/* PRODUCTS TAB */}
+        {activeTab === 'products' && (
+          <div className="bg-white rounded-[2.5rem] border border-black/5 shadow-lg overflow-hidden">
+             {(products || []).map((p) => (
+               <div key={p.id} className="grid grid-cols-[64px_1fr_120px_100px] items-center px-8 py-5 gap-3 hover:bg-gray-50 transition-colors border-b border-black/[0.03]">
+                 <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gray-100 border border-black/5"><img src={p.image} alt="" className="w-full h-full object-cover" /></div>
+                 <div><p className="text-sm font-bold text-gray-950 uppercase tracking-tighter truncate">{p.name}</p><span className="text-[9px] font-bold text-[#d82828] uppercase">{p.category}</span></div>
+                 <span className="text-sm font-black">R$ {Number(p.price || 0).toFixed(2)}</span>
+                 <div className="flex items-center gap-2 justify-end"><button onClick={() => openEditModal(p)} className="p-2 hover:bg-black hover:text-white rounded-xl transition-all"><Edit3 size={16} /></button><button onClick={() => handleDelete(p.id)} className="p-2 hover:bg-red-500 hover:text-white rounded-xl transition-all"><Trash2 size={16} /></button></div>
+               </div>
+             ))}
+          </div>
+        )}
+
+        {/* MAGIC TAB */}
         {activeTab === 'magic' && (
-          <div className="max-w-4xl mx-auto space-y-10">
-             <div className="bg-white rounded-[3.5rem] border border-black/5 shadow-2xl p-12 space-y-12">
-                <div className="flex items-center gap-6 border-l-4 border-[#d82828] pl-8">
-                   <div className="w-14 h-14 bg-red-50 text-[#d82828] rounded-2xl flex items-center justify-center shadow-lg"><Sparkles size={32} /></div>
-                   <div>
-                      <h2 className="text-3xl font-black uppercase tracking-tighter">A Mágica Acontece</h2>
-                      <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">Gestão de Antes e Depois da Vitrine</p>
-                   </div>
-                </div>
+          <div className="max-w-4xl mx-auto space-y-10 bg-white rounded-[3.5rem] border border-black/5 shadow-2xl p-12">
+            <div className="flex items-center gap-6 border-l-4 border-[#d82828] pl-8">
+               <div className="w-14 h-14 bg-red-50 text-[#d82828] rounded-2xl flex items-center justify-center shadow-lg"><Sparkles size={32} /></div>
+               <div><h2 className="text-3xl font-black uppercase tracking-tighter">A Mágica</h2><p className="text-gray-400 text-sm font-bold uppercase tracking-widest">Antes e Depois</p></div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-12">
+               {['before', 'after'].map((r) => (
+                 <div key={r} className="space-y-4">
+                    <div className="aspect-square rounded-[2.5rem] overflow-hidden bg-gray-50 border border-black/5 relative group">
+                       <img src={r==='before'?siteSettings.magic.beforeUrl:siteSettings.magic.afterUrl} className="w-full h-full object-cover" alt="" />
+                       <label className="absolute inset-x-8 bottom-8 h-14 bg-white/10 hover:bg-white text-white hover:text-black rounded-2xl flex items-center justify-center gap-3 font-black text-[10px] uppercase cursor-pointer transition-all border border-white/20 opacity-0 group-hover:opacity-100 backdrop-blur-sm">
+                          {isUploading ? <RefreshCw className="animate-spin" /> : <Upload size={16} />} ARQUIVO
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMagicUpload(f, r as any); }} />
+                       </label>
+                    </div>
+                    <input value={r==='before'?siteSettings.magic.beforeUrl:siteSettings.magic.afterUrl} onChange={(e) => setSiteSettings(prev => ({ ...prev, magic: { ...prev.magic, [r==='before'?'beforeUrl':'afterUrl']: e.target.value } }))} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-mono text-[10px]" placeholder="URL" />
+                 </div>
+               ))}
+            </div>
+            <Button onClick={() => handleSaveSettings('magic')} disabled={isSavingSettings} className="w-full h-16 bg-black text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-4 transition-all shadow-xl"><Save size={20} /> SALVAR MÁGICA</Button>
+          </div>
+        )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                   {['before', 'after'].map((role) => (
-                     <div key={role} className="space-y-6">
-                        <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">
-                          Foto {role === 'before' ? 'Original (Antes)' : 'Revelada (Depois)'}
-                        </label>
-                        <div className="relative group aspect-square rounded-[2.5rem] overflow-hidden bg-gray-50 border border-black/5 shadow-inner">
-                           <img src={role === 'before' ? siteSettings.magic.beforeUrl : siteSettings.magic.afterUrl} className={`w-full h-full object-cover transition-all duration-700 ${role === 'before' ? 'grayscale opacity-70' : 'group-hover:scale-105'}`} alt="" />
-                           <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-black/80 to-transparent flex flex-col gap-4 opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm">
-                              <label className="w-full h-14 bg-white/10 hover:bg-white text-white hover:text-black rounded-2xl flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest cursor-pointer transition-all border border-white/20">
-                                 {isUploading ? <RefreshCw className="animate-spin" /> : <Upload size={16} />}
-                                 {isUploading ? "ENVIANDO..." : "ESCOLHER ARQUIVO"}
-                                 <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMagicUpload(f, role as any); }} />
-                              </label>
-                           </div>
-                           {isUploading && (
-                             <div className="absolute inset-0 bg-white/60 backdrop-blur-md flex items-center justify-center">
-                                <RefreshCw className="animate-spin text-[#d82828]" size={32} />
-                             </div>
-                           )}
+        {/* HERO TAB */}
+        {activeTab === 'hero' && (
+          <div className="max-w-3xl mx-auto bg-white rounded-[2.5rem] border border-black/5 shadow-xl p-10 space-y-8">
+            <h2 className="text-2xl font-bold uppercase tracking-tighter border-b pb-4">Hero Home</h2>
+            <div className="grid gap-6">
+               <div className="space-y-2"><p className="text-[10px] font-bold uppercase text-gray-400">Título</p><input value={siteSettings.hero.title} onChange={(e) => setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, title: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border border-black/5" /></div>
+               <div className="space-y-2"><p className="text-[10px] font-bold uppercase text-gray-400">Subtítulo</p><input value={siteSettings.hero.subtitle} onChange={(e) => setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, subtitle: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border border-black/5" /></div>
+               <img src={siteSettings.hero.backgroundImage} className="w-full h-40 object-cover rounded-3xl" />
+            </div>
+            <Button onClick={() => handleSaveSettings('hero')} className="w-full h-16 bg-black text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-black/10 mt-6"><Save size={18} /> SALVAR HERO</Button>
+          </div>
+        )}
+
+        {/* BANNER TAB */}
+        {activeTab === 'banner' && (
+          <div className="max-w-3xl mx-auto bg-white rounded-[2.5rem] border border-black/5 shadow-xl p-10 space-y-8">
+            <h2 className="text-2xl font-bold uppercase tracking-tighter border-b pb-4">Banner Oferta</h2>
+            <img src={siteSettings.banner.image} className="w-full h-40 object-cover rounded-3xl mb-6 shadow-inner" />
+            <div className="flex gap-4">
+              <label className="flex-1 h-16 bg-gray-100 hover:bg-black hover:text-white rounded-2xl flex items-center justify-center font-black text-xs uppercase cursor-pointer transition-all border border-black/5 shadow-sm">
+                {isUploading ? "ENVIANDO..." : "ESCOLHER BANNER"}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSettingImageUpload(f, 'banner'); }} />
+              </label>
+            </div>
+            <Button onClick={() => handleSaveSettings('banner')} className="w-full h-16 bg-black text-white rounded-2xl font-black uppercase tracking-widest mt-6 shadow-xl"><Save size={18} /> SALVAR BANNER</Button>
+          </div>
+        )}
+
+        {/* FEEDBACKS TAB */}
+        {activeTab === 'testimonials' && (
+          <div className="max-w-4xl mx-auto bg-white rounded-[3.5rem] border border-black/5 shadow-2xl p-12 space-y-12">
+            <div className="flex justify-between items-center border-b border-black/5 pb-10">
+               <div className="flex items-center gap-6">
+                 <div className="w-16 h-16 bg-red-50 text-[#d82828] rounded-2xl flex items-center justify-center shadow-lg"><Users size={32} /></div>
+                 <div><h2 className="text-3xl font-black uppercase tracking-tighter">Feedbacks de Elite</h2><p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Depoimentos do seu império</p></div>
+               </div>
+               <Button onClick={() => setSiteSettings(prev => ({ ...prev, testimonials: [...(prev.testimonials || []), { name: "Novo Cliente", role: "Elite Member", content: "Produto Fantástico!", image: "https://api.dicebear.com/7.x/notionists/svg?seed=N-" + Date.now() }] }))} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full h-14 px-10 font-black text-xs uppercase shadow-xl hover:scale-105 transition-all">NOVO FEEDBACK</Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              {(siteSettings.testimonials || []).map((t, i) => (
+                <div key={i} className="bg-gray-50 rounded-[2.5rem] p-10 relative border border-black/5 group hover:shadow-2xl transition-all flex flex-col gap-6">
+                  <button onClick={() => setSiteSettings(prev => ({ ...prev, testimonials: prev.testimonials.filter((_, idx) => idx !== i) }))} className="absolute top-8 right-8 text-gray-200 hover:text-red-500 transition-colors bg-white p-2 rounded-xl shadow-sm"><Trash2 size={18} /></button>
+                  
+                  <div className="flex items-center gap-6">
+                    <div className="relative group/avatar">
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-xl bg-white"><img src={t.image || "https://api.dicebear.com/7.x/notionists/svg?seed="+i} className="w-full h-full object-cover" /></div>
+                      <label className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center text-white opacity-0 group-hover/avatar:opacity-100 cursor-pointer transition-all">
+                        <Upload size={20} />
+                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                           const f = e.target.files?.[0];
+                           if (f) {
+                             const url = await handleImageUpload(f);
+                             if (url) {
+                               const nt = [...siteSettings.testimonials];
+                               nt[i].image = url;
+                               setSiteSettings(prev => ({ ...prev, testimonials: nt }));
+                             }
+                           }
+                        }} />
+                      </label>
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-gray-400 ml-1">Nome</label>
+                        <input value={t.name} onChange={(e) => { const nt = [...siteSettings.testimonials]; nt[i].name = e.target.value; setSiteSettings(prev => ({ ...prev, testimonials: nt })); }} className="w-full h-10 bg-white border border-black/5 px-4 rounded-xl font-black text-sm outline-none focus:border-[#d82828] transition-all uppercase" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-gray-400 ml-1">Profissão / Cargo</label>
+                        <input value={t.role} onChange={(e) => { const nt = [...siteSettings.testimonials]; nt[i].role = e.target.value; setSiteSettings(prev => ({ ...prev, testimonials: nt })); }} className="w-full h-10 bg-white border border-black/5 px-4 rounded-xl font-bold text-xs outline-none focus:border-[#d82828] transition-all text-gray-500" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase text-gray-400 ml-1">Mensagem do Cliente</label>
+                    <textarea value={t.content} onChange={(e) => { const nt = [...siteSettings.testimonials]; nt[i].content = e.target.value; setSiteSettings(prev => ({ ...prev, testimonials: nt })); }} className="w-full text-xs outline-none bg-white p-6 rounded-[2rem] h-32 border border-black/5 focus:bg-white transition-all shadow-inner focus:border-[#d82828]/20" placeholder="Depoimento..." />
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="pt-6 border-t border-black/5">
+              <Button onClick={() => handleSaveSettings('testimonials')} className="w-full h-20 bg-black text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all text-sm flex items-center justify-center gap-4 hover:bg-[#d82828]"><Save size={24} /> SALVAR TODOS FEEDBACKS</Button>
+              <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-6">Alterações só refletem no site após clicar em SALVAR</p>
+            </div>
+          </div>
+        )}
+
+        {/* MOSAICO TAB */}
+        {activeTab === 'shopTheLook' && (
+          <div className="max-w-4xl mx-auto bg-white rounded-[3.5rem] border border-black/5 shadow-2xl p-12 space-y-12">
+            <div className="flex items-center gap-6 border-b border-black/5 pb-8">
+               <div className="w-16 h-16 bg-red-50 text-[#d82828] rounded-2xl flex items-center justify-center shadow-lg"><ImageIcon size={32} /></div>
+               <div><h2 className="text-3xl font-black uppercase tracking-tighter">Mosaico Visual</h2><p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Vitrine estilo Instagram</p></div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-8">
+               {(siteSettings.shopTheLook || []).map((item, i) => (
+                 <div key={i} className="bg-gray-50 p-6 rounded-[2.5rem] border border-black/5 hover:shadow-2xl transition-all flex flex-col gap-4 group">
+                    <div className="aspect-square w-full overflow-hidden rounded-[2rem] border-4 border-white shadow-xl relative group/mosaic bg-white">
+                      <img src={item.src} className="w-full h-full object-cover" />
+                      <label className="absolute inset-0 bg-black/60 flex items-center justify-center text-white opacity-0 group-hover/mosaic:opacity-100 cursor-pointer transition-all">
+                        <div className="flex flex-col items-center gap-2">
+                           {isUploading ? <RefreshCw className="animate-spin" /> : <Upload size={24} />}
+                           <span className="text-[10px] font-black uppercase tracking-widest">Trocar Foto</span>
                         </div>
-                        <input 
-                           value={role === 'before' ? siteSettings.magic.beforeUrl : siteSettings.magic.afterUrl}
-                           onChange={(e) => setSiteSettings(prev => ({ ...prev, magic: { ...prev.magic, [role === 'before' ? 'beforeUrl' : 'afterUrl']: e.target.value } }))}
-                           className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-mono text-[10px] text-gray-500" 
-                           placeholder="Ou cole a URL aqui..."
-                        />
-                     </div>
-                   ))}
+                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                             const f = e.target.files?.[0];
+                             if (f) {
+                               const url = await handleImageUpload(f);
+                               if (url) {
+                                 const nl = [...siteSettings.shopTheLook];
+                                 nl[i].src = url;
+                                 setSiteSettings(prev => ({ ...prev, shopTheLook: nl }));
+                               }
+                             }
+                        }} />
+                      </label>
+                    </div>
+
+                    <div className="space-y-3 px-2">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase text-gray-400 ml-1">Legenda (Preset)</label>
+                        <input value={item.presetName} onChange={(e) => { const nl = [...siteSettings.shopTheLook]; nl[i].presetName = e.target.value; setSiteSettings(prev => ({ ...prev, shopTheLook: nl })); }} className="w-full h-10 bg-white border border-black/5 px-4 rounded-xl font-black text-[10px] uppercase outline-none focus:border-[#d82828] transition-all" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase text-gray-400 ml-1">ID do Produto / Link</label>
+                        <input value={item.productId} onChange={(e) => { const nl = [...siteSettings.shopTheLook]; nl[i].productId = e.target.value; setSiteSettings(prev => ({ ...prev, shopTheLook: nl })); }} className="w-full h-10 bg-white border border-black/5 px-4 rounded-xl font-bold text-[10px] outline-none focus:border-[#d82828] transition-all font-mono" placeholder="Ex: 5 ou link" />
+                      </div>
+                      <div className="space-y-1">
+                         <label className="text-[9px] font-black uppercase text-gray-400 ml-1">URL da Imagem</label>
+                         <input value={item.src} onChange={(e) => { const nl = [...siteSettings.shopTheLook]; nl[i].src = e.target.value; setSiteSettings(prev => ({ ...prev, shopTheLook: nl })); }} className="w-full h-8 bg-white border border-black/5 px-3 rounded-lg font-mono text-[8px] outline-none text-gray-400" />
+                      </div>
+                    </div>
+                 </div>
+               ))}
+            </div>
+
+            <div className="pt-6 border-t border-black/5">
+              <Button onClick={() => handleSaveSettings('shopTheLook')} className="w-full h-20 bg-black text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all text-sm flex items-center justify-center gap-4 hover:bg-[#d82828]"><Save size={24} /> SALVAR MOSAICO</Button>
+            </div>
+          </div>
+        )}
+
+        {/* ORDER TAB */}
+        {activeTab === 'order' && (
+          <div className="max-w-4xl mx-auto space-y-12">
+             <div className="bg-white rounded-[3.5rem] border border-black/5 shadow-2xl p-12 space-y-10">
+                <div className="flex items-center gap-6 border-l-4 border-[#d82828] pl-10 mb-10">
+                   <div className="w-16 h-16 bg-red-50 text-[#d82828] rounded-2xl flex items-center justify-center shadow-lg"><LayoutList size={32} /></div>
+                   <div><h2 className="text-3xl font-black uppercase tracking-tighter italic">Ordenação Vital</h2><p className="text-gray-400 text-xs font-bold uppercase tracking-widest leading-none">Controle a exibição da sua vitrine de elite</p></div>
                 </div>
 
-                <div className="pt-8 border-t border-black/5 flex justify-end">
-                   <Button 
-                      onClick={() => handleSaveSettings('magic')}
-                      disabled={isSavingSettings}
-                      className="h-16 px-12 bg-black hover:bg-[#d82828] text-white rounded-2xl font-black uppercase tracking-widest flex items-center gap-4 transition-all shadow-xl active:scale-95 text-sm"
-                   >
-                      <Save size={20} />
-                      {isSavingSettings ? "SINCRONIZANDO..." : "SALVAR MÁGICA NA VITRINE"}
-                   </Button>
+                <div className="space-y-20">
+                   {([
+                     { key: 'newArrivals', label: 'Novidades Exclusivas', description: 'Bloco superior da página inicial' },
+                     { key: 'bestSellers', label: 'Mais Vendidos (Best Sellers)', description: 'Carrossel de destaques' },
+                     { key: 'allPresets', label: 'Catálogo Geral (Todos os Presets)', description: 'Grade principal de produtos' }
+                   ] as const).map(({ key, label, description }) => {
+                     const savedIds = siteSettings.homeSectionOrder[key] || [];
+                     const currentItems = savedIds.map(id => products.find(p => p.id === id)).filter(Boolean);
+
+                     return (
+                       <div key={key} className="space-y-6 bg-gray-50/50 p-8 rounded-[3rem] border border-black/5">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
+                             <div>
+                                <h3 className="text-lg font-black uppercase tracking-tighter text-gray-950 italic">{label}</h3>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{description}</p>
+                             </div>
+                             
+                             <div className="flex items-center gap-3">
+                                <select 
+                                   className="h-12 bg-white border border-black/5 rounded-xl px-4 text-xs font-black uppercase outline-none focus:border-[#d82828] transition-all min-w-[200px]"
+                                   onChange={(e) => {
+                                      const productId = e.target.value;
+                                      if (productId && !savedIds.includes(productId)) {
+                                         setSiteSettings(prev => ({
+                                            ...prev,
+                                            homeSectionOrder: {
+                                               ...prev.homeSectionOrder,
+                                               [key]: [...(prev.homeSectionOrder[key] || []), productId]
+                                            }
+                                         }));
+                                      }
+                                      e.target.value = "";
+                                   }}
+                                >
+                                   <option value="">+ ADICIONAR PRODUTO</option>
+                                   {products
+                                     .filter(p => !savedIds.includes(p.id))
+                                     .map(p => (
+                                       <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>
+                                     ))
+                                   }
+                                </select>
+                                <span className="text-[9px] font-black bg-white px-3 py-1.5 rounded-full border border-black/5 text-gray-400">{currentItems.length} ITENS</span>
+                             </div>
+                          </div>
+                          
+                          <Reorder.Group 
+                            axis="y" 
+                            values={currentItems} 
+                            onReorder={(newOrder) => {
+                              const newIds = newOrder.map(item => item.id);
+                              setSiteSettings(prev => ({
+                                ...prev,
+                                homeSectionOrder: {
+                                  ...prev.homeSectionOrder,
+                                  [key]: newIds
+                                }
+                              }));
+                            }}
+                            className="space-y-3"
+                          >
+                            {currentItems.map((p) => (
+                              <Reorder.Item 
+                                key={p.id} 
+                                value={p}
+                                className="bg-white border border-black/5 p-4 rounded-2xl flex items-center gap-4 cursor-grab active:cursor-grabbing hover:shadow-xl transition-all group"
+                              >
+                                 <GripVertical className="text-gray-200 group-hover:text-[#d82828]" size={16} />
+                                 <div className="w-12 h-12 rounded-xl overflow-hidden border border-black/5 bg-gray-50 flex-shrink-0"><img src={p.image} className="w-full h-full object-cover" /></div>
+                                 <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-black uppercase tracking-tighter text-gray-950 truncate leading-none italic">{p.name}</p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                       <span className="text-[9px] font-bold text-[#d82828] uppercase">{p.category}</span>
+                                       <span className="text-gray-300">•</span>
+                                       <span className="text-[9px] font-mono text-gray-400">ID: {p.id}</span>
+                                    </div>
+                                 </div>
+                                 <button 
+                                    onClick={() => {
+                                       setSiteSettings(prev => ({
+                                          ...prev,
+                                          homeSectionOrder: {
+                                             ...prev.homeSectionOrder,
+                                             [key]: prev.homeSectionOrder[key].filter(id => id !== p.id)
+                                          }
+                                       }));
+                                    }}
+                                    className="p-3 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                 >
+                                    <Trash2 size={16} />
+                                 </button>
+                              </Reorder.Item>
+                            ))}
+                          </Reorder.Group>
+                          
+                          {currentItems.length === 0 && (
+                            <div className="p-16 text-center border-2 border-dashed border-gray-200 rounded-[2.5rem] bg-white/50">
+                               <p className="text-gray-300 font-black uppercase text-[10px] tracking-widest">Nenhum produto fixado nesta seção</p>
+                               <p className="text-gray-200 text-[8px] font-bold mt-2 uppercase">Use o seletor acima para adicionar produtos manualmente</p>
+                            </div>
+                          )}
+                       </div>
+                     );
+                   })}
+                </div>
+
+                <div className="pt-10 border-t border-black/5 space-y-6">
+                   <Button onClick={() => handleSaveSettings('homeSectionOrder')} className="w-full h-20 bg-black text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all text-sm flex items-center justify-center gap-4 hover:bg-[#d82828]"><Save size={24} /> SALVAR ORDEM DAS SEÇÕES</Button>
+                   <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dica: Arraste os cards para mudar a ordem na Home. Adicione qualquer produto usando o seletor de cada seção.</p>
                 </div>
              </div>
           </div>
         )}
 
-        {/* TAB: OVERVIEW */}
-        {activeTab === 'overview' && (
-          <div className="space-y-10">
-            <div className="flex flex-col md:flex-row items-center justify-between p-8 bg-white rounded-[2.5rem] border border-black/5 shadow-xl gap-6">
-               <div className="flex items-center gap-6">
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${siteSettings.integration.isCartEnabled ? 'bg-emerald-50 text-emerald-500' : 'bg-gray-100 text-gray-400'}`}>
-                     <ShoppingBag size={28} />
-                  </div>
-                  <div>
-                     <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold uppercase tracking-tighter">Status do Carrinho</h3>
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${siteSettings.integration.isCartEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200 text-gray-500'}`}>
-                           {siteSettings.integration.isCartEnabled ? 'Habilitado' : 'Desativado'}
-                        </span>
-                     </div>
-                     <p className="text-sm text-gray-400 font-medium max-w-md leading-tight">Mude para "Desativado" para ocultar o carrinho e levar o cliente direto ao checkout.</p>
-                  </div>
-               </div>
-               
-               <div className="flex flex-col items-center gap-3">
-                  <button 
-                    onClick={async () => {
-                       const nextState = !siteSettings.integration.isCartEnabled;
-                       const nextIntegration = { ...siteSettings.integration, isCartEnabled: nextState };
-                       setSiteSettings(prev => ({ ...prev, integration: nextIntegration }));
-                       try {
-                          await saveSetting('integration', nextIntegration);
-                          toast.success(`Carrinho ${nextState ? 'Habilitado' : 'Desativado'} com sucesso!`);
-                       } catch (e) {
-                          toast.error("Erro ao salvar mudança");
-                       }
-                    }}
-                    className={`w-16 h-8 rounded-full transition-all relative p-1 ${siteSettings.integration.isCartEnabled ? 'bg-emerald-500' : 'bg-gray-300'}`}
-                  >
-                    <div className={`w-6 h-6 bg-white rounded-full transition-all duration-300 shadow-md ${siteSettings.integration.isCartEnabled ? 'translate-x-8' : 'translate-x-0'}`} />
-                  </button>
-                  <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Clique para alternar</span>
-               </div>
-            </div>
-
-            <div className="flex items-center justify-between mb-2">
-               <div>
-                  <h2 className="text-2xl font-black uppercase tracking-tighter">Performance da Loja</h2>
-                  <div className="flex items-center gap-2 mt-1">
-                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Atualizado: {new Date().toLocaleTimeString()}</p>
-                  </div>
-               </div>
-               
-               <Button 
-                 onClick={handleSyncSales}
-                 disabled={isSavingSettings}
-                 className="bg-black hover:bg-[#d82828] text-white rounded-2xl px-8 h-12 flex items-center gap-3 transition-all shadow-xl active:scale-95 group font-bold text-xs uppercase tracking-widest"
-               >
-                 <Zap size={16} className="group-hover:animate-bounce" />
-                 {isSavingSettings ? "Sincronizando..." : "Sincronizar com GGCheckout"}
-               </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-               {[
-                 { label: 'Total de Vendas', value: totalSalesCount, icon: ShoppingBag, color: 'text-emerald-500', bg: 'bg-emerald-50', verified: true },
-                 { label: 'Receita Estimada', value: `R$ ${estimatedRevenue.toFixed(2)}`, icon: DollarSign, color: 'text-[#d82828]', bg: 'bg-red-50', verified: true },
-                 { label: 'Total de Produtos', value: totalProducts, icon: Package, color: 'text-blue-500', bg: 'bg-blue-50', verified: false },
-                 { label: 'Valor Médio Pack', value: `R$ ${averagePrice.toFixed(2)}`, icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-50', verified: false },
-               ].map((stat, i) => (
-                 <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-white p-8 rounded-[2.5rem] border border-black/5 shadow-sm hover:shadow-xl transition-all group overflow-hidden relative">
-                    <div className={`absolute top-0 right-0 w-24 h-24 ${stat.bg} blur-3xl rounded-full -translate-y-8 translate-x-8 opacity-40 group-hover:opacity-100 transition-opacity`} />
-                    <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-6 relative z-10`}>
-                       <stat.icon size={24} />
-                    </div>
-                    <div className="flex items-center gap-2 mb-1 relative z-10">
-                       <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{stat.label}</p>
-                       {stat.verified && <Check size={10} className="text-emerald-500" strokeWidth={4} />}
-                    </div>
-                    <h3 className="text-3xl font-black tracking-tighter relative z-10">{stat.value}</h3>
-                 </motion.div>
-               ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-               <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-black/5 p-10">
-                  <div className="flex items-center justify-between mb-10">
-                     <h3 className="text-xl font-bold uppercase tracking-tighter">Produtos Mais Vendidos</h3>
-                     <TrendingUp className="text-emerald-500" />
-                  </div>
-                  <div className="space-y-6">
-                     {products.sort((a,b) => b.salesCount - a.salesCount).slice(0, 5).map((p, idx) => (
-                       <div key={p.id} className="flex items-center gap-4 group">
-                          <span className="text-lg font-black text-gray-100 italic">0{idx + 1}</span>
-                          <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-100 border border-black/5 shrink-0">
-                             <img src={p.image} className="w-full h-full object-cover" alt="" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                             <p className="text-sm font-bold uppercase tracking-tighter truncate">{p.name}</p>
-                             <div className="w-full bg-gray-50 h-1.5 rounded-full mt-2 overflow-hidden">
-                                <div className="bg-[#d82828] h-full rounded-full" style={{ width: `${(p.salesCount / (products[0]?.salesCount || 1)) * 100}%` }} />
-                             </div>
-                          </div>
-                          <div className="text-right">
-                             <p className="text-xs font-bold">{p.salesCount} vendas</p>
-                             <p className="text-[10px] text-gray-400 font-semibold">R$ {p.price.toFixed(2)}</p>
-                          </div>
-                       </div>
-                     ))}
-                  </div>
-               </div>
-
-               <div className="bg-black text-white rounded-[2.5rem] p-10 relative overflow-hidden flex flex-col justify-between">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-[#d82828]/20 blur-3xl rounded-full translate-x-32 -translate-y-32" />
-                  <div className="relative z-10">
-                     <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6"><Bell size={24} /></div>
-                     <h3 className="text-2xl font-bold uppercase tracking-tighter leading-tight mb-4">Mantenha sua Loja Atualizada</h3>
-                     <p className="text-gray-400 text-sm font-medium leading-relaxed">Novos presets e fotos atraentes aumentam a conversão em até 40%. Não esqueça de revisar seus Best Sellers semanalmente.</p>
-                  </div>
-                  <Button onClick={() => setActiveTab('products')} className="w-full h-14 bg-white text-black hover:bg-[#d82828] hover:text-white rounded-2xl font-bold uppercase tracking-widest mt-12 relative z-10">Gerenciar Presets</Button>
-               </div>
-            </div>
+        {/* INTEGRATION TAB */}
+        {activeTab === 'integration' && (
+          <div className="max-w-3xl mx-auto bg-white rounded-[2.5rem] border border-black/5 shadow-xl p-12 space-y-10">
+             <div className="flex items-center gap-4 border-b pb-6"><Zap className="text-amber-500" /><h2 className="text-2xl font-black uppercase tracking-tighter">Integração GGCheckout</h2></div>
+             <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase text-gray-400">Base URL do Checkout</p>
+                <input value={siteSettings.integration.checkoutBaseUrl} onChange={(e) => setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, checkoutBaseUrl: e.target.value } }))} className="w-full h-16 bg-gray-50 rounded-2xl px-8 font-mono text-sm border border-black/5" placeholder="https://..." />
+             </div>
+             <Button onClick={() => handleSaveSettings('integration')} className="w-full h-16 bg-black text-white rounded-2xl font-black uppercase tracking-widest shadow-xl"><Save size={18} /> SALVAR INTEGRAÇÃO</Button>
           </div>
         )}
 
-        {/* TAB: PRODUCTS */}
-        {activeTab === 'products' && (
-          isLoading && products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-               <div className="w-12 h-12 border-4 border-[#d82828] border-t-transparent rounded-full animate-spin" />
-               <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Carregando estoque...</p>
+        {/* PROMO BAR TAB */}
+        {activeTab === 'promoBar' && (
+          <div className="max-w-3xl mx-auto bg-white rounded-[2.5rem] border border-black/5 shadow-xl p-10 space-y-10">
+            <div className="flex items-center gap-4 border-b pb-6"><Bell className="text-[#d82828]" /><h2 className="text-2xl font-black uppercase tracking-tighter">Aviso no Cabeçalho</h2></div>
+            <div className="grid gap-6">
+               <div className="space-y-2"><p className="text-[10px] font-black uppercase text-gray-400">Mensagem (Português)</p><input value={siteSettings.promoBar.PT} onChange={(e) => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, PT: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all" /></div>
+               <div className="space-y-2"><p className="text-[10px] font-black uppercase text-gray-400">Mensagem (Inglês)</p><input value={siteSettings.promoBar.EN} onChange={(e) => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, EN: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all" /></div>
+               <div className="space-y-2"><p className="text-[10px] font-black uppercase text-gray-400">Mensagem (Espanhol)</p><input value={siteSettings.promoBar.ES} onChange={(e) => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, ES: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all" /></div>
             </div>
-          ) : products.length === 0 ? (
-            <div className="bg-white rounded-[2.5rem] border-2 border-dashed border-gray-200 p-20 flex flex-col items-center text-center">
-               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6"><ShoppingBag className="text-gray-300" size={32} /></div>
-               <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhum produto encontrado</h3>
-               <Button onClick={openAddModal} className="bg-[#d82828] rounded-full px-10 h-14 font-bold uppercase tracking-widest text-white shadow-xl mt-8">Adicionar Produto</Button>
-            </div>
-          ) : (
-            <div className="bg-white rounded-[2.5rem] border border-black/5 shadow-lg overflow-hidden">
-               <div className="grid grid-cols-[64px_1fr_120px_100px_100px] items-center px-8 py-4 border-b border-black/5 bg-gray-50/50">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Preview</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Pack Preset</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Valor</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Performance</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Ação</span>
-              </div>
-              {products.map((product, idx) => (
-                <motion.div key={product.id} className="grid grid-cols-[64px_1fr_120px_100px_100px] items-center px-8 py-5 gap-3 hover:bg-gray-50/80 transition-colors border-b last:border-0 border-black/[0.03]">
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gray-100 shrink-0 border border-black/5"><img src={product.image} alt="" className="w-full h-full object-cover" /></div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-gray-950 uppercase tracking-tighter truncate leading-tight">{product.name}</p>
-                    <span className="text-[9px] font-bold text-[#d82828] uppercase tracking-widest">{product.category}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-sm font-black">R$ {product.price.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <TrendingUp size={12} className={product.salesCount > 0 ? "text-emerald-500" : "text-gray-200"} />
-                    <span className="text-xs font-bold text-gray-500">{product.salesCount || 0}</span>
-                  </div>
-                  <div className="flex items-center gap-2 justify-end">
-                    <button onClick={() => openEditModal(product)} className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-black hover:text-white flex items-center justify-center transition-all"><Edit3 size={16} /></button>
-                    <button onClick={() => handleDelete(product.id)} className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all"><Trash2 size={16} /></button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )
-        )}
-
-        {/* TAB: HERO CONFIG */}
-        {activeTab === 'hero' && (
-          <div className="max-w-3xl mx-auto space-y-8">
-            <div className="bg-white rounded-[2.5rem] border border-black/5 shadow-xl p-10 space-y-8">
-              <h2 className="text-2xl font-bold uppercase tracking-tighter border-b border-black/5 pb-4">Configurações Hero</h2>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Título Principal</label>
-                  <input value={siteSettings.hero.title} onChange={(e) => setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, title: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border-2 border-transparent focus:border-black transition-all font-semibold" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Subtítulo</label>
-                  <input value={siteSettings.hero.subtitle} onChange={(e) => setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, subtitle: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border-2 border-transparent focus:border-black transition-all font-semibold" />
-                </div>
-                <div className="space-y-4 pt-4">
-                  <div className="aspect-[16/7] w-full rounded-3xl overflow-hidden border border-black/5 bg-gray-50 shadow-inner">
-                    <img src={siteSettings.hero.backgroundImage} className="w-full h-full object-cover" alt="" />
-                  </div>
-                  <label className="block h-14 bg-gray-100 hover:bg-black hover:text-white rounded-2xl flex items-center justify-center font-bold text-xs uppercase tracking-widest cursor-pointer transition-all">
-                    {isUploading ? "Enviando..." : "Subir Nova Imagem Hero"}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSettingImageUpload(f, 'hero'); }} />
-                  </label>
-                </div>
-              </div>
-              <Button disabled={isSavingSettings} onClick={() => handleSaveSettings('hero')} className="w-full h-16 bg-black text-white rounded-2xl font-bold uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-black/10 transition-all">
-                <Save size={18} /> {isSavingSettings ? "Salvando..." : "Salvar Configurações Hero"}
-              </Button>
-            </div>
+            <Button onClick={() => handleSaveSettings('promoBar')} className="w-full h-16 bg-black text-white rounded-2xl font-black uppercase shadow-xl transition-all active:scale-95 hover:bg-[#d82828] flex items-center justify-center gap-3"><Save size={20} /> SALVAR AVISOS MULTI-IDIOMA</Button>
           </div>
         )}
-
-        {/* ... (Other tabs kept for brevity but functional) */}
       </main>
 
-      {/* MODAL: PRODUCT EDIT/ADD (Optional - assuming it existed) */}
+      {/* MODAL: PRODUCT EDIT/ADD */}
       <AnimatePresence>
         {isModalOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-black overflow-y-auto">
              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white w-full max-w-2xl rounded-[3rem] p-10 relative shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar">
-                <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 text-gray-300 hover:text-black transition-all"><X size={24} /></button>
+                <button onClick={() => { setIsModalOpen(false); setIsEditing(false); setFormData(initialForm); }} className="absolute top-8 right-8 text-gray-300 hover:text-black transition-all"><X size={24} /></button>
                 <h3 className="text-2xl font-black uppercase tracking-tighter mb-8">{isEditing ? "Editar Pack Preset" : "Novo Pack de Elite"}</h3>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2"><label className="text-[10px] font-bold uppercase text-gray-400">Nome do Pack</label><input name="name" value={formData.name} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5" required /></div>
-                      <div className="space-y-2"><label className="text-[10px] font-bold uppercase text-gray-400">Categoria</label><select name="category" value={formData.category} onChange={handleInputChange as any} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 uppercase font-bold text-xs"><option value="Creative">Creative</option><option value="Urban">Urban</option><option value="Nature">Nature</option><option value="Portrait">Portrait</option></select></div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase text-gray-400">Nome do Pack</label>
+                        <input name="name" value={formData.name} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5" required />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase text-gray-400">Categoria</label>
+                        <select name="category" value={formData.category} onChange={handleInputChange as any} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 uppercase font-bold text-xs ring-offset-background focus:ring-2 focus:ring-[#d82828] transition-all">
+                          <option value="Creative">Creative</option>
+                          <option value="Urban">Urban</option>
+                          <option value="Nature">Nature</option>
+                          <option value="Portrait">Portrait</option>
+                        </select>
+                      </div>
                    </div>
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2"><label className="text-[10px] font-bold uppercase text-gray-400">Preço (R$)</label><input name="price" value={formData.price} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5" required /></div>
-                      <div className="space-y-2"><label className="text-[10px] font-bold uppercase text-gray-400">Imagem (URL)</label><input name="image" value={formData.image} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5" /></div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase text-gray-400">Preço Atual (R$)</label>
+                        <input name="price" value={formData.price} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5" placeholder="Ex: 49.90" required />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase text-gray-400">Preço Original (R$)</label>
+                        <input name="originalPrice" value={formData.originalPrice} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5" placeholder="Ex: 199.90" />
+                      </div>
                    </div>
-                   <Button type="submit" className="w-full h-14 bg-black text-white hover:bg-[#d82828] rounded-2xl font-bold uppercase tracking-widest transition-all shadow-xl">Salvar Produto</Button>
+
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase text-gray-400">Checkout URL (Botão Comprar)</label>
+                      <input name="checkoutUrl" value={formData.checkoutUrl} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-mono text-xs" placeholder="https://www.ggcheckout.com/..." />
+                   </div>
+
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase text-gray-400">Imagem de Capa</label>
+                      <div className="flex gap-4">
+                        <input name="image" value={formData.image} onChange={handleInputChange} className="flex-1 h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-mono text-xs" placeholder="https://..." />
+                        <label className="h-12 px-4 bg-black text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-[#d82828] transition-all text-xs font-bold uppercase">
+                          {isUploading ? <RefreshCw className="animate-spin w-4 h-4" /> : <Upload size={16} />}
+                          Arquivo
+                          <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                            const f = e.target.files?.[0];
+                            if (f) {
+                              const url = await handleImageUpload(f);
+                              if (url) setFormData(prev => ({ ...prev, image: url }));
+                            }
+                          }} />
+                        </label>
+                      </div>
+                   </div>
+
+                   <div className="space-y-3">
+                      <label className="text-[10px] font-bold uppercase text-gray-400">Galeria (Outras Imagens)</label>
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4">
+                        {(formData.images || []).map((img, idx) => (
+                          <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-black/5 relative group bg-gray-50">
+                            <img src={img} className="w-full h-full object-cover" />
+                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }))} className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"><Trash2 size={16} /></button>
+                          </div>
+                        ))}
+                        <label className="aspect-square rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:text-[#d82828] hover:border-[#d82828] cursor-pointer transition-all">
+                          {isUploading ? <RefreshCw className="animate-spin" /> : <Plus size={24} />}
+                          <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                             const f = e.target.files?.[0];
+                             if (f) {
+                               const url = await handleImageUpload(f);
+                               if (url) setFormData(prev => ({ ...prev, images: [...(prev.images || []), url] }));
+                             }
+                          }} />
+                        </label>
+                      </div>
+                      <div className="flex gap-4">
+                        <input id="new-gamma-img" className="flex-1 h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-mono text-xs" placeholder="Colar link de nova imagem" onKeyDown={(e) => {
+                           if (e.key === 'Enter') {
+                             e.preventDefault();
+                             const target = e.target as HTMLInputElement;
+                             if (target.value.trim()) {
+                               setFormData(prev => ({ ...prev, images: [...(prev.images || []), target.value.trim()] }));
+                               target.value = '';
+                             }
+                           }
+                        }} />
+                        <Button type="button" onClick={() => {
+                           const el = document.getElementById('new-gamma-img') as HTMLInputElement;
+                           if (el.value.trim()) {
+                             setFormData(p => ({ ...p, images: [...(p.images || []), el.value.trim()] }));
+                             el.value = '';
+                           }
+                        }} className="h-12 px-6 bg-gray-100 text-black hover:bg-black hover:text-white rounded-xl text-xs">ADD</Button>
+                      </div>
+                   </div>
+
+                   <div className="space-y-4">
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-bold uppercase text-gray-400">Descrição Curta</label>
+                         <textarea name="description" value={formData.description} onChange={handleInputChange as any} className="w-full h-24 bg-gray-50 rounded-xl p-4 outline-none border border-black/5" />
+                      </div>
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-bold uppercase text-gray-400">Descrição Detalhada</label>
+                         <textarea name="detailedDescription" value={formData.detailedDescription} onChange={handleInputChange as any} className="w-full h-40 bg-gray-50 rounded-xl p-4 outline-none border border-black/5" />
+                      </div>
+                   </div>
+
+                   <Button type="submit" disabled={isLoading} className="w-full h-16 bg-black text-white hover:bg-[#d82828] rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl mt-4 select-none">
+                      {isLoading ? <RefreshCw className="animate-spin mr-2" /> : <Save size={20} className="mr-2" />}
+                      {isEditing ? "Atualizar Pack" : "Criar Novo Pack"}
+                   </Button>
                 </form>
              </motion.div>
           </motion.div>

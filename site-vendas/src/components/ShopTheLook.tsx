@@ -28,7 +28,7 @@ export function ShopTheLook() {
           <h2 className="text-2xl md:text-4xl font-black text-gray-950 uppercase tracking-tighter mb-2">
             {title}
           </h2>
-          <a href="https://instagram.com/gorgpresets" target="_blank" rel="noopener noreferrer" className="text-sm md:text-base font-bold text-gray-400 hover:text-black transition-colors uppercase tracking-widest">
+          <a href="https://instagram.com/gorgpresets" target="_blank" rel="noopener noreferrer" className="text-sm md:text-base font-bold text-[#d82828] hover:text-black transition-colors uppercase tracking-widest">
             {handle}
           </a>
         </motion.div>

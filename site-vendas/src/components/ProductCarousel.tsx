@@ -65,44 +65,54 @@ export function ProductCarousel({
   
   if (isBestSeller) {
     return (
-      <section id={id} className={`pt-6 pb-4 md:pt-12 md:pb-8 w-full ${bgClass || 'bg-white'} overflow-hidden`}>
+      <section id={id} className={`pt-6 pb-4 md:pt-16 md:pb-12 w-full ${bgClass || 'bg-white'} overflow-hidden`}>
         <div className="container mx-auto px-4 md:px-8">
-          <div className="bg-[#f7f7f7] rounded-[2.5rem] py-16 px-0 md:p-14 flex flex-col lg:flex-row gap-8 lg:gap-12 lg:items-center overflow-hidden">
+          {/* Container Principal com Estilo Especial */}
+          <div className="bg-[#f7f7f7] rounded-[3rem] py-16 px-6 md:px-14 border border-black/[0.03]">
             
-            {/* Esquerda: Título/Desc (Mobile: Centralizado e no Topo) */}
-            <div className="w-full lg:w-1/4 text-center lg:text-left space-y-3 pb-4 lg:pb-0 px-6 md:px-0 flex-shrink-0">
-              <h2 className="text-2xl md:text-3xl font-bold text-[#333] uppercase tracking-tight">
+            {/* 1. CABEÇALHO: Centralizado no PC para "Arrumar os Blocos" */}
+            <div className="text-center md:text-center space-y-3 mb-12 max-w-2xl mx-auto">
+              <h2 className="text-2xl md:text-3xl font-black text-gray-950 uppercase tracking-tighter italic">
                 {title}
               </h2>
-              <p className="text-sm md:text-base text-gray-500 font-medium leading-relaxed max-w-sm mx-auto lg:mx-0">
+              <motion.div 
+                initial={{ width: 0 }}
+                whileInView={{ width: 48 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+                className="h-1 bg-[#d82828] mx-auto mb-4" 
+              />
+              <p className="text-sm md:text-base text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
                 {description || t("bestSellersDesc")}
               </p>
-
-              {/* Setas (Somente PC - REATIVADAS POR PEDIDO DO USER) */}
-              <div className="hidden lg:flex gap-3 pt-6">
-                 <button onClick={scrollPrev} className="bg-white hover:bg-black hover:text-white text-black p-3 rounded-full shadow-lg transition-all border border-black/5 active:scale-95"><ChevronLeft  size={20}/></button>
-                 <button onClick={scrollNext} className="bg-white hover:bg-black hover:text-white text-black p-3 rounded-full shadow-lg transition-all border border-black/5 active:scale-95"><ChevronRight size={20}/></button>
-              </div>
             </div>
 
-            {/* Direita: Carrossel Best Seller Unificado */}
-            <div className="w-full lg:w-3/4 relative min-w-0">
-              <div 
-                className="overflow-hidden py-16 -my-16 px-6 -mx-6" 
-                ref={emblaRef}
-              >
-                <div className="flex -mx-3 px-3">
-                  {/* Loop único para Mobile e Desktop */}
-                  {products.map((product, idx) => (
-                    <div
-                      key={`bst-p-${product.id}-${idx}`}
-                      className={`flex-none px-3 w-[72%] sm:w-[50%] lg:w-[33.33%] transition-transform duration-300 ${idx >= 6 ? 'hidden lg:block' : ''}`}
-                    >
-                      <ProductCard product={product} />
-                    </div>
-                  ))}
-                </div>
+            {/* 2. CONTEÚDO: Grade no PC / Carrossel no Mobile (Intacto) */}
+            <div className="relative w-full">
+              
+              {/* VERSÃO DESKTOP: Grade Fixa de 4 Colunas (Mais Organizado) */}
+              <div className="hidden lg:grid grid-cols-4 gap-6">
+                {products.slice(0, 4).map((product) => (
+                  <div key={`bst-pc-${product.id}`} className="flex flex-col h-full">
+                    <ProductCard product={product} />
+                  </div>
+                ))}
               </div>
+
+              {/* VERSÃO MOBILE: Carrossel (INTACTO conforme solicitado - Adicionado py-10/-my-10 para evitar borda cortada) */}
+              <div className="lg:hidden relative -mx-6 px-6 overflow-hidden py-10 -my-10" ref={emblaRef}>
+                 <div className="flex -mx-3 px-3">
+                   {products.map((product, idx) => (
+                     <div
+                       key={`bst-p-mob-${product.id}-${idx}`}
+                       className="flex-none px-3 w-[72%] sm:w-[50%]"
+                     >
+                       <ProductCard product={product} />
+                     </div>
+                   ))}
+                 </div>
+              </div>
+
             </div>
           </div>
         </div>
