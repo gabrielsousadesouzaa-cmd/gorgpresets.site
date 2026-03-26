@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/store/languageStore";
 
 export interface HeroSettings {
   backgroundImage: string;
-  title: string;
-  subtitle: string;
+  title: Record<string, string> | string;
+  subtitle: Record<string, string> | string;
 }
 
 export interface BannerSettings {
@@ -25,7 +26,7 @@ export interface MagicSettings {
 export interface Testimonial {
   name: string;
   role: string;
-  content: string;
+  content: string | Record<string, string>;
   image: string;
 }
 
@@ -37,6 +38,7 @@ export interface ShopTheLookItem {
 }
 
 export interface HomeSectionOrder {
+  sections: string[];
   newArrivals: string[];
   bestSellers: string[];
   allPresets: string[];
@@ -60,20 +62,21 @@ export interface SiteSettings {
 
 export const DEFAULT_SETTINGS: SiteSettings = {
   hero: {
-    backgroundImage: "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=2000",
-    title: "TRANSFORME SUAS FOTOS EM OBRAS DE ARTE",
-    subtitle: "Presets Profissionais para Lightroom",
+    backgroundImage: "", 
+    title: { PT: "", EN: "", ES: "" },
+    subtitle: { PT: "", EN: "", ES: "" },
   },
   banner: {
-    image: "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=1200",
+    image: "", 
   },
   testimonials: [
-    { name: "Mariana Silva", role: "Influenciadora", content: "Fiquei impressionada com a diferença! O feed ficou super organizado e lindo.", image: "https://api.dicebear.com/7.x/notionists/svg?seed=Mariana&backgroundColor=transparent" },
-    { name: "Lucas Fernandes", role: "Fotógrafo Amador", content: "Achei bem fácil de usar. Não manjo nada de edição de foto, mas agora é só colocar o filtro.", image: "https://api.dicebear.com/7.x/notionists/svg?seed=Lucas&backgroundColor=transparent" },
-    { name: "Carolina Costa", role: "Criadora de Conteúdo", content: "Finalmente consegui deixar meu feed organizado! Economizo horas que passava editando.", image: "https://api.dicebear.com/7.x/notionists/svg?seed=Carolina&backgroundColor=transparent" },
-    { name: "Amanda Pereira", role: "Travel Blogger", content: "Os presets salvaram minhas fotos da viagem! Um visual muito estético.", image: "https://api.dicebear.com/7.x/notionists/svg?seed=Amanda&backgroundColor=transparent" },
+    { name: "Mariana Silva", role: "Influenciadora", content: { PT: "Fiquei impressionada com a diferença! O feed ficou super organizado e lindo." }, image: "https://api.dicebear.com/7.x/notionists/svg?seed=Mariana&backgroundColor=transparent" },
+    { name: "Lucas Fernandes", role: "Fotógrafo Amador", content: { PT: "Achei bem fácil de usar. Não manjo nada de edição de foto, mas agora é só colocar o filtro." }, image: "https://api.dicebear.com/7.x/notionists/svg?seed=Lucas&backgroundColor=transparent" },
+    { name: "Carolina Costa", role: "Criadora de Conteúdo", content: { PT: "Finalmente consegui deixar meu feed organizado! Economizo horas que passava editando." }, image: "https://api.dicebear.com/7.x/notionists/svg?seed=Carolina&backgroundColor=transparent" },
+    { name: "Amanda Pereira", role: "Travel Blogger", content: { PT: "Os presets salvaram minhas fotos da viagem! Um visual muito estético." }, image: "https://api.dicebear.com/7.x/notionists/svg?seed=Amanda&backgroundColor=transparent" },
   ],
   homeSectionOrder: {
+    sections: ['novidades', 'bestsellers', 'banner', 'categorias', 'magica', 'catalogo', 'testimonials', 'faq', 'mosaico', 'features'],
     newArrivals: [],
     bestSellers: [],
     allPresets: [],
@@ -96,12 +99,14 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     ES: "LLEVA 3, PAGA 2: AÑADE 3 PRESETS Y LLEVATE 1."
   },
   magic: {
-    beforeUrl: "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=1200",
-    afterUrl: "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=1200",
+    beforeUrl: "", 
+    afterUrl: "", 
   }
 };
 
-export function useSiteSettings() {
+const SiteSettingsContext = createContext<{ settings: SiteSettings; loading: boolean } | undefined>(undefined);
+
+export function SiteSettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
 
@@ -145,7 +150,29 @@ export function useSiteSettings() {
     fetchSettings();
   }, []);
 
-  return { settings, loading };
+  return (
+    <SiteSettingsContext.Provider value={{ settings, loading }}>
+      {children}
+    </SiteSettingsContext.Provider>
+  );
+}
+
+export function useSiteSettings() {
+  const context = useContext(SiteSettingsContext);
+  const { language, t } = useLanguage();
+
+  const getLocalized = (val: any) => {
+    if (!val) return "";
+    if (typeof val === 'object' && val !== null) {
+      return val[language] || val['PT'] || Object.values(val)[0] || "";
+    }
+    return val;
+  };
+
+  if (context === undefined) {
+    return { settings: DEFAULT_SETTINGS, loading: true, getLocalized, t };
+  }
+  return { ...context, getLocalized, t };
 }
 
 export async function saveSetting(key: string, value: any) {

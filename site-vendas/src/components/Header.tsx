@@ -13,7 +13,7 @@ export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { items, openCart } = useCart();
-  const { settings } = useSiteSettings();
+  const { settings, loading } = useSiteSettings();
   const { isMenuOpen, setIsMenuOpen, isSearchOpen, setIsSearchOpen } = useMenu();
   const [navQuery, setNavQuery] = useState("");
   const { language, setLanguage, t } = useLanguage();
@@ -66,7 +66,7 @@ export function Header() {
     <div className="flex flex-col w-full relative z-[2500]">
       {/* Red Announcement Bar */}
       <div className="w-full bg-[#d82828] text-white py-2 text-center text-[10px] md:text-sm font-semibold uppercase tracking-[0.2em]">
-        {settings.promoBar[language] || t("promoBar")}
+        {loading ? "" : (settings.promoBar[language] || t("promoBar"))}
       </div>
 
       <header className="bg-white/40 backdrop-blur-2xl w-full border-b border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.03)]">

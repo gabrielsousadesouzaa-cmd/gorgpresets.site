@@ -10,6 +10,7 @@ import { CurrencySuggester } from "@/components/CurrencySuggester";
 import { Layout } from "@/components/Layout";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { MenuProvider } from "@/store/MenuContext";
+import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 import { lazy, Suspense } from "react";
 
 const Index = lazy(() => import("./pages/Index"));
@@ -29,7 +30,8 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
+      <SiteSettingsProvider>
+        <LanguageProvider>
         <CurrencyProvider>
           <TooltipProvider>
             <CartProvider>
@@ -79,7 +81,8 @@ function App() {
           </TooltipProvider>
         </CurrencyProvider>
       </LanguageProvider>
-    </QueryClientProvider>
+    </SiteSettingsProvider>
+  </QueryClientProvider>
   );
 }
 

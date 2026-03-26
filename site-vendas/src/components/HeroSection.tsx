@@ -3,8 +3,7 @@ import { useLanguage } from "@/store/languageStore";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 export function HeroSection() {
-  const { t } = useLanguage();
-  const { settings } = useSiteSettings();
+  const { settings, loading, getLocalized, t } = useSiteSettings();
 
   return (
     <div className="container mx-auto px-4 md:px-8 w-full mt-0 md:mt-6 mb-0 md:mb-4">
@@ -31,7 +30,7 @@ export function HeroSection() {
               transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
               className="text-4xl md:text-6xl lg:text-[5.2rem] font-semibold tracking-tight mb-6 leading-[1.15] uppercase drop-shadow-2xl px-4"
             >
-              {settings.hero.title || (t("heroTitle1") + " " + t("heroTitle2"))}
+              {loading ? "" : (getLocalized(settings.hero.title) || (t("heroTitle1") + " " + t("heroTitle2")))}
             </motion.h1>
             
             <motion.p 
@@ -40,7 +39,7 @@ export function HeroSection() {
               transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="text-lg md:text-2xl text-white/95 mb-8 max-w-3xl mx-auto font-normal drop-shadow-lg p-2"
             >
-              {settings.hero.subtitle || t("heroSubtitle")}
+              {loading ? "" : (getLocalized(settings.hero.subtitle) || t("heroSubtitle"))}
             </motion.p>
           </div>
         </div>

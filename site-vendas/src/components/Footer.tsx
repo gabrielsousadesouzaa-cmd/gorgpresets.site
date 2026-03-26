@@ -111,7 +111,7 @@ export function Footer() {
           >
             <div className="overflow-hidden flex flex-col gap-3.5 md:gap-4">
               <p className="text-[15px] md:text-[13px] font-normal text-[#444] md:text-black/70">
-                <strong className="text-black font-semibold">{t("supportWhatsApp")}</strong> <span className="text-[#d82828]">+351 930 941 144</span>
+                <strong className="text-black font-semibold">{t("supportWhatsApp")}</strong> <span className="text-[#d82828]">+92 98123-3514</span>
               </p>
               <p className="text-[15px] md:text-[13px] font-normal text-[#444] md:text-black/70">
                 <strong className="text-black font-semibold">{t("supportEmail")}</strong> suporte@gorgpresets.com

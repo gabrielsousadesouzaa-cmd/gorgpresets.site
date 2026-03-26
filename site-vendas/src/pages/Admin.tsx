@@ -65,6 +65,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'hero' | 'banner' | 'testimonials' | 'order' | 'integration' | 'shopTheLook' | 'promoBar' | 'magic'>('overview');
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [langTab, setLangTab] = useState<'PT' | 'EN' | 'ES'>('PT');
   
   const openAddModal = () => setIsModalOpen(true);
   const openEditModal = (product: any) => {
@@ -152,7 +153,12 @@ export default function Admin() {
       if (settingsRes.data) {
         for (const row of settingsRes.data) {
            if (row.key && row.value) {
-              (merged as any)[row.key] = row.value;
+              // Realiza merge se for objeto (para não perder chaves novas de sub-configurações)
+              if (typeof row.value === 'object' && !Array.isArray(row.value) && (merged as any)[row.key]) {
+                 (merged as any)[row.key] = { ...(merged as any)[row.key], ...row.value };
+              } else {
+                 (merged as any)[row.key] = row.value;
+              }
            }
         }
       }
@@ -516,11 +522,67 @@ export default function Admin() {
           <div className="max-w-3xl mx-auto bg-white rounded-[2.5rem] border border-black/5 shadow-xl p-10 space-y-8">
             <h2 className="text-2xl font-bold uppercase tracking-tighter border-b pb-4">Hero Home</h2>
             <div className="grid gap-6">
-               <div className="space-y-2"><p className="text-[10px] font-bold uppercase text-gray-400">Título</p><input value={siteSettings.hero.title} onChange={(e) => setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, title: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border border-black/5" /></div>
-               <div className="space-y-2"><p className="text-[10px] font-bold uppercase text-gray-400">Subtítulo</p><input value={siteSettings.hero.subtitle} onChange={(e) => setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, subtitle: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border border-black/5" /></div>
-               <img src={siteSettings.hero.backgroundImage} className="w-full h-40 object-cover rounded-3xl" />
+               <div className="space-y-4">
+                 <div className="flex items-center justify-between">
+                   <p className="text-[10px] font-bold uppercase text-[#d82828] ml-1">Título</p>
+                   <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                     {['PT', 'EN', 'ES'].map(l => (
+                       <button key={l} onClick={() => setLangTab(l as any)} className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${langTab === l ? 'bg-white text-[#d82828] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{l}</button>
+                     ))}
+                   </div>
+                 </div>
+                 <input 
+                   value={typeof siteSettings.hero.title === 'object' ? (siteSettings.hero.title[langTab] || "") : (langTab === 'PT' ? siteSettings.hero.title : "")} 
+                   onChange={(e) => {
+                     const currentTitle = typeof siteSettings.hero.title === 'object' ? siteSettings.hero.title : { PT: siteSettings.hero.title, EN: "", ES: "" };
+                     setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, title: { ...currentTitle, [langTab]: e.target.value } } }));
+                   }} 
+                   className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border border-black/5 focus:border-[#d82828] transition-all" 
+                   placeholder={`Título em ${langTab}...`}
+                 />
+               </div>
+
+               <div className="space-y-4">
+                 <div className="flex items-center justify-between">
+                   <p className="text-[10px] font-bold uppercase text-[#d82828] ml-1">Subtítulo</p>
+                 </div>
+                 <input 
+                   value={typeof siteSettings.hero.subtitle === 'object' ? (siteSettings.hero.subtitle[langTab] || "") : (langTab === 'PT' ? siteSettings.hero.subtitle : "")} 
+                   onChange={(e) => {
+                     const currentSub = typeof siteSettings.hero.subtitle === 'object' ? siteSettings.hero.subtitle : { PT: siteSettings.hero.subtitle, EN: "", ES: "" };
+                     setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, subtitle: { ...currentSub, [langTab]: e.target.value } } }));
+                   }} 
+                   className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border border-black/5 focus:border-[#d82828] transition-all" 
+                   placeholder={`Subtítulo em ${langTab}...`}
+                 />
+               </div>
+               <div className="space-y-4">
+                 <p className="text-[10px] font-bold uppercase text-gray-400 ml-1">Imagem de Fundo</p>
+                 <div className="relative group aspect-video rounded-3xl overflow-hidden bg-gray-50 border border-black/5 mb-4 shadow-inner">
+                    <img src={siteSettings.hero.backgroundImage} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700" alt="Hero Preview" />
+                    <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-[2px]">
+                       <div className="flex flex-col items-center gap-2 text-white">
+                          {isUploading ? <RefreshCw className="animate-spin" size={24} /> : <Upload size={24} />}
+                          <span className="text-[10px] font-black uppercase tracking-widest">Trocar Imagem</span>
+                       </div>
+                       <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSettingImageUpload(f, 'hero'); }} />
+                    </label>
+                 </div>
+                 <div className="space-y-2">
+                    <p className="text-[9px] font-bold uppercase text-gray-300 ml-1">Ou cole uma URL direta</p>
+                    <input 
+                       value={siteSettings.hero.backgroundImage} 
+                       onChange={(e) => setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, backgroundImage: e.target.value } }))} 
+                       className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-mono text-[10px] focus:border-[#d82828] transition-all" 
+                       placeholder="https://images.unsplash.com/..." 
+                    />
+                 </div>
+               </div>
             </div>
-            <Button onClick={() => handleSaveSettings('hero')} className="w-full h-16 bg-black text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-black/10 mt-6"><Save size={18} /> SALVAR HERO</Button>
+            <Button onClick={() => handleSaveSettings('hero')} disabled={isSavingSettings} className="w-full h-16 bg-black text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-black/10 mt-6 flex items-center justify-center gap-3">
+              {isSavingSettings ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />} 
+              SALVAR HERO
+            </Button>
           </div>
         )}
 
@@ -585,10 +647,27 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase text-gray-400 ml-1">Mensagem do Cliente</label>
-                    <textarea value={t.content} onChange={(e) => { const nt = [...siteSettings.testimonials]; nt[i].content = e.target.value; setSiteSettings(prev => ({ ...prev, testimonials: nt })); }} className="w-full text-xs outline-none bg-white p-6 rounded-[2rem] h-32 border border-black/5 focus:bg-white transition-all shadow-inner focus:border-[#d82828]/20" placeholder="Depoimento..." />
-                  </div>
+                   <div className="space-y-4">
+                     <div className="flex items-center justify-between">
+                       <label className="text-[10px] font-bold uppercase text-[#d82828] ml-1">Mensagem</label>
+                       <div className="flex gap-1 bg-white p-1 rounded-xl shadow-inner border border-black/5">
+                         {['PT', 'EN', 'ES'].map(l => (
+                           <button key={l} onClick={() => setLangTab(l as any)} className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${langTab === l ? 'bg-[#d82828] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{l}</button>
+                         ))}
+                       </div>
+                     </div>
+                     <textarea 
+                       value={typeof t.content === 'object' ? (t.content[langTab] || "") : (langTab === 'PT' ? t.content : "")} 
+                       onChange={(e) => { 
+                         const nt = [...siteSettings.testimonials]; 
+                         const currentContent = typeof t.content === 'object' ? t.content : { PT: t.content, EN: "", ES: "" };
+                         nt[i].content = { ...currentContent, [langTab]: e.target.value }; 
+                         setSiteSettings(prev => ({ ...prev, testimonials: nt })); 
+                       }} 
+                       className="w-full text-xs outline-none bg-white p-6 rounded-[2rem] h-32 border border-black/5 focus:bg-white transition-all shadow-inner focus:border-[#d82828]/20" 
+                       placeholder={`Depoimento em ${langTab}...`} 
+                     />
+                   </div>
                 </div>
               ))}
             </div>
@@ -666,6 +745,52 @@ export default function Admin() {
                 </div>
 
                 <div className="space-y-20">
+                   {/* NOVO: REORDENAR SEÇÕES DA HOME */}
+                   <div className="space-y-6 bg-gray-50/50 p-8 rounded-[3rem] border border-black/5">
+                      <div className="px-4">
+                         <h3 className="text-xl font-black uppercase tracking-tighter text-[#d82828] italic">Ordem das Seções na Home</h3>
+                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Arraste para mudar a ordem das seções na página inicial</p>
+                      </div>
+                      
+                      <Reorder.Group 
+                        axis="y" 
+                        values={siteSettings.homeSectionOrder.sections || []} 
+                        onReorder={(newOrder) => setSiteSettings(prev => ({ ...prev, homeSectionOrder: { ...prev.homeSectionOrder, sections: newOrder } }))}
+                        className="space-y-3"
+                      >
+                         {(siteSettings.homeSectionOrder.sections || []).map((id) => {
+                           const SECTION_LABELS: Record<string, string> = {
+                             novidades: 'Novidades Exclusivas',
+                             bestsellers: 'Best Sellers',
+                             banner: 'Banner Edição',
+                             categorias: 'Carrossel de Categorias',
+                             magica: 'A Mágica (Antes/Depois)',
+                             catalogo: 'Todos os Presets',
+                             testimonials: 'Feedbacks de Clientes',
+                             faq: 'Dúvidas Frequentes (FAQ)',
+                             mosaico: 'Mosaico Shop the Look',
+                             features: 'Diferenciais (Features)'
+                           };
+                           return (
+                             <Reorder.Item 
+                               key={id} 
+                               value={id}
+                               className="bg-white border border-black/5 p-5 rounded-2xl flex items-center gap-4 cursor-grab active:cursor-grabbing hover:shadow-xl transition-all group"
+                             >
+                                <GripVertical className="text-gray-200 group-hover:text-[#d82828]" size={20} />
+                                <div className="flex-1">
+                                  <p className="text-sm font-black uppercase tracking-tighter text-gray-1000 italic">{SECTION_LABELS[id] || id}</p>
+                                </div>
+                             </Reorder.Item>
+                           );
+                         })}
+                      </Reorder.Group>
+                   </div>
+
+                   <div className="space-y-10">
+                     <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Abaixo, escolha quais produtos aparecem em cada vitrine:</p>
+                   </div>
+
                    {([
                      { key: 'newArrivals', label: 'Novidades Exclusivas', description: 'Bloco superior da página inicial' },
                      { key: 'bestSellers', label: 'Mais Vendidos (Best Sellers)', description: 'Carrossel de destaques' },

@@ -8,7 +8,8 @@ import { useLanguage } from "@/store/languageStore";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 
-function TestimonialItem({ testimonial }: { testimonial: any }) {
+function TestimonialItem({ testimonial, index }: { testimonial: any, index: number }) {
+  const { getLocalized, t } = useSiteSettings();
   return (
     <div 
       className="bg-card p-6 md:p-8 rounded-[2rem] shadow-md border border-border/50 h-full flex flex-col md:hover:shadow-xl transition-all duration-['400ms'] hover:-translate-y-2 active:scale-[0.98] transform-gpu ease-out"
@@ -21,7 +22,7 @@ function TestimonialItem({ testimonial }: { testimonial: any }) {
 
       <div className="flex-1 mb-6">
         <p className="text-sm md:text-base italic text-muted-foreground/90 leading-relaxed font-normal">
-          "{testimonial.content}"
+          "{getLocalized(testimonial.content) || (t as any)(`test${index + 1}Text`)}"
         </p>
       </div>
 
@@ -99,7 +100,7 @@ export function TestimonialsSection() {
                 key={idx}
                 className="flex-none px-3 w-[82%] sm:w-[45%] md:w-[33.33%] lg:w-[25%]"
               >
-                <TestimonialItem testimonial={testimonial} />
+                <TestimonialItem testimonial={testimonial} index={idx} />
               </div>
             ))}
           </div>
