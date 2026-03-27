@@ -72,7 +72,7 @@ export function ProductCarousel({
             
             {/* 1. CABEÇALHO: Centralizado no PC para "Arrumar os Blocos" */}
             <div className="text-center md:text-center space-y-3 mb-12 max-w-2xl mx-auto">
-              <h2 className="text-2xl md:text-3xl font-black text-gray-950 uppercase tracking-tighter italic">
+              <h2 className="text-2xl md:text-3xl font-black text-gray-950 uppercase tracking-tighter">
                 {title}
               </h2>
               <motion.div 
@@ -82,7 +82,7 @@ export function ProductCarousel({
                 transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
                 className="h-1 bg-[#d82828] mx-auto mb-4" 
               />
-              <p className="text-sm md:text-base text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
+              <p className="text-sm md:text-base text-gray-600 font-bold leading-relaxed">
                 {description || t("bestSellersDesc")}
               </p>
             </div>

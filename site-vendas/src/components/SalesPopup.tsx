@@ -84,7 +84,7 @@ export function SalesPopup() {
     // Initial delay before first popup
     const initialTimer = setTimeout(() => {
       showRandomSale();
-    }, 10000); // Mostra o primeiro popup após 10 seg
+    }, 22000); // Mostra o primeiro popup após 22 seg
 
     // Set interval for subsequent popups
     const interval = setInterval(() => {

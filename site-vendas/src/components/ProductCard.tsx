@@ -34,10 +34,8 @@ export function ProductCard({ product }: ProductCardProps) {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
-      whileHover={{ y: -8 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative flex flex-col bg-white rounded-[2rem] border border-black/5 shadow-lg hover:shadow-2xl transition-shadow duration-500 h-full"
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className="group relative flex flex-col bg-white rounded-[2rem] border border-black/5 shadow-lg hover:shadow-2xl card-hover h-full"
     >
 
       {/* Badge de Desconto - Calculado automaticamente */}

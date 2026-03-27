@@ -14,7 +14,7 @@
     --card-border: 0 0% 91%;
     --ring: 0 72% 50%;
     --radius: 1.5rem;
-    
+
     /* Cores da promoção */
     --promo-success: 120 40% 95%;
     --promo-success-border: 120 40% 75%;
@@ -24,28 +24,71 @@
 }
 
 @layer base {
-  * {
+  *, *::before, *::after {
     @apply border-border;
+    box-sizing: border-box;
   }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overflow-x: hidden;
+  }
+
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Garantir GPU layer para elementos animados */
+  [data-framer-motion], .motion-safe\:animate-none {
+    will-change: auto;
   }
 }
 
+/* ─── Marquee Puro em CSS (mais fluido que framer-motion no mobile) ─── */
 @keyframes marquee {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-25%); } 
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
+
 .animate-marquee {
+  display: flex;
   width: max-content;
-  animation: marquee 35s linear infinite;
+  animation: marquee 40s linear infinite;
   will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
+
 .animate-marquee:hover {
   animation-play-state: paused;
 }
 
-/* Fix Sonner Mobile Position to Right - Ultra stable version */
+/* ─── Reduce Motion: respeita preferências de acessibilidade ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-marquee {
+    animation: none !important;
+  }
+}
+
+/* ─── Sonner Toast: Mobile ─── */
 @media (max-width: 640px) {
   [data-sonner-toaster] {
     right: 16px !important;
@@ -64,7 +107,7 @@
   }
 }
 
-/* Adjust Sonner Desktop Position to be closer to edges */
+/* ─── Sonner Toast: Desktop ─── */
 @media (min-width: 1024px) {
   [data-sonner-toaster] {
     top: 10px !important;
@@ -72,11 +115,28 @@
   }
 }
 
-/* Hide Scrollbar Cross Browser */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none !important;
+/* ─── Scrollbar oculta ─── */
+.hide-scrollbar::-webkit-scrollbar { display: none !important; }
+.hide-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+
+/* ─── GPU Acceleration helper ─── */
+.gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
-.hide-scrollbar {
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
+
+/* ─── Smooth card hover (sem jank) ─── */
+.card-hover {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  transform: translateZ(0);
 }
+.card-hover:hover {
+  transform: translateY(-6px) translateZ(0);
+}
+.card-hover:active {
+  transform: scale(0.98) translateZ(0);
+}
+

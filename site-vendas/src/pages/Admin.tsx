@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { 
@@ -17,8 +17,8 @@ const ADMIN_PASSWORD = "gorgadmin2024";
 interface ProductFormData {
   id?: string;
   name: string;
-  description: string;
-  detailedDescription: string;
+  description: any;
+  detailedDescription: any;
   price: string | number;
   originalPrice: string | number;
   discount: number;
@@ -36,8 +36,8 @@ interface ProductFormData {
 
 const initialForm: ProductFormData = {
   name: "",
-  description: "",
-  detailedDescription: "",
+  description: { PT: "", EN: "", ES: "" },
+  detailedDescription: { PT: "", EN: "", ES: "" },
   price: "",
   originalPrice: "",
   discount: 0,
@@ -62,7 +62,7 @@ export default function Admin() {
   const [formData, setFormData] = useState<ProductFormData>(initialForm);
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'hero' | 'banner' | 'testimonials' | 'order' | 'integration' | 'shopTheLook' | 'promoBar' | 'magic'>('overview');
+  const [activeTab, setActiveTab] = useState<'products' | 'hero' | 'banner' | 'testimonials' | 'order' | 'integration' | 'shopTheLook' | 'promoBar' | 'magic'>('products');
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [langTab, setLangTab] = useState<'PT' | 'EN' | 'ES'>('PT');
@@ -72,8 +72,18 @@ export default function Admin() {
     setFormData({
       id: product.id,
       name: product.name,
-      description: product.description,
-      detailedDescription: product.detailedDescription,
+      description: (() => {
+        const d = product.description;
+        if (!d) return { PT: "", EN: "", ES: "" };
+        if (typeof d === "object") return { PT: d.PT || "", EN: d.EN || "", ES: d.ES || "" };
+        return { PT: String(d), EN: "", ES: "" };
+      })(),
+      detailedDescription: (() => {
+        const d = product.detailedDescription;
+        if (!d) return { PT: "", EN: "", ES: "" };
+        if (typeof d === "object") return { PT: d.PT || "", EN: d.EN || "", ES: d.ES || "" };
+        return { PT: String(d), EN: "", ES: "" };
+      })(),
       price: product.price,
       originalPrice: product.originalPrice,
       discount: product.discount,
@@ -432,7 +442,6 @@ export default function Admin() {
         
         <div className="container mx-auto px-6 flex gap-1 border-t border-black/5 overflow-x-auto no-scrollbar">
           {[
-            { key: 'overview', label: 'Visão Geral', icon: TrendingUp },
             { key: 'products', label: 'Produtos', icon: ShoppingBag },
             { key: 'magic', label: 'Mágica', icon: Sparkles },
             { key: 'hero', label: 'Hero', icon: ImageIcon },
@@ -451,32 +460,6 @@ export default function Admin() {
       </header>
 
       <main className="container mx-auto px-6 py-12">
-        {/* OVERVIEW TAB */}
-        {activeTab === 'overview' && (
-          <div className="space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-               {[
-                 { label: 'Total de Vendas', value: totalSalesCount, icon: ShoppingBag, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                 { label: 'Receita Estimada', value: `R$ ${estimatedRevenue.toFixed(2)}`, icon: DollarSign, color: 'text-[#d82828]', bg: 'bg-red-50' },
-                 { label: 'Total de Produtos', value: totalProducts, icon: Package, color: 'text-blue-500', bg: 'bg-blue-50' },
-                 { label: 'Média por Pack', value: `R$ ${averagePrice.toFixed(2)}`, icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-50' },
-               ].map((stat, i) => (
-                 <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-black/5 shadow-sm">
-                    <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-6`}><stat.icon size={24} /></div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{stat.label}</p>
-                    <h3 className="text-3xl font-black tracking-tighter">{stat.value}</h3>
-                 </div>
-               ))}
-            </div>
-            <div className="bg-white p-10 rounded-[2.5rem] border border-black/5 flex items-center justify-between">
-               <div className="flex items-center gap-6">
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${siteSettings.integration.isCartEnabled ? 'bg-emerald-50 text-emerald-500' : 'bg-gray-100 text-gray-400'}`}><ShoppingBag size={28} /></div>
-                  <div><h3 className="text-xl font-bold uppercase tracking-tighter">Status do Carrinho</h3><p className="text-sm text-gray-400">{siteSettings.integration.isCartEnabled ? 'Ativo na Loja' : 'Ir direto ao Checkout'}</p></div>
-               </div>
-               <button onClick={async () => { const n = !siteSettings.integration.isCartEnabled; setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, isCartEnabled: n } })); await saveSetting('integration', { ...siteSettings.integration, isCartEnabled: n }); toast.success(`Carrinho ${n ? 'Habilitado' : 'Desativado'}`); }} className={`w-16 h-8 rounded-full relative transition-all ${siteSettings.integration.isCartEnabled ? 'bg-emerald-500' : 'bg-gray-300'}`}><div className={`w-6 h-6 bg-white rounded-full transition-all ${siteSettings.integration.isCartEnabled ? 'translate-x-8' : 'translate-x-0'}`} /></button>
-            </div>
-          </div>
-        )}
 
         {/* PRODUCTS TAB */}
         {activeTab === 'products' && (
@@ -908,6 +891,29 @@ export default function Admin() {
         {activeTab === 'integration' && (
           <div className="max-w-3xl mx-auto bg-white rounded-[2.5rem] border border-black/5 shadow-xl p-12 space-y-10">
              <div className="flex items-center gap-4 border-b pb-6"><Zap className="text-amber-500" /><h2 className="text-2xl font-black uppercase tracking-tighter">Integração GGCheckout</h2></div>
+
+             {/* Carrinho Toggle */}
+             <div className="bg-gray-50 p-8 rounded-[2rem] border border-black/5 flex items-center justify-between">
+               <div className="flex items-center gap-5">
+                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${siteSettings.integration.isCartEnabled ? 'bg-emerald-50 text-emerald-500' : 'bg-gray-100 text-gray-400'}`}><ShoppingBag size={26} /></div>
+                 <div>
+                   <h3 className="text-base font-bold uppercase tracking-tighter">Status do Carrinho</h3>
+                   <p className="text-xs text-gray-400 mt-0.5">{siteSettings.integration.isCartEnabled ? 'Ativo — clientes podem adicionar ao carrinho' : 'Desativado — redireciona direto ao checkout'}</p>
+                 </div>
+               </div>
+               <button
+                 onClick={async () => {
+                   const n = !siteSettings.integration.isCartEnabled;
+                   setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, isCartEnabled: n } }));
+                   await saveSetting('integration', { ...siteSettings.integration, isCartEnabled: n });
+                   toast.success(`Carrinho ${n ? 'Habilitado' : 'Desativado'}`);
+                 }}
+                 className={`w-16 h-8 rounded-full relative transition-all flex-shrink-0 ${siteSettings.integration.isCartEnabled ? 'bg-emerald-500' : 'bg-gray-300'}`}
+               >
+                 <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all shadow-sm ${siteSettings.integration.isCartEnabled ? 'left-9' : 'left-1'}`} />
+               </button>
+             </div>
+
              <div className="space-y-2">
                 <p className="text-[10px] font-black uppercase text-gray-400">Base URL do Checkout</p>
                 <input value={siteSettings.integration.checkoutBaseUrl} onChange={(e) => setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, checkoutBaseUrl: e.target.value } }))} className="w-full h-16 bg-gray-50 rounded-2xl px-8 font-mono text-sm border border-black/5" placeholder="https://..." />
@@ -990,24 +996,50 @@ export default function Admin() {
 
                    <div className="space-y-3">
                       <label className="text-[10px] font-bold uppercase text-gray-400">Galeria (Outras Imagens)</label>
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4">
-                        {(formData.images || []).map((img, idx) => (
-                          <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-black/5 relative group bg-gray-50">
-                            <img src={img} className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }))} className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"><Trash2 size={16} /></button>
-                          </div>
+                      <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest mb-3">Arraste para reordenar • Passe o mouse para deletar</p>
+                      <Reorder.Group
+                        axis="x"
+                        values={formData.images || []}
+                        onReorder={(newOrder) => setFormData(prev => ({ ...prev, images: newOrder }))}
+                        className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4"
+                        style={{ listStyle: 'none', padding: 0, margin: 0 }}
+                      >
+                        {(formData.images || []).map((img) => (
+                          <Reorder.Item
+                            key={img}
+                            value={img}
+                            className="aspect-square rounded-lg overflow-hidden border border-black/5 relative group bg-gray-50 cursor-grab active:cursor-grabbing"
+                            style={{ listStyle: 'none' }}
+                            whileDrag={{ scale: 1.08, zIndex: 50, boxShadow: '0 8px 30px rgba(0,0,0,0.15)' }}
+                          >
+                            <img src={img} className="w-full h-full object-cover pointer-events-none" />
+                            {/* Ícone de grip */}
+                            <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-md p-0.5">
+                              <GripVertical size={12} className="text-white" />
+                            </div>
+                            {/* Deletar */}
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((i) => i !== img) }))}
+                              className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all pt-4"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </Reorder.Item>
                         ))}
+                        {/* Botão de adicionar imagem */}
                         <label className="aspect-square rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:text-[#d82828] hover:border-[#d82828] cursor-pointer transition-all">
                           {isUploading ? <RefreshCw className="animate-spin" /> : <Plus size={24} />}
                           <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                             const f = e.target.files?.[0];
-                             if (f) {
-                               const url = await handleImageUpload(f);
-                               if (url) setFormData(prev => ({ ...prev, images: [...(prev.images || []), url] }));
-                             }
+                            const f = e.target.files?.[0];
+                            if (f) {
+                              const url = await handleImageUpload(f);
+                              if (url) setFormData(prev => ({ ...prev, images: [...(prev.images || []), url] }));
+                            }
                           }} />
                         </label>
-                      </div>
+                      </Reorder.Group>
+
                       <div className="flex gap-4">
                         <input id="new-gamma-img" className="flex-1 h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-mono text-xs" placeholder="Colar link de nova imagem" onKeyDown={(e) => {
                            if (e.key === 'Enter') {
@@ -1029,16 +1061,94 @@ export default function Admin() {
                       </div>
                    </div>
 
-                   <div className="space-y-4">
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold uppercase text-gray-400">Descrição Curta</label>
-                         <textarea name="description" value={formData.description} onChange={handleInputChange as any} className="w-full h-24 bg-gray-50 rounded-xl p-4 outline-none border border-black/5" />
-                      </div>
-                      <div className="space-y-2">
-                         <label className="text-[10px] font-bold uppercase text-gray-400">Descrição Detalhada</label>
-                         <textarea name="detailedDescription" value={formData.detailedDescription} onChange={handleInputChange as any} className="w-full h-40 bg-gray-50 rounded-xl p-4 outline-none border border-black/5" />
-                      </div>
-                   </div>
+                    <div className="space-y-4">
+                       {/* Descrição Curta — Multilíngue */}
+                       <div className="space-y-2">
+                         <div className="flex items-center justify-between">
+                           <label className="text-[10px] font-bold uppercase text-gray-400">Descrição Curta</label>
+                           <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                             {['PT', 'EN', 'ES'].map(l => (
+                               <button key={l} type="button" onClick={() => setLangTab(l as any)} className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${langTab === l ? 'bg-white text-[#d82828] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{l}</button>
+                             ))}
+                           </div>
+                         </div>
+                         <textarea
+                           value={typeof formData.description === 'object' ? (formData.description[langTab] || '') : (langTab === 'PT' ? (formData.description || '') : '')}
+                           onChange={(e) => {
+                             const cur = typeof formData.description === 'object' ? formData.description : { PT: formData.description || '', EN: '', ES: '' };
+                             setFormData(prev => ({ ...prev, description: { ...cur, [langTab]: e.target.value } }));
+                           }}
+                           placeholder={`Descrição curta em ${langTab}...`}
+                           className="w-full h-24 bg-gray-50 rounded-xl p-4 outline-none border border-black/5 focus:border-[#d82828] transition-all"
+                         />
+                       </div>
+                       {/* Descrição Detalhada — Multilíngue */}
+                       <div className="space-y-2">
+                         <div className="flex items-center justify-between">
+                           <label className="text-[10px] font-bold uppercase text-gray-400">Descrição Detalhada</label>
+                           <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                             {['PT', 'EN', 'ES'].map(l => (
+                               <button key={l} type="button" onClick={() => setLangTab(l as any)} className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${langTab === l ? 'bg-white text-[#d82828] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{l}</button>
+                             ))}
+                           </div>
+                         </div>
+                         <textarea
+                           value={typeof formData.detailedDescription === 'object' ? (formData.detailedDescription[langTab] || '') : (langTab === 'PT' ? (formData.detailedDescription || '') : '')}
+                           onChange={(e) => {
+                             const cur = typeof formData.detailedDescription === 'object' ? formData.detailedDescription : { PT: formData.detailedDescription || '', EN: '', ES: '' };
+                             setFormData(prev => ({ ...prev, detailedDescription: { ...cur, [langTab]: e.target.value } }));
+                           }}
+                           placeholder={`Descrição detalhada em ${langTab}...`}
+                           className="w-full h-40 bg-gray-50 rounded-xl p-4 outline-none border border-black/5 focus:border-[#d82828] transition-all"
+                         />
+                       </div>
+                    </div>
+
+                    {/* O que está incluso */}
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-bold uppercase text-gray-400">O que está incluso</label>
+                       {formData.whatsIncluded.map((item, idx) => (
+                         <div key={idx} className="flex gap-2">
+                           <input
+                             value={item}
+                             onChange={(e) => {
+                               const updated = [...formData.whatsIncluded];
+                               updated[idx] = e.target.value;
+                               setFormData(prev => ({ ...prev, whatsIncluded: updated }));
+                             }}
+                             className="flex-1 h-11 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 focus:border-[#d82828] transition-all text-sm"
+                             placeholder={`Item ${idx + 1}...`}
+                           />
+                           <button type="button" onClick={() => setFormData(prev => ({ ...prev, whatsIncluded: prev.whatsIncluded.filter((_, i) => i !== idx) }))} className="p-2 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                         </div>
+                       ))}
+                       <button type="button" onClick={() => setFormData(prev => ({ ...prev, whatsIncluded: [...prev.whatsIncluded, ''] }))} className="flex items-center gap-2 text-[10px] font-bold uppercase text-gray-400 hover:text-black transition-colors mt-1">
+                         <Plus size={14} /> Adicionar item
+                       </button>
+                    </div>
+
+                    {/* Ideal Para */}
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-bold uppercase text-gray-400">Ideal Para</label>
+                       {formData.idealFor.map((item, idx) => (
+                         <div key={idx} className="flex gap-2">
+                           <input
+                             value={item}
+                             onChange={(e) => {
+                               const updated = [...formData.idealFor];
+                               updated[idx] = e.target.value;
+                               setFormData(prev => ({ ...prev, idealFor: updated }));
+                             }}
+                             className="flex-1 h-11 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 focus:border-[#d82828] transition-all text-sm"
+                             placeholder={`Perfil ${idx + 1}...`}
+                           />
+                           <button type="button" onClick={() => setFormData(prev => ({ ...prev, idealFor: prev.idealFor.filter((_, i) => i !== idx) }))} className="p-2 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                         </div>
+                       ))}
+                       <button type="button" onClick={() => setFormData(prev => ({ ...prev, idealFor: [...prev.idealFor, ''] }))} className="flex items-center gap-2 text-[10px] font-bold uppercase text-gray-400 hover:text-black transition-colors mt-1">
+                         <Plus size={14} /> Adicionar perfil
+                       </button>
+                    </div>
 
                    <Button type="submit" disabled={isLoading} className="w-full h-16 bg-black text-white hover:bg-[#d82828] rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl mt-4 select-none">
                       {isLoading ? <RefreshCw className="animate-spin mr-2" /> : <Save size={20} className="mr-2" />}

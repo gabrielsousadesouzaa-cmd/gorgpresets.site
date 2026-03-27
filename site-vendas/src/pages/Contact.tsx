@@ -65,7 +65,7 @@ export default function Contact() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            href="https://wa.me/92981233514" 
+            href="https://wa.me/5592981233514" 
             target="_blank" 
             rel="noopener noreferrer"
             className="group flex flex-col items-center justify-center gap-5 p-10 bg-white border border-black/5 rounded-[3rem] shadow-xl hover:shadow-2xl hover:shadow-green-500/10 hover:border-green-500/20 transition-all duration-500 active:scale-[0.98] text-center relative overflow-hidden"

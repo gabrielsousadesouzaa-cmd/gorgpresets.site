@@ -168,11 +168,11 @@ export default function ProductDetail() {
               {/* Badge Removido Temporariamente */}
 
               {/* Nome */}
-              <h1 className="text-3xl font-semibold text-gray-950 uppercase tracking-tighter leading-[1]">{product.name}</h1>
+              <h1 className="text-3xl font-extrabold text-gray-950 uppercase tracking-tighter leading-[1]">{product.name}</h1>
 
               {/* Preco */}
               <div className="flex items-center gap-4">
-                <span className="text-4xl font-semibold text-[#d82828] tracking-tighter leading-none">{formatCurrency(product.price)}</span>
+                <span className="text-4xl font-extrabold text-[#d82828] tracking-tighter leading-none">{formatCurrency(product.price)}</span>
                 {product.originalPrice > 0 && (
                   <div className="flex flex-col">
                     <span className="text-base text-gray-300 line-through font-semibold leading-none">{formatCurrency(product.originalPrice)}</span>
@@ -253,9 +253,20 @@ export default function ProductDetail() {
               <div className="space-y-12">
                 <div>
                   <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-[#d82828] mb-6">{t("pdEstheticTitle")}</h3>
-                  <p className="text-lg leading-relaxed text-gray-700">
-                    {product.detailedDescription || product.description}
-                  </p>
+                  {/* Helper local: suporta string legada OU objeto { PT, EN, ES } */}
+                  {(() => {
+                    const getLocalizedDesc = (val: any): string => {
+                      if (!val) return "";
+                      if (typeof val === "string") return val;
+                      return val[language] || val.PT || val.EN || val.ES || "";
+                    };
+                    return (
+                      <p className="text-lg leading-relaxed text-gray-700">
+                        {getLocalizedDesc(product.detailedDescription) || getLocalizedDesc(product.description)}
+                      </p>
+                    );
+                  })()}
+
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -289,10 +300,10 @@ export default function ProductDetail() {
             <div className="bg-white rounded-[2.5rem] border border-black/5 shadow-2xl p-10 space-y-8">
               {/* Vendas removidas (apenas Admin) */}
 
-              <h1 className="text-4xl font-semibold text-gray-950 uppercase tracking-tighter leading-[0.9]">{product.name}</h1>
+              <h1 className="text-4xl font-extrabold text-gray-950 uppercase tracking-tighter leading-[0.9]">{product.name}</h1>
 
               <div className="flex items-center gap-4">
-                <span className="text-5xl font-semibold text-[#d82828] tracking-tighter leading-none">{formatCurrency(product.price)}</span>
+                <span className="text-5xl font-extrabold text-[#d82828] tracking-tighter leading-none">{formatCurrency(product.price)}</span>
                 {product.originalPrice > 0 && (
                   <div className="flex flex-col">
                     <span className="text-lg text-gray-300 line-through font-semibold leading-none">{formatCurrency(product.originalPrice)}</span>

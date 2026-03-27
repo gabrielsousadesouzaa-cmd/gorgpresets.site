@@ -138,7 +138,7 @@ export default function FAQ() {
                 <p className="text-gray-400 text-sm font-semibold mb-8 relative z-10">{t("faqSupportDesc")}</p>
                 
                 <a 
-                  href="https://wa.me/351930941144" 
+                  href="https://wa.me/5592981233514" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="bg-[#25D366] text-white px-10 py-5 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-3 relative z-10 shadow-xl shadow-green-500/20"
