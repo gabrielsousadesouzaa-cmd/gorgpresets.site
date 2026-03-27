@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { 
@@ -11,8 +11,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { saveSetting, DEFAULT_SETTINGS, SiteSettings } from "@/hooks/useSiteSettings";
 
-// ADMIN PASSWORD
-const ADMIN_PASSWORD = "gorgadmin2024";
 
 interface ProductFormData {
   id?: string;
@@ -55,7 +53,10 @@ const initialForm: ProductFormData = {
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -187,23 +188,52 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    const auth = localStorage.getItem("gorg_admin_auth");
-    if (auth === "true") setIsAuthenticated(true);
-    
+    if (!supabase) { setAuthLoading(false); return; }
+
+    // Timeout de segurança: se o Supabase demorar > 3s, libera o login
+    const safetyTimeout = setTimeout(() => setAuthLoading(false), 3000);
+
+    // Check active session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(safetyTimeout);
+      setIsAuthenticated(!!session);
+      setAuthLoading(false);
+    }).catch(() => {
+      clearTimeout(safetyTimeout);
+      setAuthLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+      setAuthLoading(false);
+    });
+    return () => { subscription.unsubscribe(); clearTimeout(safetyTimeout); };
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated) {
       fetchProducts();
       fetchSettings();
     }
   }, [isAuthenticated]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      localStorage.setItem("gorg_admin_auth", "true");
-      toast.success("Acesso autorizado!");
-    } else {
-      toast.error("Senha incorreta");
+    if (!supabase) return;
+    setLoginError("");
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setLoginError("E-mail ou senha incorretos.");
+      } else {
+        toast.success("Acesso autorizado!");
+      }
+    } catch {
+      setLoginError("Erro inesperado. Tente novamente.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -227,9 +257,9 @@ export default function Admin() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (supabase) await supabase.auth.signOut();
     setIsAuthenticated(false);
-    localStorage.removeItem("gorg_admin_auth");
   };
 
   async function fetchProducts() {
@@ -399,6 +429,14 @@ export default function Admin() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-[#d82828] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-black">
@@ -408,12 +446,24 @@ export default function Admin() {
             <h1 className="text-2xl font-bold uppercase tracking-tighter">Área Restrita</h1>
             <p className="text-gray-400 text-sm mt-1">Identifique-se para gerenciar a loja</p>
           </div>
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Senha de Acesso</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold" placeholder="••••••••" />
+              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">E-mail</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold" placeholder="admin@gorgpresets.com" />
             </div>
-            <Button className="w-full h-14 bg-[#d82828] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest transition-all">Entrar no Painel</Button>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Senha</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold" placeholder="••••••••" />
+            </div>
+            {loginError && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl px-4 py-3">
+                <AlertCircle size={14} /> {loginError}
+              </div>
+            )}
+            <Button type="submit" disabled={isLoading} className="w-full h-14 bg-[#d82828] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest transition-all mt-2 flex items-center justify-center gap-2">
+              {isLoading ? <RefreshCw className="animate-spin" size={16} /> : <Lock size={16} />}
+              {isLoading ? "Verificando..." : "Entrar no Painel"}
+            </Button>
           </form>
         </motion.div>
       </div>
@@ -1162,3 +1212,4 @@ export default function Admin() {
     </div>
   );
 }
+
