@@ -76,12 +76,24 @@ export default function Admin() {
       description: (() => {
         const d = product.description;
         if (!d) return { PT: "", EN: "", ES: "" };
+        if (typeof d === "string" && d.startsWith("{")) {
+          try {
+            const parsed = JSON.parse(d);
+            return { PT: parsed.PT || "", EN: parsed.EN || "", ES: parsed.ES || "" };
+          } catch(e) {}
+        }
         if (typeof d === "object") return { PT: d.PT || "", EN: d.EN || "", ES: d.ES || "" };
         return { PT: String(d), EN: "", ES: "" };
       })(),
       detailedDescription: (() => {
         const d = product.detailedDescription;
         if (!d) return { PT: "", EN: "", ES: "" };
+        if (typeof d === "string" && d.startsWith("{")) {
+          try {
+            const parsed = JSON.parse(d);
+            return { PT: parsed.PT || "", EN: parsed.EN || "", ES: parsed.ES || "" };
+          } catch(e) {}
+        }
         if (typeof d === "object") return { PT: d.PT || "", EN: d.EN || "", ES: d.ES || "" };
         return { PT: String(d), EN: "", ES: "" };
       })(),

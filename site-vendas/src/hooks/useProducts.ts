@@ -28,8 +28,16 @@ const mapProduct = (p: any): Product => {
     ...p,
     id: String(p.id || Math.random()), 
     name: p.name || "Sem Nome",
-    description: p.description || "",
-    detailedDescription: p.detailed_description || p.description || "",
+    description: (() => {
+      const d = p.description;
+      if (typeof d === 'string' && d.startsWith('{')) { try { return JSON.parse(d); } catch(e){}}
+      return d || "";
+    })(),
+    detailedDescription: (() => {
+      const d = p.detailed_description || p.description;
+      if (typeof d === 'string' && d.startsWith('{')) { try { return JSON.parse(d); } catch(e){}}
+      return d || "";
+    })(),
     price: parseFloat(String(p.price)) || 0,
     originalPrice: p.original_price ? parseFloat(String(p.original_price)) : 0,
     discount: parseInt(String(p.discount)) || 0,
