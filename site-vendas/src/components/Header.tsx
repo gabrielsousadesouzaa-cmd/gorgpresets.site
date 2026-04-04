@@ -87,7 +87,7 @@ export function Header() {
             {/* Center Column: Logo */}
             <div className="flex justify-center text-center">
               <Link to="/" onClick={handleLogoClick} className="flex-shrink-0">
-                 <img src="/logo.png" alt="Gorg Presets" className="h-14 md:h-20 w-auto object-contain" />
+                 <img src="/logo.png" alt="Gorg Presets" className="h-16 md:h-24 w-auto object-contain" />
               </Link>
             </div>
 

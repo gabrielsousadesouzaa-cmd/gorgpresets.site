@@ -73,7 +73,7 @@ export function CategoriesCarousel() {
           className="flex flex-col items-center justify-center text-center mb-10"
         >
           <div className="relative inline-block">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight uppercase text-[#333] pb-1">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-950 uppercase tracking-tighter mb-2">
               {t("categories")}
             </h2>
             <motion.div 

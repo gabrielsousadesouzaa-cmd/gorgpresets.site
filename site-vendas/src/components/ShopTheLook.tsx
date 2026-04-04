@@ -14,7 +14,7 @@ export function ShopTheLook() {
   const handle = "@gorgpresets";
 
   return (
-    <section className="py-12 md:py-24 bg-white overflow-hidden">
+    <section className="pt-6 pb-12 md:pt-10 md:pb-24 bg-white overflow-hidden">
       <div className="container mx-auto px-6 text-center mb-8 md:mb-12">
         <motion.div
            initial={{ opacity: 0, y: 20 }}
@@ -25,7 +25,7 @@ export function ShopTheLook() {
           <div className="flex justify-center mb-4 text-[#d82828]">
              <Instagram size={36} strokeWidth={1.5} />
           </div>
-          <h2 className="text-2xl md:text-4xl font-black text-gray-950 uppercase tracking-tighter mb-2">
+          <h2 className="text-2xl md:text-4xl font-bold text-gray-950 uppercase tracking-tighter mb-2">
             {title}
           </h2>
           <a href="https://instagram.com/gorgpresets" target="_blank" rel="noopener noreferrer" className="text-sm md:text-base font-bold text-[#d82828] hover:text-black transition-colors uppercase tracking-widest">

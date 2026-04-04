@@ -72,7 +72,7 @@ export function ProductCarousel({
             
             {/* 1. CABEÇALHO: Centralizado no PC para "Arrumar os Blocos" */}
             <div className="text-center md:text-center space-y-3 mb-12 max-w-2xl mx-auto">
-              <h2 className="text-2xl md:text-3xl font-black text-gray-950 uppercase tracking-tighter">
+              <h2 className="text-2xl md:text-4xl font-bold text-gray-950 uppercase tracking-tighter">
                 {title}
               </h2>
               <motion.div 

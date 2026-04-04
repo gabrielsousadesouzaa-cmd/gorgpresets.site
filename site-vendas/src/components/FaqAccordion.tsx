@@ -29,10 +29,10 @@ export function FaqAccordion() {
   const title = language === 'EN' ? "FREQUENTLY ASKED QUESTIONS" : language === 'ES' ? "PREGUNTAS FRECUENTES" : "PERGUNTAS FREQUENTES";
 
   return (
-    <div className="w-full max-w-[1100px] mx-auto px-6 py-12 md:py-24">
+    <div className="w-full max-w-[1100px] mx-auto px-6 pt-8 pb-6 md:pt-12 md:pb-10">
       <div className="text-center mb-10 md:mb-16">
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-4">FAQ</p>
-        <h2 className="text-2xl md:text-4xl font-black text-gray-950 uppercase tracking-tighter">
+        <h2 className="text-2xl md:text-4xl font-bold text-gray-950 uppercase tracking-tighter">
           {title}
         </h2>
       </div>
@@ -44,7 +44,7 @@ export function FaqAccordion() {
             <div 
               key={index} 
               className={`border transition-all duration-500 rounded-[2rem] overflow-hidden ${
-                isOpen ? 'border-black/10 bg-gray-50 shadow-inner' : 'border-black/5 bg-white hover:border-black/20 hover:shadow-lg'
+                isOpen ? 'border-[#d82828]/60 bg-white shadow-[0_8px_30px_rgba(216,40,40,0.12)] scale-[1.01]' : 'border-black/5 bg-white hover:border-black/20 hover:shadow-lg'
               }`}
             >
               <button
@@ -54,7 +54,7 @@ export function FaqAccordion() {
                 <span className="text-[13px] md:text-[15px] font-bold text-gray-900 pr-8">
                   {faq.q}
                 </span>
-                <span className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-2xl transition-all duration-300 ${isOpen ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>
+                <span className={`shrink-0 w-10 h-10 flex items-center justify-center rounded-2xl transition-all duration-500 ${isOpen ? 'bg-[#d82828] text-white rotate-180 scale-110 shadow-lg shadow-[#d82828]/30' : 'bg-gray-100 text-gray-400'}`}>
                   {isOpen ? <Minus size={18} strokeWidth={3} /> : <Plus size={18} strokeWidth={3} />}
                 </span>
               </button>

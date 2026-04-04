@@ -6,7 +6,7 @@ export function HeroSection() {
   const { settings, loading, getLocalized, t } = useSiteSettings();
 
   return (
-    <div className="container mx-auto px-4 md:px-8 w-full mt-0 md:mt-6 mb-0 md:mb-4">
+    <div className="container mx-auto px-4 md:px-8 w-full mt-0 md:mt-6 mb-8 md:mb-12">
       <div className="relative h-[65vh] md:h-[75vh] w-full overflow-hidden rounded-[2.5rem] md:rounded-[3rem] shadow-2xl group">
         
         {/* Collage Background */}

@@ -63,7 +63,7 @@ export default function Index() {
           <section key={id} className="py-12 md:py-20 bg-white">
             <div className="container mx-auto px-6 max-w-5xl">
               <div className="text-center mb-10">
-                <h2 className="text-2xl md:text-4xl font-black text-gray-950 uppercase tracking-tighter mb-3">
+                <h2 className="text-2xl md:text-4xl font-bold text-gray-950 uppercase tracking-tighter mb-3">
                   {language === 'EN' ? 'THE MAGIC HAPPENS' : language === 'ES' ? 'LA MAGIA SUCEDE' : 'A Mágica Acontece'}
                 </h2>
                 <p className="text-sm md:text-base text-gray-500 font-medium">
@@ -86,7 +86,7 @@ export default function Index() {
           </div>
         );
       case 'testimonials':
-        return <div key={id} className="mt-8 mb-12 md:mb-6"><TestimonialsSection /></div>;
+        return <div key={id} className="mt-8 mb-4 md:mb-2"><TestimonialsSection /></div>;
       case 'faq':
         return <div key={id} id="faq" className="bg-gray-50/50 scroll-mt-20"><FaqAccordion /></div>;
       case 'mosaico':
