@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Product } from "@/data/products";
 import { useCart } from "@/store/cartStore";
 import { useCurrency } from "@/store/currencyStore";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/store/languageStore";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -27,7 +27,28 @@ export function ProductCard({ product }: ProductCardProps) {
     setTimeout(() => setIsAdded(false), 2000);
   }, [addItem, product]);
 
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
+  // Garante que a primeira foto (index 0) seja SEMPRE a foto de capa oficial (product.image)
+  const slideshowImages = [
+    product.image || "https://images.unsplash.com/photo-1542038784456-1ea8e935640e",
+    ...(Array.isArray(product.images) ? product.images : [])
+  ];
+
+  useEffect(() => {
+    let interval: number;
+    
+    // Apenas faz a animação de slideshow se o mouse estiver literalmente em cima (hover)
+    if (slideshowImages.length > 1 && isHovered) {
+      interval = window.setInterval(() => {
+        setCurrentImgIndex((prev) => (prev + 1) % slideshowImages.length);
+      }, 700); // 0.7s por foto
+    } else {
+      setCurrentImgIndex(0); // Volta pra capa oficial
+    }
+    return () => window.clearInterval(interval);
+  }, [isHovered, slideshowImages.length]);
 
   return (
     <motion.div
@@ -49,11 +70,16 @@ export function ProductCard({ product }: ProductCardProps) {
         ) : null;
       })() : null}
 
-      {/* Imagem do Produto */}
-      <Link to={`/product/${product.id}`} className="p-4 block relative">
+      {/* Imagem do Produto Animada */}
+      <Link 
+        to={`/product/${product.id}`} 
+        className="p-4 block relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <div className="aspect-square w-full rounded-[1.5rem] overflow-hidden bg-gray-50 relative">
           <img
-            src={product.image || "https://images.unsplash.com/photo-1542038784456-1ea8e935640e"}
+            src={slideshowImages[currentImgIndex]}
             alt={product.name}
             onError={(e) => {
               const target = e.target as HTMLImageElement;

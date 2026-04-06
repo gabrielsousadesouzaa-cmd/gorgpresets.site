@@ -30,7 +30,7 @@ function TestimonialItem({ testimonial, index }: { testimonial: any, index: numb
         <img
           src={testimonial.image}
           alt={testimonial.name}
-          className="w-12 h-12 min-w-[3rem] min-h-[3rem] shrink-0 rounded-full object-cover border-2 border-primary/20 bg-secondary pointer-events-none select-none"
+          className="w-12 h-12 min-w-[3rem] min-h-[3rem] shrink-0 rounded-full object-cover border-2 border-[#d82828] bg-secondary pointer-events-none select-none"
           loading="eager"
           draggable={false}
           onError={(e) => {

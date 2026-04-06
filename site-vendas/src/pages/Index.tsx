@@ -98,10 +98,14 @@ export default function Index() {
     }
   };
 
+  const hiddenSections = settings.homeSectionOrder.hiddenSections || [];
+
   return (
     <div className="w-full max-w-[1300px] mx-auto overflow-x-hidden">
-      <HeroSection />
-      {(settings.homeSectionOrder.sections || []).map(renderSection)}
+      {!hiddenSections.includes('hero') && <HeroSection />}
+      {(settings.homeSectionOrder.sections || [])
+        .filter(sec => !hiddenSections.includes(sec))
+        .map(renderSection)}
     </div>
   );
 }

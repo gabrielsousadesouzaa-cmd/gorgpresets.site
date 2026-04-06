@@ -5,7 +5,7 @@ import {
   Plus, Trash2, Edit3, X, Save, Lock, LayoutDashboard, ShoppingBag, LogOut, 
   AlertCircle, Image as ImageIcon, Star, Users, GripVertical, LayoutList, 
   ChevronRight, Check, TrendingUp, DollarSign, Package, BarChart3, Bell, Zap,
-  Upload, Sparkles, RefreshCw
+  Upload, Sparkles, RefreshCw, Eye, EyeOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,9 @@ export default function Admin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [mfaSetup, setMfaSetup] = useState<{qrCode: string, factorId: string, secret?: string, uri?: string} | null>(null);
+  const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -201,24 +204,75 @@ export default function Admin() {
 
   useEffect(() => {
     if (!supabase) { setAuthLoading(false); return; }
-
-    // Timeout de segurança: se o Supabase demorar > 3s, libera o login
     const safetyTimeout = setTimeout(() => setAuthLoading(false), 3000);
 
-    // Check active session on mount
+    const checkMFA = async (session: any) => {
+      if (!session) {
+        setIsAuthenticated(false);
+        setAuthLoading(false);
+        return;
+      }
+      try {
+        const { data: factorsData } = await supabase.auth.mfa.listFactors();
+        const totpFactors = factorsData?.totp || [];
+        const verifiedFactor = totpFactors.find(f => f.status === 'verified');
+        const unverifiedFactors = totpFactors.filter(f => f.status === 'unverified');
+
+        // Remove tentativas incompletas anteriores
+        for (const uf of unverifiedFactors) {
+           await supabase.auth.mfa.unenroll({ factorId: uf.id });
+        }
+
+        const { data: aal, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (error) throw error;
+        
+        if (verifiedFactor) {
+          if (aal?.currentLevel === 'aal1') {
+             setIsAuthenticated(false);
+             const { data: challenge } = await supabase.auth.mfa.challenge({ factorId: verifiedFactor.id });
+             if (challenge?.id) setMfaChallengeId(challenge.id);
+          } else {
+             setIsAuthenticated(true);
+          }
+        } else {
+          setIsAuthenticated(false);
+          setMfaChallengeId(null);
+          const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+          if (enrollError) throw enrollError;
+          if (data?.totp) {
+            setMfaSetup({ 
+              qrCode: data.totp.qr_code, 
+              factorId: data.id,
+              secret: data.totp.secret,
+              uri: data.totp.uri 
+            });
+          }
+        }
+      } catch (err) {
+         console.error("MFA Validation Error:", err);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(safetyTimeout);
-      setIsAuthenticated(!!session);
-      setAuthLoading(false);
+      checkMFA(session);
     }).catch(() => {
       clearTimeout(safetyTimeout);
       setAuthLoading(false);
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-      setAuthLoading(false);
+       if (_event === 'SIGNED_IN') {
+          setAuthLoading(true);
+          checkMFA(session);
+       } else if (_event === 'SIGNED_OUT') {
+          setIsAuthenticated(false);
+          setMfaSetup(null);
+          setMfaChallengeId(null);
+          setAuthLoading(false);
+       }
     });
     return () => { subscription.unsubscribe(); clearTimeout(safetyTimeout); };
   }, []);
@@ -240,10 +294,41 @@ export default function Admin() {
       if (error) {
         setLoginError("E-mail ou senha incorretos.");
       } else {
-        toast.success("Acesso autorizado!");
+        toast.success("Credenciais válidas. Verificando segurança...");
       }
     } catch {
       setLoginError("Erro inesperado. Tente novamente.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyMFA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase) return;
+    setLoginError("");
+    setIsLoading(true);
+    try {
+      if (mfaSetup) {
+         const { data: challenge } = await supabase.auth.mfa.challenge({ factorId: mfaSetup.factorId });
+         const { error } = await supabase.auth.mfa.verify({ factorId: mfaSetup.factorId, challengeId: challenge.id, code: mfaCode });
+         if (error) throw error;
+         toast.success("Dispositivo vinculado com sucesso!");
+         setMfaSetup(null);
+         setIsAuthenticated(true);
+      } else if (mfaChallengeId) {
+         const { data: factors } = await supabase.auth.mfa.listFactors();
+         const factorId = factors?.totp[0]?.id;
+         if (!factorId) throw new Error("MFA não encontrado");
+         const { error } = await supabase.auth.mfa.verify({ factorId, challengeId: mfaChallengeId, code: mfaCode });
+         if (error) throw error;
+         toast.success("Acesso autorizado!");
+         setMfaChallengeId(null);
+         setIsAuthenticated(true);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setLoginError("Código inválido. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -454,29 +539,67 @@ export default function Admin() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-black">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md bg-white rounded-[3rem] shadow-2xl p-10 border border-black/5">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-[#d82828] rounded-2xl flex items-center justify-center shadow-xl mb-4"><Lock className="text-white" size={28} /></div>
+            <div className="w-16 h-16 bg-[#d82828] rounded-2xl flex items-center justify-center shadow-xl mb-4">
+               {mfaSetup || mfaChallengeId ? <Lock className="text-white relative top-[2px]" size={28} /> : <Lock className="text-white" size={28} />}
+            </div>
             <h1 className="text-2xl font-bold uppercase tracking-tighter">Área Restrita</h1>
-            <p className="text-gray-400 text-sm mt-1">Identifique-se para gerenciar a loja</p>
+            <p className="text-gray-400 text-sm mt-1 text-center">
+              {mfaSetup ? "Configure o 2FA para continuar" : mfaChallengeId ? "Digite o código 2FA do seu App" : "Identifique-se para gerenciar a loja"}
+            </p>
           </div>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">E-mail</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold" placeholder="admin@gorgpresets.com" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Senha</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold" placeholder="••••••••" />
-            </div>
-            {loginError && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl px-4 py-3">
-                <AlertCircle size={14} /> {loginError}
+
+          {(mfaSetup || mfaChallengeId) ? (
+            <form onSubmit={handleVerifyMFA} className="space-y-4">
+               {mfaSetup && (
+                  <div className="flex flex-col items-center justify-center gap-4 mb-6">
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-[#d82828] text-center">Escaneie ou copie o código abaixo</p>
+                    <div className="p-3 bg-white border border-gray-200 rounded-2xl shadow-inner [&>svg]:w-40 [&>svg]:h-40" dangerouslySetInnerHTML={{ __html: mfaSetup.qrCode }} />
+                    <div className="flex flex-col items-center gap-2 mt-1 w-full">
+                       <p className="text-[9px] uppercase font-bold text-gray-400">Se a câmera não ler, digite este código no App:</p>
+                       <code className="block w-full text-center px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-mono font-black text-black select-all tracking-widest overflow-hidden break-all">
+                          {mfaSetup.secret}
+                       </code>
+                    </div>
+                  </div>
+               )}
+               <div className="space-y-2">
+                 <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Código de 6 Dígitos</label>
+                 <input type="text" value={mfaCode} onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))} autoFocus required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold tracking-[0.5em] text-center text-xl" placeholder="••••••" maxLength={6} />
+               </div>
+               {loginError && (
+                 <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl px-4 py-3">
+                   <AlertCircle size={14} /> {loginError}
+                 </div>
+               )}
+               <Button type="submit" disabled={isLoading} className="w-full h-14 bg-black hover:bg-[#d82828] text-white rounded-2xl font-bold uppercase tracking-widest transition-all mt-2 flex items-center justify-center gap-2 shadow-xl">
+                 {isLoading ? <RefreshCw className="animate-spin" size={16} /> : <Check size={16} />}
+                 {isLoading ? "Verificando..." : mfaSetup ? "Vincular App" : "Validar Código"}
+               </Button>
+               <button type="button" onClick={handleLogout} className="w-full mt-6 text-[10px] uppercase font-bold tracking-widest text-gray-400 hover:text-red-500 transition-colors">
+                 Voltar ao Login
+               </button>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">E-mail</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold" placeholder="admin@gorgpresets.com" />
               </div>
-            )}
-            <Button type="submit" disabled={isLoading} className="w-full h-14 bg-[#d82828] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest transition-all mt-2 flex items-center justify-center gap-2">
-              {isLoading ? <RefreshCw className="animate-spin" size={16} /> : <Lock size={16} />}
-              {isLoading ? "Verificando..." : "Entrar no Painel"}
-            </Button>
-          </form>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Senha</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold" placeholder="••••••••" />
+              </div>
+              {loginError && (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl px-4 py-3">
+                  <AlertCircle size={14} /> {loginError}
+                </div>
+              )}
+              <Button type="submit" disabled={isLoading} className="w-full h-14 bg-[#d82828] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest transition-all mt-2 flex items-center justify-center gap-2">
+                {isLoading ? <RefreshCw className="animate-spin" size={16} /> : <Lock size={16} />}
+                {isLoading ? "Verificando..." : "Entrar no Painel"}
+              </Button>
+            </form>
+          )}
         </motion.div>
       </div>
     );
@@ -820,11 +943,21 @@ export default function Admin() {
                              <Reorder.Item 
                                key={id} 
                                value={id}
-                               className="bg-white border border-black/5 p-5 rounded-2xl flex items-center gap-4 cursor-grab active:cursor-grabbing hover:shadow-xl transition-all group"
+                               className={`bg-white border border-black/5 p-5 rounded-2xl flex items-center gap-4 cursor-grab active:cursor-grabbing hover:shadow-xl transition-all group ${(siteSettings.homeSectionOrder.hiddenSections || []).includes(id) ? 'opacity-50 grayscale' : ''}`}
                              >
                                 <GripVertical className="text-gray-200 group-hover:text-[#d82828]" size={20} />
                                 <div className="flex-1">
-                                  <p className="text-sm font-black uppercase tracking-tighter text-gray-1000 italic">{SECTION_LABELS[id] || id}</p>
+                                  <p className={`text-sm font-black uppercase tracking-tighter italic ${(siteSettings.homeSectionOrder.hiddenSections || []).includes(id) ? 'line-through text-gray-400' : 'text-gray-1000'}`}>{SECTION_LABELS[id] || id}</p>
+                                </div>
+                                <div onClick={(e) => {
+                                     e.stopPropagation(); e.preventDefault();
+                                     setSiteSettings(prev => {
+                                        const hiddens = prev.homeSectionOrder.hiddenSections || [];
+                                        const isHidden = hiddens.includes(id);
+                                        return { ...prev, homeSectionOrder: { ...prev.homeSectionOrder, hiddenSections: isHidden ? hiddens.filter(h => h !== id) : [...hiddens, id] } };
+                                     });
+                                }} className="cursor-pointer p-2 bg-gray-100 hover:bg-gray-200 rounded text-gray-600">
+                                  {(siteSettings.homeSectionOrder.hiddenSections || []).includes(id) ? <EyeOff size={18}/> : <Eye size={18}/>}
                                 </div>
                              </Reorder.Item>
                            );
@@ -1224,4 +1357,5 @@ export default function Admin() {
     </div>
   );
 }
+
 

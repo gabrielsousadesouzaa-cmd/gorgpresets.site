@@ -18,13 +18,22 @@ export function CartDrawer() {
 
   const extractId = (url: string) => {
     if (!url || url === "#") return "";
-    const parts = url.split("/");
-    return parts[parts.length - 1];
+    try {
+      const urlObj = new URL(url);
+      const parts = urlObj.pathname.split('/').filter(Boolean);
+      return parts[parts.length - 1];
+    } catch {
+      const parts = url.split("?")[0].split("/").filter(Boolean);
+      return parts[parts.length - 1];
+    }
   };
+
   const handleCheckout = () => {
     const ids = items
       .map(item => extractId(item.product.checkoutUrl || ""))
       .filter(id => id && id !== "#");
+
+    console.log("Produtos extraídos (IDs):", ids);
 
     if (ids.length === 0) return;
 
@@ -33,13 +42,22 @@ export function CartDrawer() {
       return;
     }
 
-    // Usa o checkoutUrl do primeiro produto como base
-    const baseUrl = `https://checkout.gorgpresets.com/checkout/v3/${ids[0]}`;
-    const extraIds = ids.slice(1).map(id => `add=${id}`).join("&");
-    const finalUrl = `${baseUrl}?${extraIds}`;
+    try {
+      // Usa a URL exata do primeiro produto (para não importar se é v3, v5, etc) e remove queries soltas
+      const firstUrl = new URL(items[0].product.checkoutUrl!);
+      const baseUrl = `${firstUrl.origin}${firstUrl.pathname}`;
+      
+      const extraIds = ids.slice(1).map(id => `add=${id}`).join("&");
+      const finalUrl = `${baseUrl}?${extraIds}`;
 
-    console.log("Checkout URL:", finalUrl);
-    window.location.href = finalUrl;
+      console.log("Multi-Checkout Dinâmico URL:", finalUrl);
+      window.location.href = finalUrl;
+    } catch (e) {
+      // Fallback seguro caso o URL seja inválido para a classe nativa URL()
+      const baseUrl = items[0].product.checkoutUrl!.split('?')[0];
+      const extraIds = ids.slice(1).map(id => `add=${id}`).join("&");
+      window.location.href = `${baseUrl}?${extraIds}`;
+    }
   };
   // Sugestão baseada em produtos REAIS que NÃO estão no carrinho
   const upsellProduct = products.find(p => !items.some(item => item.product.id === p.id));

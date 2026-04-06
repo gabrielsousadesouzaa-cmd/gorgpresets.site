@@ -39,6 +39,7 @@ export interface ShopTheLookItem {
 
 export interface HomeSectionOrder {
   sections: string[];
+  hiddenSections?: string[];
   newArrivals: string[];
   bestSellers: string[];
   allPresets: string[];
@@ -77,6 +78,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   ],
   homeSectionOrder: {
     sections: ['novidades', 'bestsellers', 'banner', 'categorias', 'magica', 'catalogo', 'testimonials', 'faq', 'mosaico', 'features'],
+    hiddenSections: [],
     newArrivals: [],
     bestSellers: [],
     allPresets: [],
@@ -126,7 +128,15 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
             if (row.key === "hero" && row.value) merged.hero = { ...merged.hero, ...row.value };
             if (row.key === "banner" && row.value) merged.banner = { ...merged.banner, ...row.value };
             if (row.key === "testimonials" && row.value) merged.testimonials = row.value;
-            if (row.key === "homeSectionOrder" && row.value) merged.homeSectionOrder = { ...merged.homeSectionOrder, ...row.value };
+            if (row.key === "homeSectionOrder" && row.value) {
+              merged.homeSectionOrder = { ...merged.homeSectionOrder, ...row.value };
+              // Recover missing sections that exist in defaults but not in db (like new features as 'bundles')
+              const dbSections = row.value.sections || [];
+              const missingSections = DEFAULT_SETTINGS.homeSectionOrder.sections.filter(s => !dbSections.includes(s));
+              if (missingSections.length > 0) {
+                merged.homeSectionOrder.sections = [...dbSections, ...missingSections];
+              }
+            }
             if (row.key === "integration" && row.value) merged.integration = { ...merged.integration, ...row.value };
             if (row.key === "shopTheLook" && row.value) merged.shopTheLook = row.value;
             if (row.key === "promoBar" && row.value) merged.promoBar = { ...merged.promoBar, ...row.value };
