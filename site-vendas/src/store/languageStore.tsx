@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 type Language = "PT" | "EN" | "ES";
 
@@ -209,6 +209,14 @@ export const translations = {
   pdProductsBreadcrumb: { PT: "Produtos", EN: "Products", ES: "Productos" },
   pdHintDesktop: { PT: "Passe o mouse ou role para aproximar", EN: "Hover or scroll to zoom", ES: "Pasa el mouse o desplaza para acercar" },
   pdHintMobile: { PT: "Use os botões ou as fotos abaixo", EN: "Use buttons or thumbnails below", ES: "Usa los botones o las fotos inferiores" },
+  pdInternationalTitle: { PT: "ENTREGA DIGITAL", EN: "DIGITAL DELIVERY", ES: "ENTREGA DIGITAL" },
+  pdInternationalAccess: { PT: "Acesso Imediato via E-mail", EN: "Instant Access via Email", ES: "Acceso Inmediato por Email" },
+  pdInternationalCompatible: { PT: "Compatível com Mobile & Desktop", EN: "Mobile & Desktop Compatible", ES: "Compatible con Mobile & Desktop" },
+  pdInternationalLifetime: { PT: "Download Vitalício", EN: "Lifetime Download", ES: "Descarga Vitalicia" },
+  pdBadgeWarranty: { PT: "7 dias de garantia", EN: "7-day guarantee", ES: "7 días de garantía" },
+  pdBadgeSecure: { PT: "Pagamento 100% seguro", EN: "100% secure payment", ES: "Pago 100% seguro" },
+  pdBadgeInstant: { PT: "Envio imediato via e-mail", EN: "Instant email delivery", ES: "Envío inmediato por e-mail" },
+
   faqNote: { PT: "Os presets são produtos digitais de entrega imediata. Verifique seu e-mail (incluindo spam) após a confirmação do pagamento.", EN: "Presets are digital products with immediate delivery. Please check your email (including spam) after payment confirmation.", ES: "Los presets son productos digitales de entrega inmediata. Verifique su correo electrónico (incluido el spam) después de la confirmación del pago." },
 
   // Shipping Page
@@ -293,6 +301,32 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setLanguageState(lang);
     localStorage.setItem("gorg-language", lang);
   };
+
+  // Auto-detecção por IP
+  useEffect(() => {
+    const detectLocale = async () => {
+      // Se o usuário já tiver uma preferência salva, não sobrescrevemos
+      if (localStorage.getItem("gorg-language")) return;
+
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        
+        // Mapeamento de País -> Idioma
+        if (['BR', 'PT'].includes(data.country_code)) {
+          setLanguage("PT");
+        } else if (data.country_code === 'ES') {
+          setLanguage("ES");
+        } else {
+          setLanguage("EN");
+        }
+      } catch (error) {
+        console.error("Falha ao detectar idioma:", error);
+      }
+    };
+
+    detectLocale();
+  }, []);
 
   const t = (key: TranslationKey) => {
     return translations[key]?.[language] || key;

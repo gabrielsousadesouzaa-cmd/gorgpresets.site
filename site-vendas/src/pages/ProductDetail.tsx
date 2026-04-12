@@ -9,7 +9,9 @@ import {
   Lock,
   ShoppingBag,
   Zap,
-  Minus
+  Minus,
+  ArrowRight,
+  ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,18 +21,29 @@ import { useCart } from "@/store/cartStore";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { InstallationGuide } from "@/components/InstallationGuide";
+import { useMenu } from "@/store/MenuContext";
 
 export default function ProductDetail() {
-  const { id } = useParams();
-  const { product, loading: productLoading } = useProduct(id);
+  const { slug } = useParams();
+  const { product, loading: productLoading } = useProduct(slug);
   const { products: allProducts } = useProducts();
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, currency } = useCurrency();
   const { language, t } = useLanguage();
   const { addItem } = useCart();
   const { settings } = useSiteSettings();
+  const { setIsProductStickyVisible } = useMenu();
   
   const [selectedImage, setSelectedImage] = useState("");
   const [showStickyBar, setShowStickyBar] = useState(false);
+
+  useEffect(() => {
+    setIsProductStickyVisible(showStickyBar);
+  }, [showStickyBar, setIsProductStickyVisible]);
+
+  // Limpar estado ao desmontar
+  useEffect(() => {
+    return () => setIsProductStickyVisible(false);
+  }, [setIsProductStickyVisible]);
 
   useEffect(() => {
     if (product?.image) {
@@ -144,6 +157,7 @@ export default function ProductDetail() {
                         transition={{ duration: 0.2 }}
                         className="w-full h-full object-cover select-none rounded-[1.5rem]"
                       />
+
                     </AnimatePresence>
 
                     {images.length > 1 && (
@@ -185,32 +199,70 @@ export default function ProductDetail() {
 
               {/* Parcelamento + Pix */}
               <div className="bg-[#f8fafc] rounded-2xl p-4 space-y-3">
-                <div className="flex justify-between items-center text-sm font-semibold px-1">
-                  <span className="text-gray-400">{t("pdInstallments")}</span>
-                  <span className="text-gray-950 font-bold">{t("pdInstallmentText")} {formatCurrency(product.price / 12)}</span>
-                </div>
-                <div className="flex justify-between items-center bg-[#4ade80]/8 p-4 rounded-2xl border border-[#4ade80]/10">
-                  <div className="flex flex-col">
-                    <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{t("pdPixPrice")}</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[#32BCAD] font-black text-xl tracking-tight">{formatCurrency(product.price * 0.95)}</span>
-                      <span className="bg-[#32BCAD] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase shadow-sm">5% OFF</span>
+                {currency === "BRL" ? (
+                  <div className="flex justify-between items-center text-sm font-semibold px-1">
+                    <span className="text-gray-400">{t("pdInstallments")}</span>
+                    <span className="text-gray-950 font-bold">{t("pdInstallmentText")} {formatCurrency(product.price / 12)}</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4 py-1">
+                    <div className="flex items-center gap-3 text-[#d82828]">
+                      <ShieldCheck size={16} fill="currentColor" />
+                      <span className="text-xs font-bold uppercase tracking-widest">{t("pdInternationalTitle")}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                       <div className="flex items-center gap-2 text-[11px] text-gray-500 font-medium">
+                          <CheckCircle2 size={13} className="text-[#32BCAD]" /> {t("pdInternationalAccess")}
+                       </div>
+                       <div className="flex items-center gap-2 text-[11px] text-gray-500 font-medium">
+                          <CheckCircle2 size={13} className="text-[#32BCAD]" /> {t("pdInternationalCompatible")}
+                       </div>
+                       <div className="flex items-center gap-2 text-[11px] text-gray-500 font-medium">
+                          <CheckCircle2 size={13} className="text-[#32BCAD]" /> {t("pdInternationalLifetime")}
+                       </div>
                     </div>
                   </div>
-                  <img src="/pix.png" alt="Pix" className="h-5 w-auto object-contain opacity-50" />
-                </div>
+                )}
+                {currency === "BRL" && (
+                  <div className="flex justify-between items-center bg-[#4ade80]/8 p-4 rounded-2xl border border-[#4ade80]/10">
+                    <div className="flex flex-col">
+                      <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">{t("pdPixPrice")}</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[#32BCAD] font-black text-xl tracking-tight">{formatCurrency(product.price * 0.95)}</span>
+                        <span className="bg-[#32BCAD] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase shadow-sm">5% OFF</span>
+                      </div>
+                    </div>
+                    <img src="/pix.png" alt="Pix" className="h-5 w-auto object-contain opacity-50" />
+                  </div>
+                )}
               </div>
 
               {/* Botoes */}
               <div className="space-y-3 pt-1">
-                <button onClick={handleBuyNow} className={`w-full h-[60px] bg-[#d82828] text-white rounded-2xl text-base font-bold uppercase tracking-[0.05em] shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all ${!settings.integration.isCartEnabled ? 'scale-105' : ''}`}>
-                  <Zap size={20} fill="currentColor" /> {t("pdBuyNow")}
+                <button onClick={handleBuyNow} className={`shimmer-effect w-full h-[60px] bg-[#d82828] text-white rounded-2xl text-base font-bold uppercase tracking-[0.05em] shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all ${!settings.integration.isCartEnabled ? 'scale-105' : ''}`}>
+                  {t("pdBuyNow")}
                 </button>
                 {settings.integration.isCartEnabled && (
                   <button onClick={handleAddToCart} className="w-full h-14 bg-white text-gray-950 border-2 border-gray-950 rounded-2xl text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all">
                     <ShoppingBag size={18} /> {t("addToCart")}
                   </button>
                 )}
+              </div>
+
+              {/* Trust Badges Mobile */}
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 py-4 border-t border-black/5 mt-2">
+                <div className="flex items-center gap-1.5 grayscale opacity-70">
+                  <ShieldCheck size={14} className="text-[#32BCAD]" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600">{t("pdBadgeWarranty")}</span>
+                </div>
+                <div className="flex items-center gap-1.5 grayscale opacity-70">
+                  <Lock size={14} className="text-gray-900" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600">{t("pdBadgeSecure")}</span>
+                </div>
+                <div className="flex items-center gap-1.5 grayscale opacity-70">
+                  <Zap size={14} fill="currentColor" className="text-amber-500" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600">{t("pdBadgeInstant")}</span>
+                </div>
               </div>
 
               {/* Bloco de Segurança Mobile */}
@@ -315,31 +367,69 @@ export default function ProductDetail() {
               </div>
 
               <div className="bg-[#f8fafc] rounded-2xl p-6 space-y-4">
-                <div className="flex justify-between items-center text-sm font-semibold px-1">
-                   <span className="text-gray-400">{t("pdInstallments")}</span>
-                   <span className="text-gray-900 font-bold">{t("pdInstallmentText")} {formatCurrency(product.price / 12)}</span>
-                </div>
-                <div className="flex justify-between items-center bg-[#4ade80]/8 p-5 rounded-2xl border border-[#4ade80]/10">
-                  <div className="flex flex-col">
-                    <span className="text-gray-500 text-[11px] font-bold uppercase tracking-widest">{t("pdPixPrice")}</span>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <span className="text-[#32BCAD] font-black text-2xl tracking-tight">{formatCurrency(product.price * 0.95)}</span>
-                      <span className="bg-[#32BCAD] text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase shadow-sm">5% OFF</span>
+                {currency === "BRL" ? (
+                  <div className="flex justify-between items-center text-sm font-semibold px-1">
+                    <span className="text-gray-400">{t("pdInstallments")}</span>
+                    <span className="text-gray-900 font-bold">{t("pdInstallmentText")} {formatCurrency(product.price / 12)}</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4 py-2 border-b border-black/[0.03] mb-2">
+                    <div className="flex items-center gap-3 text-[#d82828] mb-1">
+                      <ShieldCheck size={20} fill="currentColor" />
+                      <span className="text-sm font-black uppercase tracking-[0.15em]">{t("pdInternationalTitle")}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                       <div className="flex items-center gap-3 text-sm text-gray-600 font-semibold">
+                          <CheckCircle2 size={16} className="text-[#32BCAD]" /> {t("pdInternationalAccess")}
+                       </div>
+                       <div className="flex items-center gap-3 text-sm text-gray-600 font-semibold">
+                          <CheckCircle2 size={16} className="text-[#32BCAD]" /> {t("pdInternationalCompatible")}
+                       </div>
+                       <div className="flex items-center gap-3 text-sm text-gray-600 font-semibold">
+                          <CheckCircle2 size={16} className="text-[#32BCAD]" /> {t("pdInternationalLifetime")}
+                       </div>
                     </div>
                   </div>
-                  <img src="/pix.png" alt="Pix" className="h-6 w-auto object-contain opacity-50" />
-                </div>
+                )}
+                {currency === "BRL" && (
+                  <div className="flex justify-between items-center bg-[#4ade80]/8 p-5 rounded-2xl border border-[#4ade80]/10">
+                    <div className="flex flex-col">
+                      <span className="text-gray-500 text-[11px] font-bold uppercase tracking-widest">{t("pdPixPrice")}</span>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="text-[#32BCAD] font-black text-2xl tracking-tight">{formatCurrency(product.price * 0.95)}</span>
+                        <span className="bg-[#32BCAD] text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase shadow-sm">5% OFF</span>
+                      </div>
+                    </div>
+                    <img src="/pix.png" alt="Pix" className="h-6 w-auto object-contain opacity-50" />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
-                <button onClick={handleBuyNow} className={`w-full h-[70px] bg-[#d82828] text-white rounded-2xl text-[1.2rem] font-bold uppercase tracking-[0.05em] shadow-2xl flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all ${!settings.integration.isCartEnabled ? 'scale-105' : ''}`}>
-                   <Zap size={24} fill="currentColor" /> {t("pdBuyNow")}
+                <button onClick={handleBuyNow} className={`shimmer-effect w-full h-[70px] bg-[#d82828] text-white rounded-2xl text-[1.2rem] font-bold uppercase tracking-[0.05em] shadow-2xl flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all ${!settings.integration.isCartEnabled ? 'scale-105' : ''}`}>
+                   {t("pdBuyNow")}
                 </button>
                 {settings.integration.isCartEnabled && (
                   <button onClick={handleAddToCart} className="w-full h-16 bg-white text-gray-950 border-2 border-gray-950 rounded-2xl text-[0.95rem] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-95 transition-all">
                     <ShoppingBag size={20} /> {t("addToCart")}
                   </button>
                 )}
+              </div>
+
+              {/* Trust Badges Desktop simplified */}
+              <div className="flex flex-wrap items-center justify-start gap-x-6 gap-y-2 py-6 border-y border-black/5 mt-auto">
+                <div className="flex items-center gap-2 group/badge">
+                  <ShieldCheck size={16} className="text-[#32BCAD]" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-gray-950">{t("pdBadgeWarranty")}</span>
+                </div>
+                <div className="flex items-center gap-2 group/badge">
+                  <Lock size={16} className="text-gray-950" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-gray-950">{t("pdBadgeSecure")}</span>
+                </div>
+                <div className="flex items-center gap-2 group/badge">
+                  <Zap size={16} fill="currentColor" className="text-amber-500" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-gray-950">{t("pdBadgeInstant")}</span>
+                </div>
               </div>
 
               {/* Bloco de Segurança Desktop */}
@@ -393,21 +483,70 @@ export default function ProductDetail() {
 
       <AnimatePresence>
         {showStickyBar && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 inset-x-0 z-[100] bg-white/95 backdrop-blur-xl border-t border-black/5 shadow-2xl px-5 py-4 flex items-center justify-between lg:hidden"
-          >
-             <div className="flex flex-col">
-                <span className="text-xl font-semibold text-gray-950 leading-none">{formatCurrency(product.price)}</span>
-                <span className="text-[10px] font-semibold text-gray-400 mt-1">{t("pdInstallmentText")} {formatCurrency(product.price / 12)}</span>
-             </div>
-             <button onClick={handleBuyNow} className="bg-[#d82828] text-white h-14 px-8 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all">
-               {t("pdBuyNow")}
-             </button>
-          </motion.div>
+          <>
+            {/* Versão Mobile (Bottom Bar) */}
+            <motion.div 
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="fixed bottom-0 inset-x-0 z-[100] bg-white/90 backdrop-blur-2xl border-t border-black/5 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] px-4 py-4 pb-8 flex items-center justify-between lg:hidden rounded-t-[2.2rem]"
+            >
+               <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-black/5 shadow-sm shrink-0">
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[8px] font-black text-[#d82828] uppercase tracking-[0.2em] leading-none mb-1">{product.category}</span>
+                    <h4 className="text-[13px] font-black text-gray-950 uppercase tracking-tighter truncate leading-tight mb-1">{product.name}</h4>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-black text-gray-950 leading-none">{formatCurrency(product.price)}</span>
+                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t("pdInstallmentText")} {formatCurrency(product.price / 12)}</span>
+                    </div>
+                  </div>
+               </div>
+               <button onClick={handleBuyNow} className="shimmer-effect bg-[#d82828] text-white h-12 px-6 rounded-xl font-black text-[9px] uppercase tracking-[0.15em] shadow-xl shadow-[#d82828]/20 active:scale-95 transition-all shrink-0">
+                 {t("pdBuyNow")}
+               </button>
+            </motion.div>
+
+            {/* Versão Desktop (Bottom Full Bar) */}
+            <motion.div 
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="fixed bottom-0 inset-x-0 z-[3000] hidden lg:flex items-center justify-center bg-white/90 backdrop-blur-2xl border-t border-black/5 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] px-20 py-5"
+            >
+              <div className="container max-w-[1300px] flex items-center justify-between">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-md border border-black/5">
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-[#d82828] uppercase tracking-[0.2em]">{product.category}</span>
+                    <h3 className="text-2xl font-black text-gray-950 uppercase tracking-tighter leading-tight">{product.name}</h3>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-12">
+                  <div className="text-right flex flex-col items-end">
+                     <div className="flex items-center gap-4">
+                        {product.originalPrice > 0 && <span className="text-base text-gray-400 line-through font-medium">{formatCurrency(product.originalPrice)}</span>}
+                        <span className="text-3xl font-black text-gray-950 tracking-tighter">{formatCurrency(product.price)}</span>
+                     </div>
+                     <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t("pdInstallmentText")} {formatCurrency(product.price/12)}</p>
+                  </div>
+                  <button 
+                    onClick={handleBuyNow}
+                    className="shimmer-effect h-16 px-16 bg-[#d82828] text-white rounded-[1.2rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-[#d82828]/20 hover:scale-[1.03] active:scale-95 transition-all"
+                  >
+                    {t("pdBuyNow")}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

@@ -20,6 +20,7 @@ export function Header() {
   const { currency, setCurrency, formatCurrency } = useCurrency();
   const { products } = useProducts();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [shuffledBestsellers, setShuffledBestsellers] = useState<any[]>([]);
 
   // Atalho de Teclado (Ctrl + K)
   useEffect(() => {
@@ -33,6 +34,14 @@ export function Header() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Shuffle products whenever search opens to show full catalog variety
+  useEffect(() => {
+    if (isSearchOpen && products.length > 0) {
+      const shuffled = [...products].sort(() => 0.5 - Math.random());
+      setShuffledBestsellers(shuffled.slice(0, 4));
+    }
+  }, [isSearchOpen, products]);
   
   // Fechar menus sincronamente ao trocar de URL (Blindagem Máxima)
   useLayoutEffect(() => {
@@ -40,13 +49,19 @@ export function Header() {
     setIsSearchOpen(false);
   }, [location.pathname, location.search, location.key]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (navQuery.trim()) {
-      navigate(`/catalog?search=${encodeURIComponent(navQuery.trim())}`);
-      setIsSearchOpen(false);
-      setNavQuery("");
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    const query = navQuery.trim();
+    if (query) {
+      navigate(`/catalog?search=${encodeURIComponent(query)}`);
+    } else {
+      navigate('/catalog');
     }
+    
+    // Fechamos manualmente para garantir, caso o usuário já esteja na mesma URL
+    setIsSearchOpen(false);
+    setNavQuery("");
   };
 
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -64,16 +79,22 @@ export function Header() {
 
   return (
     <div className="flex flex-col w-full relative z-[2500]">
-      {/* Red Announcement Bar */}
-      <div className="w-full bg-[#d82828] text-white py-2 text-center text-[10px] md:text-sm font-semibold uppercase tracking-[0.2em]">
-        {loading ? "" : (settings.promoBar[language] || t("promoBar"))}
+      {/* Red Announcement Bar (Marquee) */}
+      <div className="w-full bg-[#d82828] text-white py-2 overflow-hidden relative border-b border-white/10">
+        <div className="animate-marquee whitespace-nowrap flex items-center">
+          {[1,2,3,4,5,6,7,8,9,10].map((i) => (
+            <span key={i} className="mx-10 text-[10px] md:text-[13px] font-black uppercase tracking-[0.2em] flex-shrink-0">
+              {loading ? "..." : (settings.promoBar[language] || t("promoBar"))}
+            </span>
+          ))}
+        </div>
       </div>
 
       <header className="bg-white/40 backdrop-blur-2xl w-full border-b border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
         <div className="container mx-auto px-4 md:px-8 py-3 md:py-4">
           <div className="grid grid-cols-3 items-center">
             
-            {/* Left Column: Menu Button ONLY on Desktop */}
+            {/* Left Column: Menu Button ONLY */}
             <div className="flex items-center">
                <button 
                  onClick={() => setIsMenuOpen(true)}
@@ -156,78 +177,117 @@ export function Header() {
                    />
                 </form>
               </div>
+               <div className="py-8 md:py-12">
+                  {navQuery.trim().length >= 1 ? (
+                    <div className="space-y-6 md:space-y-8">
+                       <div className="flex items-center justify-between border-b border-black/5 pb-4">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                             {products.filter(p => 
+                               p.name.toLowerCase().includes(navQuery.toLowerCase()) || 
+                               p.category.toLowerCase().includes(navQuery.toLowerCase()) ||
+                               (p.tags && p.tags.some(tag => tag.toLowerCase().includes(navQuery.toLowerCase())))
+                             ).length} Resultados Encontrados
+                          </p>
+                       </div>
 
-              <div className="py-10 md:py-16">
-                 {navQuery.trim().length > 1 ? (
-                   <div className="space-y-8">
-                      <div className="flex items-center justify-between border-b border-black/5 pb-4">
-                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Resultados Encontrados</p>
-                         <button onClick={handleSearchSubmit} className="text-[10px] font-black uppercase tracking-widest text-[#d82828] flex items-center gap-1.5 hover:gap-3 transition-all">Ver todos <ArrowRight size={12} /></button>
-                      </div>
+                       <div className="flex flex-col gap-2 max-w-4xl mx-auto">
+                         {(products.filter(p => 
+                           p.name.toLowerCase().includes(navQuery.toLowerCase()) || 
+                           p.category.toLowerCase().includes(navQuery.toLowerCase()) ||
+                           (p.tags && p.tags.some(tag => tag.toLowerCase().includes(navQuery.toLowerCase())))
+                         )).slice(0, 10).map((product) => (
+                           <Link 
+                             key={product.id}
+                             to={`/product/${product.slug}`}
+                             onClick={() => setIsSearchOpen(false)}
+                             className="flex items-center gap-6 p-3 md:p-4 rounded-3xl hover:bg-gray-50/80 border border-transparent hover:border-black/5 hover:shadow-xl hover:shadow-black/5 transition-all group"
+                           >
+                             <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-black/5">
+                               <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                             </div>
+                             
+                             <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4 min-w-0">
+                                <div className="space-y-1">
+                                   <div className="flex items-center gap-2">
+                                      <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-gray-100 rounded-full text-gray-400 group-hover:bg-[#d82828] group-hover:text-white transition-colors">
+                                         {product.category}
+                                      </span>
+                                      {product.isNew && <span className="text-[9px] font-black uppercase tracking-widest text-[#d82828]">New</span>}
+                                   </div>
+                                   <h4 className="text-base md:text-lg font-black text-gray-950 uppercase tracking-tighter truncate leading-tight group-hover:text-[#d82828] transition-colors">
+                                      {product.name}
+                                   </h4>
+                                </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                        {(products.filter(p => p.name.toLowerCase().includes(navQuery.toLowerCase()))).slice(0, 6).map((product) => (
-                          <Link 
-                            key={product.id}
-                            to={`/product/${product.id}`}
-                            onClick={() => setIsSearchOpen(false)}
-                            className="flex items-center gap-4 group p-4 rounded-[2rem] bg-white border border-black/5 hover:border-black/10 hover:shadow-2xl hover:shadow-black/5 transition-all active:scale-[0.98]"
-                          >
-                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden bg-gray-50 shrink-0 shadow-sm group-hover:scale-95 transition-transform duration-500">
-                              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                <div className="flex items-center justify-between md:justify-end gap-6">
+                                   <div className="flex flex-col items-end shrink-0">
+                                      <span className="text-base md:text-lg font-black text-gray-950">{formatCurrency(product.price)}</span>
+                                      {product.originalPrice > 0 && <span className="text-[10px] text-gray-400 line-through font-bold">{formatCurrency(product.originalPrice)}</span>}
+                                   </div>
+                                   <div className="p-3 bg-gray-50 rounded-full text-gray-300 group-hover:bg-[#d82828] group-hover:text-white group-hover:translate-x-1 transition-all">
+                                      <ArrowRight size={16} strokeWidth={3} />
+                                   </div>
+                                </div>
+                             </div>
+                           </Link>
+                         ))}
+                         
+                         {products.filter(p => 
+                           p.name.toLowerCase().includes(navQuery.toLowerCase()) || 
+                           p.category.toLowerCase().includes(navQuery.toLowerCase()) ||
+                           (p.tags && p.tags.some(tag => tag.toLowerCase().includes(navQuery.toLowerCase())))
+                         ).length === 0 && (
+                            <div className="py-20 text-center space-y-4">
+                               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                                  <Search className="text-gray-200" size={32} />
+                               </div>
+                               <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">{t("searchEmpty")}</p>
                             </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-[9px] font-bold text-[#d82828] uppercase tracking-[0.2em]">{product.category}</span>
-                              <h4 className="text-[14px] md:text-15px font-bold text-gray-950 uppercase tracking-tight truncate group-hover:text-[#d82828] transition-colors leading-tight">{product.name}</h4>
-                              <span className="text-xs font-bold text-gray-900 mt-1">
-                                {formatCurrency(product.price)}
-                              </span>
-                            </div>
-                          </Link>
-                        ))}
-                        
-                        {products.filter(p => p.name.toLowerCase().includes(navQuery.toLowerCase())).length === 0 && (
-                           <div className="col-span-full py-20 text-center space-y-4">
-                              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
-                                 <Search className="text-gray-200" size={32} />
-                              </div>
-                              <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">{t("searchEmpty")}</p>
-                           </div>
-                        )}
-                      </div>
-                   </div>
-                 ) : (
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                      <div className="space-y-6">
-                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
-                            <Sparkles size={14} className="text-[#d82828]" /> Sugestões Populares
-                         </p>
-                         <div className="flex flex-wrap gap-2">
-                            {["Lifestyle", "Creative", "Travel", "Negócios", "Essential"].map((sug) => (
-                               <button 
-                                 key={sug}
-                                 onClick={() => setNavQuery(sug)}
-                                 className="px-6 py-3 bg-gray-50 hover:bg-black hover:text-white rounded-full text-[11px] font-bold uppercase tracking-widest transition-all border border-black/5 shadow-sm"
-                               >
-                                  {sug}
-                               </button>
+                         )}
+                       </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-12">
+                       <div className="space-y-6">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                             <Sparkles size={14} className="text-[#d82828]" /> Categorias Rápidas
+                          </p>
+                          <div className="flex flex-wrap gap-2 md:gap-3">
+                             {["Lifestyle", "Creative", "Travel", "Negócios", "Essential"].map((sug) => (
+                                <button 
+                                  key={sug}
+                                  onClick={() => setNavQuery(sug)}
+                                  className="px-6 py-3.5 bg-gray-50 hover:bg-black hover:text-white rounded-2xl text-[11px] font-bold uppercase tracking-widest transition-all border border-black/5 shadow-sm active:scale-95"
+                                >
+                                   {sug}
+                                </button>
+                             ))}
+                          </div>
+                       </div>
+
+                       <div className="space-y-6">
+                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">🔥 Presets em Destaque</p>
+                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                            {shuffledBestsellers.map((product) => (
+                              <Link 
+                                key={product.id}
+                                to={`/product/${product.slug}`}
+                                onClick={() => setIsSearchOpen(false)}
+                                className="flex flex-col gap-3 group"
+                              >
+                                <div className="aspect-[4/5] w-full rounded-2xl overflow-hidden bg-gray-50 shadow-sm border border-black/5 group-hover:shadow-xl transition-all duration-300">
+                                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                </div>
+                                <div className="flex flex-col px-1">
+                                  <h4 className="text-[12px] font-bold text-gray-900 uppercase tracking-tight truncate group-hover:text-[#d82828] transition-colors">{product.name}</h4>
+                                  <span className="text-[11px] font-black text-gray-950 mt-1">{formatCurrency(product.price)}</span>
+                                </div>
+                              </Link>
                             ))}
                          </div>
-                      </div>
-
-                      <div className="space-y-6 hidden md:block">
-                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Atalho Rápido</p>
-                         <div className="p-8 rounded-[2.5rem] bg-gray-50/50 border border-black/5 flex items-center justify-between">
-                            <span className="text-sm font-semibold text-gray-500 uppercase">Pesquisa Rápida</span>
-                            <div className="flex gap-1.5">
-                               <kbd className="px-3 py-1.5 bg-white border border-black/10 rounded-lg text-xs font-bold shadow-sm">Ctrl</kbd>
-                               <span className="text-gray-300 font-bold">+</span>
-                               <kbd className="px-3 py-1.5 bg-white border border-black/10 rounded-lg text-xs font-bold shadow-sm">K</kbd>
-                            </div>
-                         </div>
-                      </div>
-                   </div>
-                 )}
+                       </div>
+                    </div>
+                  )}
               </div>
             </div>
           </motion.div>

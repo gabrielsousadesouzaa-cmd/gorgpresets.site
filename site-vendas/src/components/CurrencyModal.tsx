@@ -34,21 +34,21 @@ export function CurrencyModal() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-background/50 backdrop-blur-md transition-all duration-700 animate-in fade-in">
-      <div className="bg-card w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border border-border/60 relative animate-in slide-in-from-bottom-20 zoom-in-95 duration-500">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-background/50 backdrop-blur-md transition-all duration-700 animate-in fade-in">
+      <div className="bg-card w-full max-w-[350px] rounded-[2rem] p-6 shadow-2xl border border-border/60 relative animate-in slide-in-from-bottom-20 zoom-in-95 duration-500">
         
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={closeModal} 
-          className="absolute top-4 right-4 hover:bg-secondary rounded-full w-8 h-8 flex items-center justify-center"
+          className="absolute top-4 right-4 hover:bg-secondary rounded-full w-8 h-8 flex items-center justify-center z-10"
         >
           <X size={18} />
         </Button>
 
-        <div className="flex items-center gap-3 mb-4 text-primary">
-          <Globe size={32} />
-          <h3 className="font-semibold text-xl text-foreground">{t("welcome")}</h3>
+        <div className="flex items-center gap-3 mb-4 text-[#d82828] pr-8">
+          <Globe size={28} className="shrink-0" />
+          <h3 className="font-bold text-xl text-gray-950 leading-tight tracking-tight">{t("welcome")}</h3>
         </div>
         
         <p className="text-sm text-foreground mb-6 font-normal leading-relaxed">

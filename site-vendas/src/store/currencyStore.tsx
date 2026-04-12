@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 type Currency = "BRL" | "USD" | "EUR";
 
@@ -27,6 +27,32 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     setCurrencyState(c);
     localStorage.setItem("gorg-currency", c);
   };
+
+  // Auto-detecção por IP
+  useEffect(() => {
+    const detectLocale = async () => {
+      // Se o usuário já tiver uma preferência salva, não sobrescrevemos
+      if (localStorage.getItem("gorg-currency")) return;
+
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        
+        // Mapeamento de País -> Moeda
+        if (data.country_code === 'BR') {
+          setCurrency("BRL");
+        } else if (['PT', 'ES', 'FR', 'DE', 'IT', 'NL', 'BE'].includes(data.country_code)) {
+          setCurrency("EUR");
+        } else {
+          setCurrency("USD");
+        }
+      } catch (error) {
+        console.error("Falha ao detectar localização:", error);
+      }
+    };
+
+    detectLocale();
+  }, []);
 
   const formatCurrency = (valueInBrl: number) => {
     const converted = valueInBrl * (exchangeRates[currency] || 1);

@@ -11,6 +11,7 @@ import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { useProducts } from "@/hooks/useProducts";
 import { useLanguage } from "@/store/languageStore";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Index() {
   const { t, language } = useLanguage();
@@ -32,9 +33,30 @@ export default function Index() {
 
   if (productsLoading || settingsLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white">
-          <div className="w-12 h-12 border-4 border-[#d82828] border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Preparando sua experiência premium...</p>
+      <div className="w-full max-w-[1350px] mx-auto px-4 md:px-8 py-6 md:py-10 space-y-10 md:space-y-16 animate-in fade-in duration-500">
+          {/* Skeleton Hero */}
+          <div className="w-full">
+            <Skeleton className="w-full h-[65vh] md:h-[70vh] rounded-[2.5rem] md:rounded-[3rem]" />
+          </div>
+          
+          {/* Skeleton Products Row */}
+          <div className="space-y-8">
+            <div className="flex flex-col items-center md:items-start space-y-3">
+              <Skeleton className="w-[280px] h-10 md:h-12 rounded-xl" />
+              <Skeleton className="w-[180px] h-4 rounded-lg hidden md:block" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-4">
+                  <Skeleton className="w-full aspect-[4/5] rounded-[1.5rem] md:rounded-[2rem]" />
+                  <div className="space-y-2 px-1">
+                    <Skeleton className="w-full h-5 rounded-md" />
+                    <Skeleton className="w-2/3 h-4 rounded-md opacity-60" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
       </div>
     );
   }
@@ -44,7 +66,7 @@ export default function Index() {
     switch (id) {
       case 'novidades':
         return (
-          <div key={id} id="novidades" className="scroll-mt-20 mt-8 md:mt-18">
+          <div key={id} id="novidades" className="scroll-mt-20 mt-4 md:mt-6">
             <ProductCarousel title={t("newArrivals")} products={newProducts} />
           </div>
         );
@@ -60,7 +82,7 @@ export default function Index() {
         return <div key={id}><CategoriesCarousel /></div>;
       case 'magica':
         return (
-          <section key={id} className="py-12 md:py-20 bg-white">
+          <section key={id} className="py-8 md:py-12 bg-white">
             <div className="container mx-auto px-6 max-w-5xl">
               <div className="text-center mb-10">
                 <h2 className="text-2xl md:text-4xl font-bold text-gray-950 uppercase tracking-tighter mb-3">

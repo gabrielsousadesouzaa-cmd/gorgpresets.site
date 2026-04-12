@@ -4,6 +4,7 @@ import { MapPin, X, CheckCircle2 } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { Product } from "@/data/products";
 import { useLanguage } from "@/store/languageStore";
+import { useMenu } from "@/store/MenuContext";
 
 const buyersBR = [
   { name: "Ana P.", city: "São Paulo, SP" },
@@ -41,6 +42,7 @@ const timesEs = ["Hace 2 min", "Hace 5 min", "Hace 12 min", "Hace 20 min", "Hace
 export function SalesPopup() {
   const { products } = useProducts();
   const { language } = useLanguage();
+  const { isProductStickyVisible } = useMenu();
   const [isVisible, setIsVisible] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false); // se o user fechar no X, não volta mais
   const [currentSale, setCurrentSale] = useState<{
@@ -112,10 +114,15 @@ export function SalesPopup() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 50, scale: 0.9, transition: { duration: 0.2 } }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          className="fixed bottom-6 left-6 z-[150] w-[calc(100%-48px)] max-w-[340px] md:bottom-10 md:left-10"
+          className="fixed left-6 z-[150] w-[calc(100%-48px)] max-w-[260px] md:max-w-[280px] md:left-10"
+          style={{ 
+            bottom: isProductStickyVisible 
+              ? "120px" 
+              : (window.innerWidth < 1024 ? "24px" : "40px") 
+          }}
         >
           {/* Fundo Glassmorphism Luxuoso */}
-          <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-3 pr-8 flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/50 overflow-hidden group">
+          <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl p-2 pr-7 flex items-center gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/50 overflow-hidden group">
             
             {/* Fechar Invisível até hover */}
             <button 
@@ -126,7 +133,7 @@ export function SalesPopup() {
             </button>
 
             {/* Imagem do Produto */}
-            <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl overflow-hidden shrink-0 border border-black/5 shadow-sm relative">
+            <div className="w-11 h-11 md:w-13 md:h-13 rounded-xl overflow-hidden shrink-0 border border-black/5 shadow-sm relative">
               <img 
                 src={currentSale.product.image} 
                 alt={currentSale.product.name}
@@ -138,24 +145,24 @@ export function SalesPopup() {
 
             {/* Informações */}
             <div className="flex flex-col min-w-0 flex-grow pt-0.5">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <p className="text-[11px] font-bold text-gray-950 truncate max-w-[120px]">
+              <div className="flex items-center gap-1.5 mb-1 md:mb-1.5 leading-none">
+                <p className="text-[10px] md:text-[11px] font-bold text-gray-950 truncate max-w-[100px] md:max-w-[120px]">
                   {currentSale.buyerInfo.name}
                 </p>
                 <span className="text-emerald-500 shrink-0 flex items-center">
-                  <CheckCircle2 size={14} strokeWidth={2.5} />
+                  <CheckCircle2 size={12} strokeWidth={2.5} className="md:w-3.5 md:h-3.5" />
                 </span>
-                <span className="text-[11px] text-gray-500 shrink-0">{textPurchased}</span>
+                <span className="text-[10px] md:text-[11px] text-gray-500 shrink-0">{textPurchased}</span>
               </div>
               
-              <p className="text-xs md:text-[13px] font-black uppercase tracking-tighter text-[#d82828] truncate mb-1">
+              <p className="text-[11px] md:text-[13px] font-black uppercase tracking-tighter text-[#d82828] truncate mb-0.5 md:mb-1">
                 {currentSale.product.name}
               </p>
               
-              <div className="flex items-center gap-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-                <MapPin size={10} className="shrink-0" />
+              <div className="flex items-center gap-1 text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                <MapPin size={8} className="shrink-0 md:w-2.5 md:h-2.5" />
                 <span className="truncate">{currentSale.buyerInfo.city}</span>
-                <span className="mx-1">•</span>
+                <span className="mx-0.5 md:mx-1">•</span>
                 <span className="shrink-0">{currentSale.time}</span>
               </div>
             </div>

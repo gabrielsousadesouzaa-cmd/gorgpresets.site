@@ -1,5 +1,8 @@
+import { slugify } from "@/lib/slugify";
+
 export interface Product {
     id: string;
+    slug: string;
     name: string;
     description: string;
     detailedDescription: string;
@@ -18,9 +21,11 @@ export interface Product {
     salesCount: number;
 }
 
+
 export const mockProducts: Product[] = [
     {
         id: "1",
+        slug: slugify("DEEP BLACK"),
         name: "DEEP BLACK",
         description: "Transforme sua foto num aesthetic monocromático profundo.",
         detailedDescription: "O pack DEEP BLACK foi projetado para criar a estética perfeita das maiores influenciadoras.",
@@ -47,6 +52,7 @@ export const mockProducts: Product[] = [
     },
     {
         id: "2",
+        slug: slugify("VERÃO"),
         name: "VERÃO",
         description: "Tons quentes para suas fotos de praia.",
         detailedDescription: "O pack VERÃO traz a vibração do sol e do mar para suas fotos.",
@@ -73,6 +79,7 @@ export const mockProducts: Product[] = [
     },
     {
         id: "3",
+        slug: slugify("SILENT LUXURY"),
         name: "SILENT LUXURY",
         description: "Minimalista, cores sóbrias e elegantes.",
         detailedDescription: "Inspirado na estética Old Money.",
@@ -99,6 +106,7 @@ export const mockProducts: Product[] = [
     },
     {
         id: "4",
+        slug: slugify("URBAN DARK"),
         name: "URBAN DARK",
         description: "Estética noturna pesada e industrial.",
         detailedDescription: "Ideal para fotos de noite...",
@@ -125,6 +133,7 @@ export const mockProducts: Product[] = [
     },
     {
         id: "5",
+        slug: slugify("MINIMALIST HOME"),
         name: "MINIMALIST HOME",
         description: "Claridade e tons neutros para interiores.",
         detailedDescription: "Perfeito para fotos de casa.",
@@ -151,6 +160,7 @@ export const mockProducts: Product[] = [
     },
     {
         id: "6",
+        slug: slugify("COLD WINTER"),
         name: "COLD WINTER",
         description: "Realça tons azuis e brancos frios.",
         detailedDescription: "Ideal para neve.",

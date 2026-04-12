@@ -5,12 +5,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/store/cartStore";
 import { CurrencyProvider } from "@/store/currencyStore";
 import { LanguageProvider } from "@/store/languageStore";
-import { CurrencyModal } from "@/components/CurrencyModal";
-import { CurrencySuggester } from "@/components/CurrencySuggester";
 import { Layout } from "@/components/Layout";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { MenuProvider } from "@/store/MenuContext";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
+import { Skeleton } from "@/components/ui/skeleton";
 import { lazy, Suspense } from "react";
 
 const Index = lazy(() => import("./pages/Index"));
@@ -39,8 +38,6 @@ function App() {
               <BrowserRouter>
                 <MenuProvider>
                   <ScrollToTop />
-                  <CurrencySuggester />
-                  <CurrencyModal />
                   <Routes>
                     {/* Admin sem Layout */}
                     <Route 
@@ -57,11 +54,18 @@ function App() {
                       path="*" 
                       element={
                         <Layout>
-                          <Suspense fallback={<div className="h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-[#d82828] border-t-transparent rounded-full animate-spin" /></div>}>
+                          <Suspense fallback={
+                            <div className="w-full max-w-[1350px] mx-auto px-4 md:px-8 py-6 md:py-10 space-y-10 animate-in fade-in duration-500">
+                              <Skeleton className="w-full h-[65vh] md:h-[70vh] rounded-[2.5rem] md:rounded-[3rem]" />
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+                                {[1,2,3,4].map(i => <Skeleton key={i} className="w-full aspect-[4/5] rounded-[1.5rem] md:rounded-[2rem]" />)}
+                              </div>
+                            </div>
+                          }>
                             <Routes>
                               <Route path="/" element={<Index />} />
                               <Route path="/catalog" element={<Catalog />} />
-                              <Route path="/product/:id" element={<ProductDetail />} />
+                              <Route path="/product/:slug" element={<ProductDetail />} />
                               <Route path="/faq" element={<FAQ />} />
                               <Route path="/contact" element={<Contact />} />
                               <Route path="/terms" element={<Terms />} />

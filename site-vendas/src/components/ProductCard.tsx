@@ -72,7 +72,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Imagem do Produto Animada */}
       <Link 
-        to={`/product/${product.id}`} 
+        to={`/product/${product.slug}`} 
         className="p-4 block relative"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -94,7 +94,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Informações */}
       <div className="px-4 pb-4 md:px-6 md:pb-6 pt-0 flex flex-col flex-grow">
-        <Link to={`/product/${product.id}`}>
+        <Link to={`/product/${product.slug}`}>
           <h3 className="text-[15px] md:text-[15px] font-bold mb-2 md:mb-3 tracking-tight text-gray-950 uppercase line-clamp-1 leading-tight">{product.name}</h3>
         </Link>
 
@@ -126,7 +126,7 @@ export function ProductCard({ product }: ProductCardProps) {
             </button>
           ) : (
             <Link
-              to={`/product/${product.id}`}
+              to={`/product/${product.slug}`}
               className="w-full py-4 md:py-4 rounded-full font-bold text-[11px] md:text-[10px] uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 bg-[#d82828] text-white hover:bg-black hover:shadow-xl"
             >
               <Zap size={14} fill="currentColor" /> {t("viewDetails")}

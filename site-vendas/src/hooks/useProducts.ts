@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { mockProducts, Product } from "@/data/products";
+import { slugify } from "@/lib/slugify";
 
 // Função utilitária para mapear dados do banco para o frontend de forma ultra-segura
 const mapProduct = (p: any): Product => {
@@ -28,6 +29,7 @@ const mapProduct = (p: any): Product => {
     ...p,
     id: String(p.id || Math.random()), 
     name: p.name || "Sem Nome",
+    slug: slugify(p.name || ""),
     description: (() => {
       const d = p.description;
       if (typeof d === 'string' && d.startsWith('{')) { try { return JSON.parse(d); } catch(e){}}
@@ -97,19 +99,20 @@ export function useProducts() {
   return { products, loading, error };
 }
 
-export function useProduct(id: string | undefined) {
+export function useProduct(slug: string | undefined) {
   const [product, setProduct] = useState<Product | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id) {
+    if (!slug) {
       setLoading(false);
       return;
     }
 
     async function fetchProduct() {
       if (!supabase) {
-        const found = mockProducts.find(p => p.id === id);
+        // Busca mock por slug ou id (retrocompatibilidade)
+        const found = mockProducts.find(p => p.slug === slug || p.id === slug);
         setProduct(found);
         setLoading(false);
         return;
@@ -117,21 +120,22 @@ export function useProduct(id: string | undefined) {
 
       try {
         setLoading(true);
+        // Busca todos e filtra por slug derivado do nome
         const { data, error } = await supabase
           .from("products")
-          .select("*")
-          .eq("id", id)
-          .single();
+          .select("*");
 
         if (error || !data) {
-          const found = mockProducts.find(p => p.id === id);
+          const found = mockProducts.find(p => p.slug === slug || p.id === slug);
           setProduct(found);
         } else {
-          setProduct(mapProduct(data));
+          const all = data.map(mapProduct);
+          const found = all.find(p => p.slug === slug || p.id === slug);
+          setProduct(found);
         }
       } catch (err) {
         console.error("Single fetch error:", err);
-        const found = mockProducts.find(p => p.id === id);
+        const found = mockProducts.find(p => p.slug === slug || p.id === slug);
         setProduct(found);
       } finally {
         setLoading(false);
@@ -139,7 +143,7 @@ export function useProduct(id: string | undefined) {
     }
 
     fetchProduct();
-  }, [id]);
+  }, [slug]);
 
   return { product, loading };
 }

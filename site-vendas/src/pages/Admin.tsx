@@ -70,6 +70,16 @@ export default function Admin() {
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [langTab, setLangTab] = useState<'PT' | 'EN' | 'ES'>('PT');
+  const [hpValue, setHpValue] = useState(""); // Honey-Pot field state
+
+  // Atualiza o título da aba na Admin
+  useEffect(() => {
+    const originalTitle = document.title;
+    document.title = "GORG PRESETS | ADMIN";
+    return () => {
+      document.title = "GORG PRESETS";
+    };
+  }, []);
   
   const openAddModal = () => setIsModalOpen(true);
   const openEditModal = (product: any) => {
@@ -274,8 +284,30 @@ export default function Admin() {
           setAuthLoading(false);
        }
     });
-    return () => { subscription.unsubscribe(); clearTimeout(safetyTimeout); };
-  }, []);
+
+    // SISTEMA DE AUTO-LOGOUT POR INATIVIDADE (15 MINUTOS)
+    let inactivityTimer: number;
+    const resetTimer = () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = window.setTimeout(async () => {
+        if (isAuthenticated) {
+          await supabase.auth.signOut();
+          toast.error("Sua sessão expirou por inatividade.");
+        }
+      }, 15 * 60 * 1000); // 15 minutos
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => document.addEventListener(event, resetTimer));
+    resetTimer();
+
+    return () => { 
+      subscription.unsubscribe(); 
+      clearTimeout(safetyTimeout);
+      clearTimeout(inactivityTimer);
+      events.forEach(event => document.removeEventListener(event, resetTimer));
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -288,6 +320,14 @@ export default function Admin() {
     e.preventDefault();
     if (!supabase) return;
     setLoginError("");
+
+    // Verificação de Honey-pot (Bots preenchem campos que humanos não veem)
+    if (hpValue.trim().length > 0) {
+       // Se o campo for preenchido, falhamos silenciosamente para "enganar" o robô
+       setTimeout(() => setIsLoading(false), 2000);
+       return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -581,6 +621,16 @@ export default function Admin() {
             </form>
           ) : (
             <form onSubmit={handleLogin} className="space-y-4">
+              {/* Honey-pot Field (Invisível para humanos, armadilha para bots) */}
+              <div style={{ position: 'absolute', opacity: 0, zIndex: -1, pointerEvents: 'none' }}>
+                <input 
+                  type="text" 
+                  autoComplete="off" 
+                  value={hpValue} 
+                  onChange={(e) => setHpValue(e.target.value)} 
+                  tabIndex={-1}
+                />
+              </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">E-mail</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold" placeholder="admin@gorgpresets.com" />
@@ -1163,6 +1213,27 @@ export default function Admin() {
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold uppercase text-gray-400">Preço Original (R$)</label>
                         <input name="originalPrice" value={formData.originalPrice} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5" placeholder="Ex: 199.90" />
+                      </div>
+                   </div>
+
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase text-gray-400">Vibes / Estilos (Tags separadas por vírgula)</label>
+                      <div className="relative">
+                         <input 
+                           name="tags" 
+                           value={(formData.tags || []).join(', ')} 
+                           onChange={(e) => {
+                              const tags = e.target.value.split(',').map(tag => tag.trim());
+                              setFormData(prev => ({ ...prev, tags }));
+                           }} 
+                           className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-bold text-xs focus:border-[#d82828] transition-all" 
+                           placeholder="Ex: Nostálgico, Moody, Clean, Cinema" 
+                         />
+                         <div className="flex flex-wrap gap-1.5 mt-2">
+                            {(formData.tags || []).filter(t => t !== "").map((tag, idx) => (
+                               <span key={idx} className="bg-[#d82828]/5 text-[#d82828] text-[9px] font-black px-2 py-0.5 rounded-md uppercase border border-[#d82828]/10">{tag}</span>
+                            ))}
+                         </div>
                       </div>
                    </div>
 

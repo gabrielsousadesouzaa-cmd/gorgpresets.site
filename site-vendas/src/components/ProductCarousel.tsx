@@ -65,7 +65,7 @@ export function ProductCarousel({
   
   if (isBestSeller) {
     return (
-      <section id={id} className={`pt-6 pb-4 md:pt-16 md:pb-12 w-full ${bgClass || 'bg-white'} overflow-hidden`}>
+      <section id={id} className={`pt-4 pb-4 md:pt-8 md:pb-8 w-full ${bgClass || 'bg-white'} overflow-hidden`}>
         <div className="container mx-auto px-4 md:px-8">
           {/* Container Principal com Estilo Especial */}
           <div className="bg-[#f7f7f7] rounded-[3rem] py-16 px-6 md:px-14 border border-black/[0.03]">
@@ -122,7 +122,7 @@ export function ProductCarousel({
 
   // Seção Padrão (Fundo Branco, Título no Topo, Alinhado à Esquerda)
   return (
-    <section id={id} className={`pt-4 pb-16 w-full ${bgClass} overflow-hidden`}>
+    <section id={id} className={`pt-4 pb-8 w-full ${bgClass} overflow-hidden`}>
       <div className="container mx-auto px-4 md:px-8">
         {/* Título Centralizado com Linha Vermelha */}
         <motion.div 
