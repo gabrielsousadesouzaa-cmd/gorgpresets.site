@@ -84,7 +84,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     allPresets: [],
   },
   integration: {
-    checkoutBaseUrl: "https://www.ggcheckout.com/s/F3LEikOi-0/cart",
+    checkoutBaseUrl: "https://ggcheckout.app/s/F3LEikOi-0/cart",
     isCartEnabled: true,
   },
   shopTheLook: [

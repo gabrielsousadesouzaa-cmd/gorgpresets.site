@@ -4,8 +4,8 @@ import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { 
   Plus, Trash2, Edit3, X, Save, Lock, LayoutDashboard, ShoppingBag, LogOut, 
   AlertCircle, Image as ImageIcon, Star, Users, GripVertical, LayoutList, 
-  ChevronRight, Check, TrendingUp, DollarSign, Package, BarChart3, Bell, Zap,
-  Upload, Sparkles, RefreshCw, Eye, EyeOff
+  ChevronRight, Check, Package, Bell, Zap,
+  Upload, Sparkles, RefreshCw, Eye, EyeOff, Globe
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -129,11 +129,6 @@ export default function Admin() {
   };
 
  
-  // Statistics Calculation
-  const totalProducts = products.length;
-  const totalSalesCount = products.reduce((acc, p) => acc + (p.salesCount || 0), 0);
-  const estimatedRevenue = products.reduce((acc, p) => acc + ((p.salesCount || 0) * (p.price || 0)), 0);
-  const averagePrice = totalProducts > 0 ? (products.reduce((acc, p) => acc + (p.price || 0), 0) / totalProducts) : 0;
 
   if (!supabase) {
     return (
@@ -568,85 +563,101 @@ export default function Admin() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#d82828] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-6 text-black">
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw size={32} className="animate-spin text-[#d82828]" />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Verificando sessão mestre...</p>
+        </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-black">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md bg-white rounded-[3rem] shadow-2xl p-10 border border-black/5">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-[#d82828] rounded-2xl flex items-center justify-center shadow-xl mb-4">
-               {mfaSetup || mfaChallengeId ? <Lock className="text-white relative top-[2px]" size={28} /> : <Lock className="text-white" size={28} />}
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-6 text-black relative">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#d82828]/[0.02] rounded-full blur-[100px]" />
+        
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98, y: 10 }} 
+          animate={{ opacity: 1, scale: 1, y: 0 }} 
+          className="w-full max-w-sm bg-white rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.05)] p-10 border border-black/5 relative z-10"
+        >
+          <div className="flex flex-col items-center mb-10">
+            <div className="w-16 h-16 bg-red-50 text-[#d82828] rounded-[1.5rem] flex items-center justify-center shadow-inner mb-6">
+               <Lock size={32} />
             </div>
-            <h1 className="text-2xl font-bold uppercase tracking-tighter">Área Restrita</h1>
-            <p className="text-gray-400 text-sm mt-1 text-center">
-              {mfaSetup ? "Configure o 2FA para continuar" : mfaChallengeId ? "Digite o código 2FA do seu App" : "Identifique-se para gerenciar a loja"}
-            </p>
+            <h2 className="text-2xl font-black uppercase tracking-tighter text-gray-950">Acesso Restrito</h2>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.3em] mt-2 text-center">Controle Mestre do Site</p>
           </div>
 
           {(mfaSetup || mfaChallengeId) ? (
             <form onSubmit={handleVerifyMFA} className="space-y-4">
-               {mfaSetup && (
-                  <div className="flex flex-col items-center justify-center gap-4 mb-6">
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-[#d82828] text-center">Escaneie ou copie o código abaixo</p>
-                    <div className="p-3 bg-white border border-gray-200 rounded-2xl shadow-inner [&>svg]:w-40 [&>svg]:h-40" dangerouslySetInnerHTML={{ __html: mfaSetup.qrCode }} />
-                    <div className="flex flex-col items-center gap-2 mt-1 w-full">
-                       <p className="text-[9px] uppercase font-bold text-gray-400">Se a câmera não ler, digite este código no App:</p>
-                       <code className="block w-full text-center px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-mono font-black text-black select-all tracking-widest overflow-hidden break-all">
-                          {mfaSetup.secret}
-                       </code>
-                    </div>
-                  </div>
-               )}
-               <div className="space-y-2">
-                 <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Código de 6 Dígitos</label>
-                 <input type="text" value={mfaCode} onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))} autoFocus required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold tracking-[0.5em] text-center text-xl" placeholder="••••••" maxLength={6} />
+               {/* Honey-pot Field */}
+               <div style={{ position: 'absolute', opacity: 0, zIndex: -1, pointerEvents: 'none' }}>
+                 <input type="text" autoComplete="off" value={hpValue} onChange={(e) => setHpValue(e.target.value)} tabIndex={-1} />
                </div>
-               {loginError && (
-                 <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl px-4 py-3">
-                   <AlertCircle size={14} /> {loginError}
+               
+               {mfaSetup && (
+                 <div className="mb-6 p-6 bg-gray-50 rounded-[1.5rem] flex flex-col items-center gap-4 border border-black/5 text-center">
+                   <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Escaneie o QR Code no Autenticador</p>
+                   <img src={mfaSetup.qrCode} alt="MFA QR Code" className="w-32 h-32 rounded-xl border-4 border-white shadow-sm" />
+                   <p className="text-[10px] text-gray-400 font-mono tracking-widest break-all px-2">{mfaSetup.secret}</p>
                  </div>
                )}
-               <Button type="submit" disabled={isLoading} className="w-full h-14 bg-black hover:bg-[#d82828] text-white rounded-2xl font-bold uppercase tracking-widest transition-all mt-2 flex items-center justify-center gap-2 shadow-xl">
+
+               <div className="space-y-3">
+                 <label className="text-[9px] font-black uppercase tracking-widest text-[#d82828] ml-1">Código de Segurança (6 dígitos)</label>
+                 <input 
+                   type="text" 
+                   value={mfaCode} 
+                   onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))} 
+                   autoFocus 
+                   required 
+                   className="w-full h-14 bg-gray-50 border border-transparent focus:border-[#d82828] focus:bg-white rounded-xl px-6 outline-none transition-all font-black tracking-[1em] text-center text-xl text-gray-950" 
+                   placeholder="••••••" 
+                   maxLength={6} 
+                 />
+               </div>
+               
+               {loginError && (
+                 <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-xl px-4 py-4">
+                   <AlertCircle size={16} /> {loginError}
+                 </div>
+               )}
+               
+               <Button type="submit" disabled={isLoading} className="w-full h-14 bg-black hover:bg-[#d82828] text-white rounded-xl font-bold uppercase tracking-[0.2em] transition-all mt-6 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
                  {isLoading ? <RefreshCw className="animate-spin" size={16} /> : <Check size={16} />}
                  {isLoading ? "Verificando..." : mfaSetup ? "Vincular App" : "Validar Código"}
                </Button>
-               <button type="button" onClick={handleLogout} className="w-full mt-6 text-[10px] uppercase font-bold tracking-widest text-gray-400 hover:text-red-500 transition-colors">
-                 Voltar ao Login
+               
+               <button type="button" onClick={handleLogout} className="w-full mt-6 text-[9px] uppercase font-black tracking-[0.2em] text-gray-400 hover:text-[#d82828] transition-colors italic">
+                 ← Voltar ao Login
                </button>
             </form>
           ) : (
-            <form onSubmit={handleLogin} className="space-y-4">
-              {/* Honey-pot Field (Invisível para humanos, armadilha para bots) */}
+            <form onSubmit={handleLogin} className="space-y-6">
+              {/* Honey-pot Field */}
               <div style={{ position: 'absolute', opacity: 0, zIndex: -1, pointerEvents: 'none' }}>
-                <input 
-                  type="text" 
-                  autoComplete="off" 
-                  value={hpValue} 
-                  onChange={(e) => setHpValue(e.target.value)} 
-                  tabIndex={-1}
-                />
+                <input type="text" autoComplete="off" value={hpValue} onChange={(e) => setHpValue(e.target.value)} tabIndex={-1} />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">E-mail</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold" placeholder="admin@gorgpresets.com" />
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">E-mail</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus required className="w-full h-14 bg-gray-50 border border-transparent focus:border-[#d82828] focus:bg-white rounded-xl px-6 outline-none transition-all font-bold text-xs" placeholder="admin@elite.com" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-gray-400 ml-1">Senha</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-[#d82828] focus:bg-white rounded-2xl px-6 outline-none transition-all font-semibold" placeholder="••••••••" />
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Senha</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full h-14 bg-gray-50 border border-transparent focus:border-[#d82828] focus:bg-white rounded-xl px-6 outline-none transition-all font-bold text-xs" placeholder="••••••••" />
               </div>
+              
               {loginError && (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl px-4 py-3">
-                  <AlertCircle size={14} /> {loginError}
-                </div>
+                 <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-xl px-4 py-4">
+                   <AlertCircle size={16} /> {loginError}
+                 </div>
               )}
-              <Button type="submit" disabled={isLoading} className="w-full h-14 bg-[#d82828] hover:bg-black text-white rounded-2xl font-bold uppercase tracking-widest transition-all mt-2 flex items-center justify-center gap-2">
+              
+              <Button type="submit" disabled={isLoading} className="w-full h-14 bg-[#d82828] hover:bg-black text-white rounded-xl font-black uppercase tracking-[0.2em] transition-all mt-6 flex items-center justify-center gap-2 shadow-xl shadow-red-500/10">
                 {isLoading ? <RefreshCw className="animate-spin" size={16} /> : <Lock size={16} />}
-                {isLoading ? "Verificando..." : "Entrar no Painel"}
+                {isLoading ? "Autenticando..." : "Entrar no Painel"}
               </Button>
             </form>
           )}
@@ -656,60 +667,190 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col text-black font-sans" style={{ paddingTop: '112px' }}>
-      <header className="bg-white/95 backdrop-blur-xl border-b border-black/5 shadow-sm fixed top-0 inset-x-0 z-50">
-        <div className="container mx-auto px-6 flex items-center justify-between py-4">
-          <div className="flex items-center gap-4">
-            <LayoutDashboard className="text-[#d82828]" />
-            <h1 className="text-xl font-bold uppercase tracking-tighter text-gray-950">GORG Admin</h1>
-          </div>
-          <div className="flex items-center gap-3">
-             {activeTab === 'products' && (
-               <Button onClick={openAddModal} className="bg-black hover:bg-[#d82828] text-white rounded-full px-6 h-10 flex items-center gap-2 transition-all">
-                  <Plus size={18} /> Novo Produto
-               </Button>
-             )}
-             <button onClick={handleLogout} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-all">
-                <LogOut size={20} />
-             </button>
+    <div className="min-h-screen bg-[#fafafa] flex flex-col text-black font-sans relative overflow-x-hidden" style={{ paddingTop: '128px' }}>
+      {/* Premium Background Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-[#d82828]/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-black/[0.02] rounded-full blur-[100px]" />
+        <div className="absolute -bottom-[10%] left-[20%] w-[50%] h-[50%] bg-[#d82828]/[0.02] rounded-full blur-[150px]" />
+      </div>
+
+      <header className="bg-white/70 backdrop-blur-3xl border-b border-black/[0.03] fixed top-0 inset-x-0 z-[100] shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
+        <div className="container mx-auto px-4 md:px-10">
+          <div className="flex items-center justify-between h-20 md:h-24">
+            <div className="flex items-center gap-4 md:gap-6">
+              <motion.div 
+                whileHover={{ rotate: 0, scale: 1.05 }}
+                className="w-12 h-12 md:w-14 md:h-14 bg-black rounded-2xl flex items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.15)] transform -rotate-12 transition-all cursor-pointer"
+              >
+                <LayoutDashboard className="text-white w-6 h-6 md:w-7 md:h-7" />
+              </motion.div>
+              <div className="flex flex-col">
+                <h1 className="text-lg md:text-2xl font-black uppercase tracking-[-0.05em] text-gray-950 leading-none">
+                  GORG<span className="text-[#d82828] drop-shadow-[0_0_8px_rgba(216,40,40,0.3)]">.</span>ADMIN
+                </h1>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-[8px] md:text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Management System</span>
+                  <div className="w-1 h-1 bg-[#d82828] rounded-full" />
+                  <span className="text-[8px] md:text-[9px] font-black text-[#d82828] uppercase tracking-[0.2em]">v2.0</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 md:gap-6">
+              <div className="hidden lg:flex items-center gap-3 px-5 py-2.5 bg-gray-50/50 backdrop-blur-sm rounded-full border border-black/5 shadow-sm">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Live Status: Active</span>
+              </div>
+              <button 
+                onClick={handleLogout} 
+                className="group flex items-center gap-2.5 px-4 md:px-6 h-11 md:h-13 bg-white hover:bg-black hover:text-white border border-black/5 rounded-full transition-all text-[10px] md:text-xs font-black uppercase tracking-wider text-gray-600 shadow-sm active:scale-95 hover:shadow-xl hover:shadow-black/5"
+              >
+                <LogOut size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                <span className="hidden md:inline">Sair</span>
+              </button>
+            </div>
           </div>
         </div>
         
-        <div className="container mx-auto px-6 flex gap-1 border-t border-black/5 overflow-x-auto no-scrollbar">
-          {[
-            { key: 'products', label: 'Produtos', icon: ShoppingBag },
-            { key: 'magic', label: 'Mágica', icon: Sparkles },
-            { key: 'hero', label: 'Hero', icon: ImageIcon },
-            { key: 'banner', label: 'Banner', icon: ImageIcon },
-            { key: 'testimonials', label: 'Feedbacks', icon: Users },
-            { key: 'shopTheLook', label: 'Mosaico', icon: ImageIcon },
-            { key: 'order', label: 'Ordenação', icon: LayoutList },
-            { key: 'integration', label: 'Integração', icon: Zap },
-            { key: 'promoBar', label: 'Aviso Topo', icon: Bell },
-          ].map(({ key, label, icon: Icon }) => (
-            <button key={key} onClick={() => setActiveTab(key as any)} className={`flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${activeTab === key ? 'border-[#d82828] text-[#d82828]' : 'border-transparent text-gray-400 hover:text-gray-700'}`}>
-              <Icon size={14} /> {label}
-            </button>
-          ))}
+        <div className="border-t border-black/[0.03] bg-white/40 backdrop-blur-md">
+          <div className="container mx-auto px-4 md:px-10">
+            <div className="flex gap-1 overflow-x-auto no-scrollbar scroll-smooth py-1">
+              {[
+                { key: 'products', label: 'Catálogo', icon: ShoppingBag },
+                { key: 'magic', label: 'A Mágica', icon: Sparkles },
+                { key: 'hero', label: 'Hero Home', icon: ImageIcon },
+                { key: 'banner', label: 'Ofertas', icon: ImageIcon },
+                { key: 'testimonials', label: 'Elite Feedbacks', icon: Users },
+                { key: 'shopTheLook', label: 'Mosaico', icon: ImageIcon },
+                { key: 'order', label: 'Curadoria', icon: LayoutList },
+                { key: 'integration', label: 'GGCheckout', icon: Zap },
+                { key: 'promoBar', label: 'Alertas', icon: Bell },
+              ].map(({ key, label, icon: Icon }) => (
+                <button 
+                  key={key} 
+                  onClick={() => setActiveTab(key as any)} 
+                  className={`group flex items-center gap-2.5 px-5 md:px-7 py-5 md:py-6 text-[10px] md:text-[11px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap relative`}
+                >
+                  <Icon size={14} className={`${activeTab === key ? 'text-[#d82828]' : 'text-gray-300 group-hover:text-gray-500'} transition-colors duration-300`} />
+                  <span className={activeTab === key ? 'text-gray-950 translate-y-[-1px]' : 'text-gray-400 group-hover:text-gray-600'}>{label}</span>
+                  {activeTab === key && (
+                    <motion.div 
+                      layoutId="activeTab"
+                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      className="absolute bottom-0 inset-x-6 h-[3px] bg-[#d82828] rounded-t-full shadow-[0_-2px_10px_rgba(216,40,40,0.5)]"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-12">
 
-        {/* PRODUCTS TAB */}
+      <main className="container mx-auto px-4 md:px-10 py-8 md:py-16 relative z-10 flex-1">
+{/* PRODUCTS TAB */}
         {activeTab === 'products' && (
-          <div className="bg-white rounded-[2.5rem] border border-black/5 shadow-lg overflow-hidden">
-             {(products || []).map((p) => (
-               <div key={p.id} className="grid grid-cols-[64px_1fr_120px_100px] items-center px-8 py-5 gap-3 hover:bg-gray-50 transition-colors border-b border-black/[0.03]">
-                 <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gray-100 border border-black/5"><img src={p.image} alt="" className="w-full h-full object-cover" /></div>
-                 <div><p className="text-sm font-bold text-gray-950 uppercase tracking-tighter truncate">{p.name}</p><span className="text-[9px] font-bold text-[#d82828] uppercase">{p.category}</span></div>
-                 <span className="text-sm font-black">R$ {Number(p.price || 0).toFixed(2)}</span>
-                 <div className="flex items-center gap-2 justify-end"><button onClick={() => openEditModal(p)} className="p-2 hover:bg-black hover:text-white rounded-xl transition-all"><Edit3 size={16} /></button><button onClick={() => handleDelete(p.id)} className="p-2 hover:bg-red-500 hover:text-white rounded-xl transition-all"><Trash2 size={16} /></button></div>
-               </div>
-             ))}
+          <div className="space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                   <div className="w-8 h-8 rounded-lg bg-[#d82828]/10 flex items-center justify-center">
+                      <LayoutDashboard className="text-[#d82828] w-4 h-4" />
+                   </div>
+                   <h2 className="text-2xl md:text-4xl font-black uppercase tracking-tighter italic text-gray-950">Gestão de Artefatos</h2>
+                </div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] ml-11">Controle total sobre o inventário digital</p>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Button onClick={handleSyncSales} disabled={isSavingSettings} className="h-12 md:h-14 px-6 md:px-8 rounded-full bg-white border border-black/[0.06] text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 flex items-center gap-3 shadow-sm hover:shadow-xl transition-all">
+                  <RefreshCw className={`w-4 h-4 text-gray-400 ${isSavingSettings ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">Refresh Data</span>
+                </Button>
+                <Button onClick={openAddModal} className="h-12 md:h-14 px-8 md:px-10 rounded-full bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#d82828] flex items-center gap-3 shadow-[0_10px_25px_rgba(0,0,0,0.15)] hover:shadow-[0_15px_35px_rgba(216,40,40,0.3)] transition-all active:scale-95">
+                  <Plus className="w-4 h-4" />
+                  <span>Novo Pack</span>
+                </Button>
+              </div>
+            </div>
+            
+            <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] md:rounded-[4rem] border border-white shadow-[0_20px_50px_rgba(0,0,0,0.04)] overflow-hidden">
+               {products.length > 0 ? (
+                 <div className="divide-y divide-black/[0.03]">
+                   {products.map((p, idx) => (
+                     <motion.div 
+                       layout
+                       initial={{ opacity: 0, x: -20 }}
+                       animate={{ opacity: 1, x: 0 }}
+                       transition={{ delay: idx * 0.05 }}
+                       key={p.id} 
+                       className="grid grid-cols-[64px_1fr_auto] md:grid-cols-[100px_1fr_140px_120px_160px] items-center px-6 md:px-12 py-6 md:py-8 gap-4 md:gap-10 hover:bg-white transition-all group relative overflow-hidden"
+                     >
+                       <div className="absolute inset-0 bg-gradient-to-r from-[#d82828]/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                       
+                       <div className="w-14 h-14 md:w-20 md:h-20 rounded-2xl md:rounded-[2rem] overflow-hidden bg-gray-100 border border-black/5 shadow-inner relative z-10">
+                         <img src={p.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                       </div>
+                       
+                       <div className="min-w-0 relative z-10">
+                         <p className="text-sm md:text-xl font-black text-gray-950 uppercase tracking-tight truncate leading-tight group-hover:text-[#d82828] transition-colors">{p.name}</p>
+                         <div className="flex items-center gap-3 mt-1.5 md:mt-2">
+                           <span className="text-[8px] md:text-[9px] font-black text-[#d82828] uppercase px-2.5 py-1 bg-[#d82828]/[0.06] rounded-full tracking-wider">{p.category}</span>
+                           <span className="hidden md:inline text-[9px] font-black text-gray-300 uppercase tracking-widest">UID: {p.id.substring(0, 8)}</span>
+                         </div>
+                       </div>
+                       
+                       <div className="hidden md:block relative z-10">
+                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5">Performace</p>
+                         <div className="flex items-center gap-2 font-black text-sm text-gray-950">
+                           <Zap size={14} className="text-amber-500 fill-amber-500" />
+                           {p.salesCount || 0} <span className="text-[10px] text-gray-300 ml-0.5">VENDAS</span>
+                         </div>
+                       </div>
+                       
+                       <div className="text-right md:text-left relative z-10">
+                         <p className="hidden md:block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1.5">Investimento</p>
+                         <span className="text-sm md:text-2xl font-black tracking-tighter text-gray-950 italic">
+                            <span className="text-[10px] md:text-xs font-black text-gray-300 not-italic mr-1">R$</span>
+                            {Number(p.price || 0).toFixed(2)}
+                         </span>
+                       </div>
+                       
+                       <div className="flex items-center gap-2 md:gap-4 justify-end relative z-10">
+                         <motion.button 
+                           whileHover={{ scale: 1.05 }}
+                           whileTap={{ scale: 0.95 }}
+                           onClick={() => openEditModal(p)} 
+                           className="w-10 h-10 md:w-14 md:h-14 flex items-center justify-center bg-gray-50 text-gray-400 hover:bg-black hover:text-white rounded-2xl transition-all shadow-sm border border-black/[0.03]"
+                         >
+                           <Edit3 size={18} className="md:w-6 md:h-6" />
+                         </motion.button>
+                         <motion.button 
+                           whileHover={{ scale: 1.05 }}
+                           whileTap={{ scale: 0.95 }}
+                           onClick={() => handleDelete(p.id)} 
+                           className="w-10 h-10 md:w-14 md:h-14 flex items-center justify-center bg-gray-50 text-gray-300 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm border border-black/[0.03]"
+                         >
+                           <Trash2 size={18} className="md:w-6 md:h-6" />
+                         </motion.button>
+                       </div>
+                     </motion.div>
+                   ))}
+                 </div>
+               ) : (
+                 <div className="py-24 md:py-32 text-center flex flex-col items-center justify-center">
+                     <div className="w-24 h-24 md:w-32 md:h-32 bg-gray-50 rounded-[3rem] flex items-center justify-center text-gray-200 mb-8 shadow-inner">
+                       <ShoppingBag size={48} className="md:w-16 md:h-16" />
+                     </div>
+                     <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">Nenhum pack no catálogo</p>
+                     <Button onClick={openAddModal} variant="ghost" className="mt-6 text-[#d82828] font-black uppercase text-[10px] tracking-widest hover:bg-red-50 px-8 h-12 rounded-full border border-transparent hover:border-[#d82828]/10 transition-all">Começar Coleção</Button>
+                 </div>
+               )}
+            </div>
           </div>
         )}
-
         {/* MAGIC TAB */}
         {activeTab === 'magic' && (
           <div className="max-w-4xl mx-auto space-y-10 bg-white rounded-[3.5rem] border border-black/5 shadow-2xl p-12">
@@ -1134,36 +1275,119 @@ export default function Admin() {
 
         {/* INTEGRATION TAB */}
         {activeTab === 'integration' && (
-          <div className="max-w-3xl mx-auto bg-white rounded-[2.5rem] border border-black/5 shadow-xl p-12 space-y-10">
-             <div className="flex items-center gap-4 border-b pb-6"><Zap className="text-amber-500" /><h2 className="text-2xl font-black uppercase tracking-tighter">Integração GGCheckout</h2></div>
+          <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+             <div className="bg-white/70 backdrop-blur-3xl rounded-[3rem] md:rounded-[4rem] border border-white shadow-[0_30px_100px_rgba(0,0,0,0.05)] p-10 md:p-16 space-y-12">
 
-             {/* Carrinho Toggle */}
-             <div className="bg-gray-50 p-8 rounded-[2rem] border border-black/5 flex items-center justify-between">
-               <div className="flex items-center gap-5">
-                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${siteSettings.integration.isCartEnabled ? 'bg-emerald-50 text-emerald-500' : 'bg-gray-100 text-gray-400'}`}><ShoppingBag size={26} /></div>
-                 <div>
-                   <h3 className="text-base font-bold uppercase tracking-tighter">Status do Carrinho</h3>
-                   <p className="text-xs text-gray-400 mt-0.5">{siteSettings.integration.isCartEnabled ? 'Ativo — clientes podem adicionar ao carrinho' : 'Desativado — redireciona direto ao checkout'}</p>
-                 </div>
-               </div>
-               <button
-                 onClick={async () => {
-                   const n = !siteSettings.integration.isCartEnabled;
-                   setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, isCartEnabled: n } }));
-                   await saveSetting('integration', { ...siteSettings.integration, isCartEnabled: n });
-                   toast.success(`Carrinho ${n ? 'Habilitado' : 'Desativado'}`);
-                 }}
-                 className={`w-16 h-8 rounded-full relative transition-all flex-shrink-0 ${siteSettings.integration.isCartEnabled ? 'bg-emerald-500' : 'bg-gray-300'}`}
-               >
-                 <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all shadow-sm ${siteSettings.integration.isCartEnabled ? 'left-9' : 'left-1'}`} />
-               </button>
-             </div>
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 pb-10 border-b border-black/[0.03]">
+                   <div className="flex items-center gap-6">
+                      <motion.div whileHover={{ scale: 1.1, rotate: 12 }} className="w-16 h-16 bg-black rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-black/10">
+                         <Zap className="text-amber-500 fill-amber-500" size={28} />
+                      </motion.div>
+                      <div>
+                         <h2 className="text-2xl md:text-4xl font-black uppercase tracking-[-0.04em] italic leading-none">Integração de <span className="text-[#d82828]">Checkout</span></h2>
+                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-3 italic">Compatível com qualquer plataforma</p>
+                      </div>
+                   </div>
+                   <div className="flex items-center gap-4 px-6 h-14 bg-gray-50/50 rounded-2xl border border-black/5">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Sistema Ativo</span>
+                   </div>
+                </div>
 
-             <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase text-gray-400">Base URL do Checkout</p>
-                <input value={siteSettings.integration.checkoutBaseUrl} onChange={(e) => setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, checkoutBaseUrl: e.target.value } }))} className="w-full h-16 bg-gray-50 rounded-2xl px-8 font-mono text-sm border border-black/5" placeholder="https://..." />
+                {/* Toggle do Carrinho */}
+                <div className="group relative">
+                   <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/0 via-emerald-500/[0.02] to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl" />
+                   <div className="relative bg-white/40 backdrop-blur-sm p-8 md:p-12 rounded-[2.5rem] md:rounded-[3rem] border border-black/[0.03] flex items-center justify-between hover:border-emerald-500/10 transition-all shadow-sm">
+                     <div className="flex items-center gap-6 md:gap-8">
+                       <div className={"w-16 h-16 md:w-20 md:h-20 rounded-3xl md:rounded-[2rem] flex items-center justify-center transition-all duration-500 " + (siteSettings.integration.isCartEnabled ? 'bg-emerald-50 text-emerald-500 shadow-lg shadow-emerald-500/10 scale-110' : 'bg-gray-100 text-gray-300')}>
+                          <ShoppingBag size={32} strokeWidth={2.5} />
+                       </div>
+                       <div>
+                         <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-gray-950">Carrinho da Loja</h3>
+                         <p className="text-[10px] md:text-xs font-bold text-gray-400 mt-1 uppercase tracking-wider">
+                           {siteSettings.integration.isCartEnabled
+                             ? 'ATIVO — cliente acumula produtos e finaliza tudo junto'
+                             : 'INATIVO — ao clicar em Comprar, vai direto ao checkout do produto'}
+                         </p>
+                         <p className="text-[9px] text-gray-300 mt-2 font-medium">Ative para permitir que o cliente adicione múltiplos presets antes de pagar</p>
+                       </div>
+                     </div>
+                     <button
+                       onClick={async () => {
+                         const n = !siteSettings.integration.isCartEnabled;
+                         setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, isCartEnabled: n } }));
+                         await saveSetting('integration', { ...siteSettings.integration, isCartEnabled: n });
+                         toast.success("Carrinho " + (n ? 'ativado' : 'desativado') + "!");
+                       }}
+                       className={"w-20 h-10 md:w-24 md:h-12 rounded-full relative transition-all flex-shrink-0 shadow-inner " + (siteSettings.integration.isCartEnabled ? 'bg-emerald-500' : 'bg-gray-200')}
+                     >
+                       <motion.div
+                         animate={{ x: siteSettings.integration.isCartEnabled ? 'calc(100% - 32px - 8px)' : '8px' }}
+                         className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full absolute top-1 shadow-2xl flex items-center justify-center"
+                       >
+                         <div className={"w-1.5 h-1.5 rounded-full " + (siteSettings.integration.isCartEnabled ? 'bg-emerald-500' : 'bg-gray-300')} />
+                       </motion.div>
+                     </button>
+                   </div>
+                </div>
+
+                {/* Plataformas Compatíveis */}
+                <div className="space-y-5">
+                   <div className="flex items-center gap-3 px-1">
+                      <div className="w-1 h-6 bg-[#d82828] rounded-full" />
+                      <p className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-700">Plataformas de checkout compatíveis</p>
+                   </div>
+                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                     {[
+                       { name: 'GGCheckout', emoji: '⚡' },
+                       { name: 'Hotmart', emoji: '🔥' },
+                       { name: 'Kiwify', emoji: '🥝' },
+                       { name: 'Lastlink', emoji: '🔗' },
+                       { name: 'Monetizze', emoji: '💳' },
+                       { name: 'Eduzz', emoji: '🚀' },
+                     ].map(p => (
+                       <div key={p.name} className="flex items-center gap-3 bg-gray-50/80 border border-black/[0.04] rounded-2xl px-4 py-3 hover:bg-white hover:shadow-md transition-all cursor-default">
+                         <span className="text-lg">{p.emoji}</span>
+                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-700">{p.name}</span>
+                         <div className="ml-auto w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
+                       </div>
+                     ))}
+                   </div>
+                   <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest text-center">Cole a URL de checkout de qualquer plataforma no campo abaixo</p>
+                </div>
+
+                {/* URL Base do Checkout */}
+                <div className="space-y-4">
+                   <div className="flex items-center justify-between px-1">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">URL do Carrinho (compra com múltiplos produtos)</p>
+                   </div>
+                   <div className="group/inp relative">
+                      <div className="absolute inset-y-0 left-8 flex items-center text-gray-300 group-focus-within/inp:text-black transition-colors">
+                         <Globe size={18} />
+                      </div>
+                      <input
+                         value={siteSettings.integration.checkoutBaseUrl}
+                         onChange={(e) => setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, checkoutBaseUrl: e.target.value } }))}
+                         className="w-full h-20 md:h-24 bg-gray-50/50 hover:bg-white focus:bg-white rounded-[1.5rem] md:rounded-[2.5rem] pl-16 pr-10 font-mono text-[10px] md:text-xs outline-none border border-black/[0.03] focus:border-black transition-all shadow-sm focus:shadow-2xl"
+                         placeholder="https://pay.hotmart.com/... | https://checkout.kiwify.com.br/..."
+                      />
+                   </div>
+                   <p className="text-[10px] text-gray-400 font-medium px-2 leading-relaxed">
+                     Esta URL é usada quando o carrinho está <strong>ativo</strong> e o cliente finaliza com múltiplos produtos. Para compra direta de <strong>1 produto</strong>, configure a URL individualmente em cada produto do catálogo.
+                   </p>
+                </div>
+
+                {/* Botão Salvar */}
+                <Button
+                   onClick={() => handleSaveSettings('integration')}
+                   disabled={isSavingSettings}
+                   className="w-full h-20 md:h-24 bg-black hover:bg-[#d82828] text-white rounded-[2rem] md:rounded-[3rem] font-black uppercase tracking-[0.4em] shadow-[0_25px_60px_rgba(0,0,0,0.2)] hover:shadow-[0_25px_60px_rgba(216,40,40,0.3)] transition-all flex items-center justify-center gap-5 group active:scale-[0.98] text-sm"
+                >
+                   {isSavingSettings ? <RefreshCw className="animate-spin" size={24} /> : <Save size={24} className="group-hover:scale-110 transition-transform" strokeWidth={2.5} />}
+                   <span>Salvar Configurações</span>
+                </Button>
              </div>
-             <Button onClick={() => handleSaveSettings('integration')} className="w-full h-16 bg-black text-white rounded-2xl font-black uppercase tracking-widest shadow-xl"><Save size={18} /> SALVAR INTEGRAÇÃO</Button>
           </div>
         )}
 
@@ -1184,242 +1408,310 @@ export default function Admin() {
       {/* MODAL: PRODUCT EDIT/ADD */}
       <AnimatePresence>
         {isModalOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6 text-black overflow-y-auto">
-             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white w-full max-w-2xl rounded-[3rem] p-10 relative shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar">
-                <button onClick={() => { setIsModalOpen(false); setIsEditing(false); setFormData(initialForm); }} className="absolute top-8 right-8 text-gray-300 hover:text-black transition-all"><X size={24} /></button>
-                <h3 className="text-2xl font-black uppercase tracking-tighter mb-8">{isEditing ? "Editar Pack Preset" : "Novo Pack de Elite"}</h3>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase text-gray-400">Nome do Pack</label>
-                        <input name="name" value={formData.name} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5" required />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase text-gray-400">Categoria</label>
-                        <select name="category" value={formData.category} onChange={handleInputChange as any} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 uppercase font-bold text-xs ring-offset-background focus:ring-2 focus:ring-[#d82828] transition-all">
-                          <option value="Creative">Creative</option>
-                          <option value="Urban">Urban</option>
-                          <option value="Nature">Nature</option>
-                          <option value="Portrait">Portrait</option>
-                        </select>
-                      </div>
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[200] flex items-center justify-center p-4 md:p-8 text-black overflow-y-auto"
+          >
+             <motion.div 
+               initial={{ scale: 0.98, y: 40, opacity: 0 }} 
+               animate={{ scale: 1, y: 0, opacity: 1 }} 
+               exit={{ scale: 0.98, y: 40, opacity: 0 }}
+               transition={{ type: "spring", damping: 25, stiffness: 300 }}
+               className="bg-white w-full max-w-5xl rounded-[3rem] md:rounded-[5rem] p-6 md:p-16 relative shadow-[0_50px_200px_rgba(0,0,0,0.8)] overflow-hidden"
+             >
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-[#d82828] to-transparent opacity-50" />
+                
+                <motion.button 
+                  whileHover={{ rotate: 90, scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => { setIsModalOpen(false); setIsEditing(false); setFormData(initialForm); }} 
+                  className="absolute top-8 md:top-12 right-8 md:right-12 w-12 h-12 md:w-16 md:h-16 bg-gray-50 text-gray-400 hover:text-black hover:bg-white rounded-full flex items-center justify-center transition-all z-10 border border-black/[0.03] shadow-sm hover:shadow-xl"
+                >
+                  <X size={28} />
+                </motion.button>
+                
+                <div className="mb-12 md:mb-20">
+                   <div className="flex items-center gap-3 mb-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#d82828] animate-pulse" />
+                      <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-gray-400">Inventory Studio</p>
                    </div>
+                   <h3 className="text-3xl md:text-6xl font-black uppercase tracking-[-0.04em] italic leading-none text-gray-950">
+                     {isEditing ? "Config." : "New"} <span className="text-[#d82828]">Pack</span>
+                   </h3>
+                </div>
 
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase text-gray-400">Preço Atual (R$)</label>
-                        <input name="price" value={formData.price} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5" placeholder="Ex: 49.90" required />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase text-gray-400">Preço Original (R$)</label>
-                        <input name="originalPrice" value={formData.originalPrice} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5" placeholder="Ex: 199.90" />
-                      </div>
-                   </div>
-
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase text-gray-400">Vibes / Estilos (Tags separadas por vírgula)</label>
-                      <div className="relative">
-                         <input 
-                           name="tags" 
-                           value={(formData.tags || []).join(', ')} 
-                           onChange={(e) => {
-                              const tags = e.target.value.split(',').map(tag => tag.trim());
-                              setFormData(prev => ({ ...prev, tags }));
-                           }} 
-                           className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-bold text-xs focus:border-[#d82828] transition-all" 
-                           placeholder="Ex: Nostálgico, Moody, Clean, Cinema" 
-                         />
-                         <div className="flex flex-wrap gap-1.5 mt-2">
-                            {(formData.tags || []).filter(t => t !== "").map((tag, idx) => (
-                               <span key={idx} className="bg-[#d82828]/5 text-[#d82828] text-[9px] font-black px-2 py-0.5 rounded-md uppercase border border-[#d82828]/10">{tag}</span>
-                            ))}
-                         </div>
-                      </div>
-                   </div>
-
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase text-gray-400">Checkout URL (Botão Comprar)</label>
-                      <input name="checkoutUrl" value={formData.checkoutUrl} onChange={handleInputChange} className="w-full h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-mono text-xs" placeholder="https://www.ggcheckout.com/..." />
-                   </div>
-
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase text-gray-400">Imagem de Capa</label>
-                      <div className="flex gap-4">
-                        <input name="image" value={formData.image} onChange={handleInputChange} className="flex-1 h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-mono text-xs" placeholder="https://..." />
-                        <label className="h-12 px-4 bg-black text-white rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-[#d82828] transition-all text-xs font-bold uppercase">
-                          {isUploading ? <RefreshCw className="animate-spin w-4 h-4" /> : <Upload size={16} />}
-                          Arquivo
-                          <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                            const f = e.target.files?.[0];
-                            if (f) {
-                              const url = await handleImageUpload(f);
-                              if (url) setFormData(prev => ({ ...prev, image: url }));
-                            }
-                          }} />
-                        </label>
-                      </div>
-                   </div>
-
-                   <div className="space-y-3">
-                      <label className="text-[10px] font-bold uppercase text-gray-400">Galeria (Outras Imagens)</label>
-                      <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest mb-3">Arraste para reordenar • Passe o mouse para deletar</p>
-                      <Reorder.Group
-                        axis="x"
-                        values={formData.images || []}
-                        onReorder={(newOrder) => setFormData(prev => ({ ...prev, images: newOrder }))}
-                        className="grid grid-cols-4 sm:grid-cols-6 gap-3 mb-4"
-                        style={{ listStyle: 'none', padding: 0, margin: 0 }}
-                      >
-                        {(formData.images || []).map((img) => (
-                          <Reorder.Item
-                            key={img}
-                            value={img}
-                            className="aspect-square rounded-lg overflow-hidden border border-black/5 relative group bg-gray-50 cursor-grab active:cursor-grabbing"
-                            style={{ listStyle: 'none' }}
-                            whileDrag={{ scale: 1.08, zIndex: 50, boxShadow: '0 8px 30px rgba(0,0,0,0.15)' }}
-                          >
-                            <img src={img} className="w-full h-full object-cover pointer-events-none" />
-                            {/* Ícone de grip */}
-                            <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-md p-0.5">
-                              <GripVertical size={12} className="text-white" />
+                <form onSubmit={handleSubmit} className="space-y-12 md:space-y-20 overflow-y-auto max-h-[65vh] pr-4 md:pr-10 custom-scrollbar scroll-smooth pb-10">
+                   {/* Layout Grid */}
+                   <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-8 md:gap-14">
+                      {/* Form Side */}
+                      <div className="space-y-12">
+                         {/* Name & Category */}
+                         <div className="grid grid-cols-1 gap-8">
+                            <div className="space-y-3">
+                              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 ml-1">Asset Identity</label>
+                              <input name="name" value={formData.name} onChange={handleInputChange} className="w-full h-16 md:h-20 bg-gray-50/50 focus:bg-white border border-black/[0.03] focus:border-black rounded-3xl md:rounded-[2rem] px-8 md:px-10 outline-none transition-all font-black text-lg md:text-2xl shadow-sm focus:shadow-2xl" required />
                             </div>
-                            {/* Deletar */}
-                            <button
-                              type="button"
-                              onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((i) => i !== img) }))}
-                              className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all pt-4"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </Reorder.Item>
-                        ))}
-                        {/* Botão de adicionar imagem */}
-                        <label className="aspect-square rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:text-[#d82828] hover:border-[#d82828] cursor-pointer transition-all">
-                          {isUploading ? <RefreshCw className="animate-spin" /> : <Plus size={24} />}
-                          <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                            const f = e.target.files?.[0];
-                            if (f) {
-                              const url = await handleImageUpload(f);
-                              if (url) setFormData(prev => ({ ...prev, images: [...(prev.images || []), url] }));
-                            }
-                          }} />
-                        </label>
-                      </Reorder.Group>
+                            
+                            <div className="grid grid-cols-2 gap-6">
+                              <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Category</label>
+                                <select name="category" value={formData.category} onChange={handleInputChange as any} className="w-full h-14 md:h-16 bg-gray-50/50 border border-black/[0.03] focus:border-black rounded-2xl md:rounded-[1.5rem] px-6 outline-none font-black text-[10px] md:text-xs tracking-widest uppercase">
+                                  <option value="Creative">Creative Collective</option>
+                                  <option value="Urban">Urban Style</option>
+                                  <option value="Nature">Deep Nature</option>
+                                  <option value="Portrait">Pure Portrait</option>
+                                </select>
+                              </div>
+                              <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Price (R$)</label>
+                                <input name="price" value={formData.price} onChange={handleInputChange} className="w-full h-14 md:h-16 bg-gray-50/50 border border-black/[0.03] focus:border-black rounded-2xl md:rounded-[1.5rem] px-6 outline-none font-black text-lg tracking-widest" required />
+                              </div>
+                            </div>
+                         </div>
 
-                      <div className="flex gap-4">
-                        <input id="new-gamma-img" className="flex-1 h-12 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 font-mono text-xs" placeholder="Colar link de nova imagem" onKeyDown={(e) => {
-                           if (e.key === 'Enter') {
-                             e.preventDefault();
-                             const target = e.target as HTMLInputElement;
-                             if (target.value.trim()) {
-                               setFormData(prev => ({ ...prev, images: [...(prev.images || []), target.value.trim()] }));
-                               target.value = '';
-                             }
-                           }
-                        }} />
-                        <Button type="button" onClick={() => {
-                           const el = document.getElementById('new-gamma-img') as HTMLInputElement;
-                           if (el.value.trim()) {
-                             setFormData(p => ({ ...p, images: [...(p.images || []), el.value.trim()] }));
-                             el.value = '';
-                           }
-                        }} className="h-12 px-6 bg-gray-100 text-black hover:bg-black hover:text-white rounded-xl text-xs">ADD</Button>
+                          {/* Preços Internacionais */}
+                          <div className="bg-gradient-to-br from-blue-50/30 to-white rounded-[2rem] border border-black/[0.04] p-6 space-y-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-7 h-7 bg-black rounded-lg flex items-center justify-center shrink-0">
+                                <Globe size={14} className="text-white" />
+                              </div>
+                              <div>
+                                <h5 className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-950">Preços Internacionais</h5>
+                                <p className="text-[9px] text-gray-300 font-medium mt-0.5">Opcional — sobrepõe a conversão automática por taxa de câmbio</p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">🇺🇸 Preço USD ($)</label>
+                                <div className="relative">
+                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-300">$</span>
+                                  <input name="priceUSD" value={formData.priceUSD} onChange={handleInputChange} placeholder="9.99" className="w-full h-12 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl pl-8 pr-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">🇪🇺 Preço EUR (€)</label>
+                                <div className="relative">
+                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-300">€</span>
+                                  <input name="priceEUR" value={formData.priceEUR} onChange={handleInputChange} placeholder="8.99" className="w-full h-12 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl pl-8 pr-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">🇺🇸 Original USD</label>
+                                <div className="relative">
+                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-300">$</span>
+                                  <input name="originalPriceUSD" value={formData.originalPriceUSD} onChange={handleInputChange} placeholder="14.99" className="w-full h-12 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl pl-8 pr-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">🇪🇺 Original EUR</label>
+                                <div className="relative">
+                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-300">€</span>
+                                  <input name="originalPriceEUR" value={formData.originalPriceEUR} onChange={handleInputChange} placeholder="13.99" className="w-full h-12 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl pl-8 pr-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                         {/* Regional Copy */}
+                         <div className="bg-gray-50/50 p-8 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] border border-black/[0.03] space-y-8">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-xl font-black uppercase italic italic">Regional Copy</h4>
+                              <div className="flex gap-2">
+                                {['PT', 'EN', 'ES'].map(l => (
+                                  <button key={l} type="button" onClick={() => setLangTab(l as any)} className={`px-4 py-2 text-[9px] font-bold rounded-xl ${langTab === l ? 'bg-[#d82828] text-white shadow-lg shadow-red-500/10' : 'text-gray-400 hover:text-gray-600'}`}>{l}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="space-y-6">
+                               <div className="space-y-2">
+                                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Description</label>
+                                  <textarea
+                                    value={typeof formData.description === 'object' ? (formData.description[langTab] || '') : (langTab === 'PT' ? (formData.description || '') : '')}
+                                    onChange={(e) => {
+                                      const cur = typeof formData.description === 'object' ? formData.description : { PT: formData.description || '', EN: '', ES: '' };
+                                      setFormData(prev => ({ ...prev, description: { ...cur, [langTab]: e.target.value } }));
+                                    }}
+                                    className="w-full h-24 bg-white rounded-2xl p-6 outline-none border border-black/[0.03] focus:border-black transition-all shadow-sm"
+                                  />
+                               </div>
+                               <div className="space-y-2">
+                                  <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Detailed Narrative</label>
+                                  <textarea
+                                    value={typeof formData.detailedDescription === 'object' ? (formData.detailedDescription[langTab] || '') : (langTab === 'PT' ? (formData.detailedDescription || '') : '')}
+                                    onChange={(e) => {
+                                      const cur = typeof formData.detailedDescription === 'object' ? formData.detailedDescription : { PT: formData.detailedDescription || '', EN: '', ES: '' };
+                                      setFormData(prev => ({ ...prev, detailedDescription: { ...cur, [langTab]: e.target.value } }));
+                                    }}
+                                    className="w-full h-40 bg-white rounded-2xl p-6 outline-none border border-black/[0.03] focus:border-black transition-all shadow-sm"
+                                  />
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+
+                      {/* Right Side: Assets */}
+                      <div className="space-y-12">
+                         <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 ml-1">Cover Art</label>
+                            <div className="aspect-[4/5] rounded-[2.5rem] md:rounded-[3.5rem] overflow-hidden border border-black/[0.05] shadow-2xl relative group bg-gray-100">
+                               <img src={formData.image || "https://images.unsplash.com/photo-1542038784456-1ea8e935640e"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-in-out" alt="Cover" />
+                               <label className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-all">
+                                  <Upload size={32} className="text-white" />
+                                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                    const f = e.target.files?.[0];
+                                    if (f) {
+                                      const url = await handleImageUpload(f);
+                                      if (url) setFormData(prev => ({ ...prev, image: url }));
+                                    }
+                                  }} />
+                               </label>
+                            </div>
+                         </div>
                       </div>
                    </div>
 
-                    <div className="space-y-4">
-                       {/* Descrição Curta — Multilíngue */}
-                       <div className="space-y-2">
-                         <div className="flex items-center justify-between">
-                           <label className="text-[10px] font-bold uppercase text-gray-400">Descrição Curta</label>
-                           <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-                             {['PT', 'EN', 'ES'].map(l => (
-                               <button key={l} type="button" onClick={() => setLangTab(l as any)} className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${langTab === l ? 'bg-white text-[#d82828] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{l}</button>
-                             ))}
+                   {/* Gallery */}
+                   <div className="space-y-8">
+                      <div className="flex items-center justify-between">
+                         <h4 className="text-xl font-black uppercase tracking-tighter italic">Gallery Preview</h4>
+                         <label className="h-12 px-8 bg-black text-white rounded-full flex items-center gap-2 cursor-pointer hover:bg-[#d82828] transition-all text-[10px] font-black uppercase tracking-widest shadow-xl">
+                            <Plus size={16} /> <span>Add Assets</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                              const f = e.target.files?.[0];
+                              if (f) {
+                                const url = await handleImageUpload(f);
+                                if (url) setFormData(prev => ({ ...prev, images: [...(prev.images || []), url] }));
+                              }
+                            }} />
+                         </label>
+                      </div>
+                      <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                         {(formData.images || []).map((img, i) => (
+                           <div key={i} className="w-40 shrink-0 aspect-[4/5] rounded-3xl overflow-hidden relative group shadow-lg border border-black/5">
+                              <img src={img} className="w-full h-full object-cover" alt="Gallery" />
+                              <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((_, idx) => idx !== i) }))} className="absolute inset-0 bg-red-600/90 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all backdrop-blur-sm"><Trash2 size={24} /></button>
                            </div>
-                         </div>
-                         <textarea
-                           value={typeof formData.description === 'object' ? (formData.description[langTab] || '') : (langTab === 'PT' ? (formData.description || '') : '')}
-                           onChange={(e) => {
-                             const cur = typeof formData.description === 'object' ? formData.description : { PT: formData.description || '', EN: '', ES: '' };
-                             setFormData(prev => ({ ...prev, description: { ...cur, [langTab]: e.target.value } }));
-                           }}
-                           placeholder={`Descrição curta em ${langTab}...`}
-                           className="w-full h-24 bg-gray-50 rounded-xl p-4 outline-none border border-black/5 focus:border-[#d82828] transition-all"
-                         />
-                       </div>
-                       {/* Descrição Detalhada — Multilíngue */}
-                       <div className="space-y-2">
-                         <div className="flex items-center justify-between">
-                           <label className="text-[10px] font-bold uppercase text-gray-400">Descrição Detalhada</label>
-                           <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-                             {['PT', 'EN', 'ES'].map(l => (
-                               <button key={l} type="button" onClick={() => setLangTab(l as any)} className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${langTab === l ? 'bg-white text-[#d82828] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{l}</button>
-                             ))}
-                           </div>
-                         </div>
-                         <textarea
-                           value={typeof formData.detailedDescription === 'object' ? (formData.detailedDescription[langTab] || '') : (langTab === 'PT' ? (formData.detailedDescription || '') : '')}
-                           onChange={(e) => {
-                             const cur = typeof formData.detailedDescription === 'object' ? formData.detailedDescription : { PT: formData.detailedDescription || '', EN: '', ES: '' };
-                             setFormData(prev => ({ ...prev, detailedDescription: { ...cur, [langTab]: e.target.value } }));
-                           }}
-                           placeholder={`Descrição detalhada em ${langTab}...`}
-                           className="w-full h-40 bg-gray-50 rounded-xl p-4 outline-none border border-black/5 focus:border-[#d82828] transition-all"
-                         />
-                       </div>
+                         ))}
+                      </div>
+                   </div>
+
+
+                    {/* BLOCK EDITOR: O Que Esta Incluso + Ideal Para */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                      {/* O QUE ESTA INCLUSO */}
+                      <div className="bg-gray-50/60 rounded-[2.5rem] border border-black/[0.04] p-8 space-y-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-[#d82828]/10 rounded-xl flex items-center justify-center">
+                              <Check size={16} className="text-[#d82828]" />
+                            </div>
+                            <h4 className="text-sm font-black uppercase tracking-widest text-gray-950">O Que Esta Incluso</h4>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, whatsIncluded: [...(prev.whatsIncluded || []), ""] }))}
+                            className="w-9 h-9 bg-black text-white rounded-xl flex items-center justify-center hover:bg-[#d82828] transition-all shadow-lg active:scale-90"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {(formData.whatsIncluded || []).map((item, i) => (
+                            <div key={i} className="flex items-center gap-3 group">
+                              <div className="w-6 h-6 bg-[#d82828]/10 rounded-lg flex items-center justify-center shrink-0">
+                                <Check size={12} className="text-[#d82828]" />
+                              </div>
+                              <input
+                                type="text"
+                                value={item}
+                                onChange={(e) => {
+                                  const arr = [...(formData.whatsIncluded || [])];
+                                  arr[i] = e.target.value;
+                                  setFormData(prev => ({ ...prev, whatsIncluded: arr }));
+                                }}
+                                placeholder={`Item ${i + 1}...`}
+                                className="flex-1 h-11 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl px-4 outline-none text-sm font-medium transition-all shadow-sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, whatsIncluded: (prev.whatsIncluded || []).filter((_, idx) => idx !== i) }))}
+                                className="w-9 h-9 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                          {(formData.whatsIncluded || []).length === 0 && (
+                            <div className="py-8 text-center border-2 border-dashed border-gray-200 rounded-2xl">
+                              <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Clique em + para adicionar</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* IDEAL PARA */}
+                      <div className="bg-gray-50/60 rounded-[2.5rem] border border-black/[0.04] p-8 space-y-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-black/5 rounded-xl flex items-center justify-center">
+                              <Star size={16} className="text-gray-700" />
+                            </div>
+                            <h4 className="text-sm font-black uppercase tracking-widest text-gray-950">Ideal Para</h4>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, idealFor: [...(prev.idealFor || []), ""] }))}
+                            className="w-9 h-9 bg-black text-white rounded-xl flex items-center justify-center hover:bg-[#d82828] transition-all shadow-lg active:scale-90"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {(formData.idealFor || []).map((item, i) => (
+                            <div key={i} className="flex items-center gap-3 group">
+                              <div className="w-6 h-6 bg-black/5 rounded-lg flex items-center justify-center shrink-0">
+                                <ChevronRight size={12} className="text-gray-500" />
+                              </div>
+                              <input
+                                type="text"
+                                value={item}
+                                onChange={(e) => {
+                                  const arr = [...(formData.idealFor || [])];
+                                  arr[i] = e.target.value;
+                                  setFormData(prev => ({ ...prev, idealFor: arr }));
+                                }}
+                                placeholder={`Perfil ${i + 1}...`}
+                                className="flex-1 h-11 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl px-4 outline-none text-sm font-medium transition-all shadow-sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, idealFor: (prev.idealFor || []).filter((_, idx) => idx !== i) }))}
+                                className="w-9 h-9 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-xl flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                          {(formData.idealFor || []).length === 0 && (
+                            <div className="py-8 text-center border-2 border-dashed border-gray-200 rounded-2xl">
+                              <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Clique em + para adicionar</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                     </div>
 
-                    {/* O que está incluso */}
-                    <div className="space-y-3">
-                       <label className="text-[10px] font-bold uppercase text-gray-400">O que está incluso</label>
-                       {formData.whatsIncluded.map((item, idx) => (
-                         <div key={idx} className="flex gap-2">
-                           <input
-                             value={item}
-                             onChange={(e) => {
-                               const updated = [...formData.whatsIncluded];
-                               updated[idx] = e.target.value;
-                               setFormData(prev => ({ ...prev, whatsIncluded: updated }));
-                             }}
-                             className="flex-1 h-11 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 focus:border-[#d82828] transition-all text-sm"
-                             placeholder={`Item ${idx + 1}...`}
-                           />
-                           <button type="button" onClick={() => setFormData(prev => ({ ...prev, whatsIncluded: prev.whatsIncluded.filter((_, i) => i !== idx) }))} className="p-2 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                         </div>
-                       ))}
-                       <button type="button" onClick={() => setFormData(prev => ({ ...prev, whatsIncluded: [...prev.whatsIncluded, ''] }))} className="flex items-center gap-2 text-[10px] font-bold uppercase text-gray-400 hover:text-black transition-colors mt-1">
-                         <Plus size={14} /> Adicionar item
-                       </button>
-                    </div>
-
-                    {/* Ideal Para */}
-                    <div className="space-y-3">
-                       <label className="text-[10px] font-bold uppercase text-gray-400">Ideal Para</label>
-                       {formData.idealFor.map((item, idx) => (
-                         <div key={idx} className="flex gap-2">
-                           <input
-                             value={item}
-                             onChange={(e) => {
-                               const updated = [...formData.idealFor];
-                               updated[idx] = e.target.value;
-                               setFormData(prev => ({ ...prev, idealFor: updated }));
-                             }}
-                             className="flex-1 h-11 bg-gray-50 rounded-xl px-4 outline-none border border-black/5 focus:border-[#d82828] transition-all text-sm"
-                             placeholder={`Perfil ${idx + 1}...`}
-                           />
-                           <button type="button" onClick={() => setFormData(prev => ({ ...prev, idealFor: prev.idealFor.filter((_, i) => i !== idx) }))} className="p-2 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                         </div>
-                       ))}
-                       <button type="button" onClick={() => setFormData(prev => ({ ...prev, idealFor: [...prev.idealFor, ''] }))} className="flex items-center gap-2 text-[10px] font-bold uppercase text-gray-400 hover:text-black transition-colors mt-1">
-                         <Plus size={14} /> Adicionar perfil
-                       </button>
-                    </div>
-
-                   <Button type="submit" disabled={isLoading} className="w-full h-16 bg-black text-white hover:bg-[#d82828] rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl mt-4 select-none">
-                      {isLoading ? <RefreshCw className="animate-spin mr-2" /> : <Save size={20} className="mr-2" />}
-                      {isEditing ? "Atualizar Pack" : "Criar Novo Pack"}
-                   </Button>
+                   {/* Actions */}
+                   <div className="pt-10 flex gap-4 sticky bottom-0 bg-white/90 backdrop-blur-xl py-6 border-t border-black/[0.02]">
+                       <Button type="button" variant="ghost" onClick={() => { setIsModalOpen(false); setIsEditing(false); setFormData(initialForm); }} className="h-16 flex-1 rounded-2xl font-black uppercase text-[10px]">Close</Button>
+                       <Button type="submit" disabled={isLoading} className="h-16 flex-[2] bg-black text-white rounded-2xl font-black uppercase tracking-[0.2em]">
+                          {isLoading ? "Saving..." : (isEditing ? "Apply Changes" : "Create Product")}
+                       </Button>
+                   </div>
                 </form>
              </motion.div>
           </motion.div>

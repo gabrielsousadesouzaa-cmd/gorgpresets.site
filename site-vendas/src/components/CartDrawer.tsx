@@ -29,35 +29,37 @@ export function CartDrawer() {
   };
 
   const handleCheckout = () => {
+    if (items.length === 0) return;
+    
+    // CASO 1: Apenas 1 produto - Checkout Individual (Solo)
+    if (items.length === 1) {
+      const linkIndividual = items[0].product.checkoutUrl;
+      if (linkIndividual && linkIndividual !== "#") {
+        window.location.href = linkIndividual;
+        return;
+      }
+    }
+
+    // CASO 2: Múltiplos produtos - Checkout de Vários Produtos
+    // Vamos construir a URL Multi-Add: ?add=ID1&add=ID2...
     const ids = items
-      .map(item => extractId(item.product.checkoutUrl || ""))
-      .filter(id => id && id !== "#");
+      .map(item => extractId(item.product.checkoutUrl))
+      .filter(id => id !== "");
 
-    console.log("Produtos extraídos (IDs):", ids);
-
-    if (ids.length === 0) return;
-
-    if (ids.length === 1) {
-      window.location.href = items[0].product.checkoutUrl!;
+    if (ids.length > 1) {
+      // Base da URL do carrinho (ex: https://ggcheckout.app/s/F3LEikOi-0/cart)
+      const baseUrl = settings.integration.checkoutBaseUrl;
+      // Monta os parâmetros ?add=ID1&add=ID2...
+      const queryParams = ids.map(id => `add=${id}`).join("&");
+      const finalUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${queryParams}`;
+      
+      console.log("Redirecionando para Multi-Checkout:", finalUrl);
+      window.location.href = finalUrl;
       return;
     }
 
-    try {
-      // Usa a URL exata do primeiro produto (para não importar se é v3, v5, etc) e remove queries soltas
-      const firstUrl = new URL(items[0].product.checkoutUrl!);
-      const baseUrl = `${firstUrl.origin}${firstUrl.pathname}`;
-      
-      const extraIds = ids.slice(1).map(id => `add=${id}`).join("&");
-      const finalUrl = `${baseUrl}?${extraIds}`;
-
-      console.log("Multi-Checkout Dinâmico URL:", finalUrl);
-      window.location.href = finalUrl;
-    } catch (e) {
-      // Fallback seguro caso o URL seja inválido para a classe nativa URL()
-      const baseUrl = items[0].product.checkoutUrl!.split('?')[0];
-      const extraIds = ids.slice(1).map(id => `add=${id}`).join("&");
-      window.location.href = `${baseUrl}?${extraIds}`;
-    }
+    // Fallback caso algo dê errado ou capture apenas 1 ID no loop
+    window.location.href = settings.integration.checkoutBaseUrl;
   };
   // Sugestão baseada em produtos REAIS que NÃO estão no carrinho
   const upsellProduct = products.find(p => !items.some(item => item.product.id === p.id));

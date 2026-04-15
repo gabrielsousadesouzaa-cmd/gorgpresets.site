@@ -101,8 +101,24 @@ export default function Index() {
           <div key={id} id="catalogo" className="scroll-mt-20">
             <ProductCarousel title={t("allPresets")} products={allPresets} />
             <div className="flex justify-center mt-6 md:mt-10 mb-12 px-4 shadow-sm">
-              <Link to="/catalog" className="w-full sm:w-auto bg-[#111] text-white px-12 py-5 rounded-full font-bold uppercase tracking-widest hover:bg-black/90 transition-all shadow-xl active:scale-95 text-center text-[15px] md:text-base border border-white/10">
-                {t("viewFullCatalog")}
+              <Link
+                to="/catalog"
+                className="group w-[90%] sm:w-auto mx-auto flex items-center justify-center gap-2 md:gap-3 overflow-hidden rounded-full bg-[#111] px-6 py-3.5 md:px-10 md:py-5 transition-all duration-700 ease-out hover:px-8 md:hover:px-[4.5rem] hover:gap-4 md:hover:gap-6 hover:bg-black shadow-[0_8px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.2)] active:scale-[0.98]"
+              >
+                <span className="text-[11px] md:text-sm font-black uppercase tracking-[0.2em] text-white transition-all duration-700 ease-out group-hover:tracking-[0.25em] md:group-hover:tracking-[0.35em]">
+                  {t("viewFullCatalog")}
+                </span>
+                
+                <div className="flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full bg-white/10 transition-all duration-700 ease-out group-hover:bg-white group-hover:scale-110 shrink-0">
+                  <svg
+                    className="w-3 h-3 md:w-4 md:h-4 text-white group-hover:text-black transition-colors duration-700"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </div>
               </Link>
             </div>
           </div>

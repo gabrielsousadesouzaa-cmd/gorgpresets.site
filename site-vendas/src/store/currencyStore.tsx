@@ -5,7 +5,7 @@ type Currency = "BRL" | "USD" | "EUR";
 interface CurrencyContextType {
   currency: Currency;
   setCurrency: (c: Currency) => void;
-  formatCurrency: (valueInBrl: number) => string;
+  formatCurrency: (valueInBrl: number, manualPrices?: { priceUSD?: number | null; priceEUR?: number | null }) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -54,12 +54,13 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     detectLocale();
   }, []);
 
-  const formatCurrency = (valueInBrl: number) => {
-    const converted = valueInBrl * (exchangeRates[currency] || 1);
+  const formatCurrency = (valueInBrl: number, manualPrices?: { priceUSD?: number | null; priceEUR?: number | null }) => {
+    let converted = valueInBrl * (exchangeRates[currency] || 1);
+    if (currency === "USD" && manualPrices?.priceUSD) converted = manualPrices.priceUSD;
+    if (currency === "EUR" && manualPrices?.priceEUR) converted = manualPrices.priceEUR;
     let locale = "pt-BR";
     if (currency === "USD") locale = "en-US";
     if (currency === "EUR") locale = "pt-PT";
-
     return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: currency,

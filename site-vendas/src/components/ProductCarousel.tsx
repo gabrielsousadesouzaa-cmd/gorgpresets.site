@@ -30,10 +30,9 @@ export function ProductCarousel({
   // Configurações específicas para cada tipo de carrossel
   const emblaOptions = isBestSeller 
     ? { 
-        align: "start" as const, 
-        loop: false, 
+        align: "center" as const, 
+        loop: true, 
         dragFree: false, 
-        containScroll: "trimSnaps" as const, 
         watchDrag: true,
         breakpoints: {
           '(min-width: 1024px)': { 

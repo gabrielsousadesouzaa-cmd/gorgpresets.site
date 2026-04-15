@@ -79,7 +79,7 @@ export function TestimonialsSection() {
       <div className="md:container md:mx-auto px-4 md:px-8 flex justify-center text-center mb-8">
         <div className="relative inline-block">
           <h2 className="text-2xl md:text-4xl font-bold text-gray-950 uppercase tracking-tighter mb-2">
-            {t("testiTitle1")}{t("testiTitle2")}
+            {t("testiTitle1")}
           </h2>
           <motion.div 
             initial={{ scaleX: 0 }}

@@ -67,11 +67,14 @@ export default function ProductDetail() {
   };
 
   const handleBuyNow = () => {
-    if (product?.checkoutUrl && product.checkoutUrl !== "#") {
-      window.open(product.checkoutUrl, "_blank");
+    if (!product) return;
+    
+    // Conforme sua regra: COMPRAR AGORA sempre leva para o checkout SOLO deste produto específico
+    // Não altera o conteúdo do carrinho do site, sendo uma compra direta e rápida.
+    if (product.checkoutUrl && product.checkoutUrl !== "#") {
+      window.location.href = product.checkoutUrl;
     } else {
-      handleAddToCart();
-      toast.info("Link de checkout não configurado. Produto adicionado ao carrinho.");
+      toast.info(language === 'PT' ? "Link de checkout não configurado." : "Checkout link not configured.");
     }
   };
 
@@ -186,10 +189,10 @@ export default function ProductDetail() {
 
               {/* Preco */}
               <div className="flex items-center gap-4">
-                <span className="text-4xl font-extrabold text-[#d82828] tracking-tighter leading-none">{formatCurrency(product.price)}</span>
+                <span className="text-4xl font-extrabold text-[#d82828] tracking-tighter leading-none">{formatCurrency(product.price, { priceUSD: product.priceUSD, priceEUR: product.priceEUR })}</span>
                 {product.originalPrice > 0 && (
                   <div className="flex flex-col">
-                    <span className="text-base text-gray-300 line-through font-semibold leading-none">{formatCurrency(product.originalPrice)}</span>
+                    <span className="text-base text-gray-300 line-through font-semibold leading-none">{formatCurrency(product.originalPrice, { priceUSD: product.originalPriceUSD, priceEUR: product.originalPriceEUR })}</span>
                     <div className="px-2 py-0.5 bg-[#d82828] text-white text-[10px] font-bold rounded-full w-fit mt-1">
                       {t("pdDiscountTag")}
                     </div>
@@ -355,10 +358,10 @@ export default function ProductDetail() {
               <h1 className="text-4xl font-extrabold text-gray-950 uppercase tracking-tighter leading-[0.9]">{product.name}</h1>
 
               <div className="flex items-center gap-4">
-                <span className="text-5xl font-extrabold text-[#d82828] tracking-tighter leading-none">{formatCurrency(product.price)}</span>
+                <span className="text-5xl font-extrabold text-[#d82828] tracking-tighter leading-none">{formatCurrency(product.price, { priceUSD: product.priceUSD, priceEUR: product.priceEUR })}</span>
                 {product.originalPrice > 0 && (
                   <div className="flex flex-col">
-                    <span className="text-lg text-gray-300 line-through font-semibold leading-none">{formatCurrency(product.originalPrice)}</span>
+                    <span className="text-lg text-gray-300 line-through font-semibold leading-none">{formatCurrency(product.originalPrice, { priceUSD: product.originalPriceUSD, priceEUR: product.originalPriceEUR })}</span>
                     <div className="px-3 py-1 bg-[#d82828] text-white text-[11px] font-bold rounded-full shadow-lg transform -rotate-1 w-fit mt-1">
                       {t("pdDiscountTag")}
                     </div>
@@ -500,7 +503,7 @@ export default function ProductDetail() {
                     <span className="text-[8px] font-black text-[#d82828] uppercase tracking-[0.2em] leading-none mb-1">{product.category}</span>
                     <h4 className="text-[13px] font-black text-gray-950 uppercase tracking-tighter truncate leading-tight mb-1">{product.name}</h4>
                     <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-black text-gray-950 leading-none">{formatCurrency(product.price)}</span>
+                      <span className="text-[13px] font-black text-gray-950 leading-none">{formatCurrency(product.price, { priceUSD: product.priceUSD, priceEUR: product.priceEUR })}</span>
                       <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t("pdInstallmentText")} {formatCurrency(product.price / 12)}</span>
                     </div>
                   </div>
@@ -532,8 +535,8 @@ export default function ProductDetail() {
                 <div className="flex items-center gap-12">
                   <div className="text-right flex flex-col items-end">
                      <div className="flex items-center gap-4">
-                        {product.originalPrice > 0 && <span className="text-base text-gray-400 line-through font-medium">{formatCurrency(product.originalPrice)}</span>}
-                        <span className="text-3xl font-black text-gray-950 tracking-tighter">{formatCurrency(product.price)}</span>
+                        {product.originalPrice > 0 && <span className="text-base text-gray-400 line-through font-medium">{formatCurrency(product.originalPrice, { priceUSD: product.originalPriceUSD, priceEUR: product.originalPriceEUR })}</span>}
+                        <span className="text-3xl font-black text-gray-950 tracking-tighter">{formatCurrency(product.price, { priceUSD: product.priceUSD, priceEUR: product.priceEUR })}</span>
                      </div>
                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t("pdInstallmentText")} {formatCurrency(product.price/12)}</p>
                   </div>

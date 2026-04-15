@@ -53,6 +53,10 @@ const mapProduct = (p: any): Product => {
     isNew: !!p.is_new,
     isBestseller: !!p.is_bestseller,
     salesCount: parseInt(String(p.sales_count)) || 0,
+    priceUSD: p.price_usd ? parseFloat(String(p.price_usd)) : null,
+    priceEUR: p.price_eur ? parseFloat(String(p.price_eur)) : null,
+    originalPriceUSD: p.original_price_usd ? parseFloat(String(p.original_price_usd)) : null,
+    originalPriceEUR: p.original_price_eur ? parseFloat(String(p.original_price_eur)) : null,
   };
 };
 

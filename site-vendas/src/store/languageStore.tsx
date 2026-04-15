@@ -94,8 +94,8 @@ export const translations = {
   countryPT: { PT: "Euro (EUR €)", EN: "Euro (EUR €)", ES: "Euro (EUR €)" },
 
   // Testimonials
-  testiTitle1: { PT: "Feedbacks ", EN: "Real ", ES: "Comentarios " },
-  testiTitle2: { PT: "reais", EN: "feedbacks", ES: "reales" },
+  testiTitle1: { PT: "Feedbacks", EN: "Feedbacks", ES: "Comentarios" },
+  testiTitle2: { PT: "", EN: "", ES: "" },
   
   // Editing Banner
   editingTitle: { PT: "Edição ", EN: "Uncomplicated ", ES: "Edición " },

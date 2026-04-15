@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { Product } from "../data/products";
 import { toast } from "sonner";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useLanguage } from "@/store/languageStore";
 
 export interface CartItem {
   product: Product;
@@ -26,6 +28,8 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { settings } = useSiteSettings();
+  const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [rawItems, setRawItems] = useState<Product[]>(() => {
     // Tenta carregar do localStorage no início
@@ -43,10 +47,46 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const toggleCart = () => setIsOpen((prev) => !prev);
 
   const addItem = (product: Product) => {
+    // Sincronização GGCheckout em Background se o carrinho estiver ATIVO
+    if (settings.integration.isCartEnabled) {
+      try {
+        const extractId = (url: string) => {
+          if (!url || url === "#") return "";
+          try {
+            const urlObj = new URL(url);
+            // Tenta pegar do query ?id= ou do path
+            const qId = urlObj.searchParams.get("id");
+            if (qId) return qId;
+            const parts = urlObj.pathname.split('/').filter(Boolean);
+            return parts[parts.length - 1];
+          } catch {
+            const parts = url.split("?")[0].split("/").filter(Boolean);
+            return parts[parts.length - 1];
+          }
+        };
+
+        const productId = extractId(product.checkoutUrl);
+        if (productId) {
+          // Garantimos que a URL base termine com /cart e adicionamos /add
+          const baseUrl = settings.integration.checkoutBaseUrl.endsWith('/') 
+            ? settings.integration.checkoutBaseUrl.slice(0, -1) 
+            : settings.integration.checkoutBaseUrl;
+          
+          const addUrl = `${baseUrl}/add?id=${productId}`;
+          
+          console.log("GGCheckout Background Add:", addUrl);
+          // Chamada silenciosa (no-cors para evitar problemas de origem cruzada se a GG não habilitar CORS)
+          fetch(addUrl, { mode: 'no-cors' }).catch(e => console.error("GG Error:", e));
+        }
+      } catch (e) {
+        console.error("Erro na integração GGCheckout:", e);
+      }
+    }
+
     setRawItems((prev) => {
       // Impede duplicata
       if (prev.find((p) => p.id === product.id)) {
-        toast.error("Este preset já está no seu carrinho!");
+        toast.error(language === 'PT' ? "Este preset já está no seu carrinho!" : "This preset is already in your cart!");
         return prev;
       }
       setIsOpen(true); // Abre o carrinho automaticamente
