@@ -11,6 +11,7 @@ import { MenuProvider } from "@/store/MenuContext";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { lazy, Suspense } from "react";
+import { SiteTracker } from "@/components/SiteTracker";
 
 const Index = lazy(() => import("./pages/Index"));
 const Catalog = lazy(() => import("./pages/Catalog"));
@@ -38,6 +39,7 @@ function App() {
               <BrowserRouter>
                 <MenuProvider>
                   <ScrollToTop />
+                  <SiteTracker />
                   <Routes>
                     {/* Admin sem Layout */}
                     <Route 

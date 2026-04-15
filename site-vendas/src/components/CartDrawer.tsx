@@ -7,6 +7,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Trash2, X, ShoppingBag, Plus, ShieldCheck, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { trackCheckoutClick } from "@/components/SiteTracker";
 
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, getTotal, addItem, getPromoDiscount, getSavings } = useCart();
@@ -28,8 +29,10 @@ export function CartDrawer() {
     }
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (items.length === 0) return;
+    
+    await trackCheckoutClick();
     
     // CASO 1: Apenas 1 produto - Checkout Individual (Solo)
     if (items.length === 1) {

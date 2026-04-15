@@ -1,16 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { 
   Plus, Trash2, Edit3, X, Save, Lock, LayoutDashboard, ShoppingBag, LogOut, 
   AlertCircle, Image as ImageIcon, Star, Users, GripVertical, LayoutList, 
-  ChevronRight, Check, Package, Bell, Zap,
+  ChevronRight, ChevronDown, Menu, Check, Package, Bell, Zap,
   Upload, Sparkles, RefreshCw, Eye, EyeOff, Globe
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { saveSetting, DEFAULT_SETTINGS, SiteSettings } from "@/hooks/useSiteSettings";
-
 
 interface ProductFormData {
   id?: string;
@@ -66,10 +65,12 @@ export default function Admin() {
   const [formData, setFormData] = useState<ProductFormData>(initialForm);
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'products' | 'hero' | 'banner' | 'testimonials' | 'order' | 'integration' | 'shopTheLook' | 'promoBar' | 'magic'>('products');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'hero' | 'banner' | 'testimonials' | 'order' | 'integration' | 'shopTheLook' | 'promoBar' | 'magic' | 'analytics'>('dashboard');
+  const [visits, setVisits] = useState<any[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [langTab, setLangTab] = useState<'PT' | 'EN' | 'ES'>('PT');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hpValue, setHpValue] = useState(""); // Honey-Pot field state
 
   // Atualiza o título da aba na Admin
@@ -308,6 +309,7 @@ export default function Admin() {
     if (isAuthenticated) {
       fetchProducts();
       fetchSettings();
+      fetchVisits();
     }
   }, [isAuthenticated]);
 
@@ -423,6 +425,25 @@ export default function Admin() {
       console.error(error);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function fetchVisits() {
+    try {
+      const pastWeek = new Date();
+      pastWeek.setDate(pastWeek.getDate() - 6);
+      pastWeek.setHours(0, 0, 0, 0);
+      
+      const { data, error } = await supabase
+        .from('site_visits')
+        .select('*')
+        .gte('created_at', pastWeek.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error && error.code !== '42P01') throw error; // Ignore se a tabela não existir
+      setVisits(data || []);
+    } catch (error) {
+      console.warn("Erro ao buscar visitas. A tabela pode não ter sido criada ainda.");
     }
   }
 
@@ -715,8 +736,62 @@ export default function Admin() {
         
         <div className="border-t border-black/[0.03] bg-white/40 backdrop-blur-md">
           <div className="container mx-auto px-4 md:px-10">
-            <div className="flex gap-1 overflow-x-auto no-scrollbar scroll-smooth py-1">
+            {/* MOBILE MENU TOGGLE */}
+            <div className="md:hidden flex items-center justify-between py-4">
+               <button 
+                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                 className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-gray-950 bg-white border border-black/5 px-5 py-4 rounded-xl shadow-sm w-full justify-between active:scale-[0.98] transition-all"
+               >
+                 <div className="flex items-center gap-2">
+                   <Menu size={16} className="text-[#d82828]" />
+                   Selecione o Menu
+                 </div>
+                 <ChevronDown size={14} className={`transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-180' : ''}`} />
+               </button>
+            </div>
+
+            {/* MOBILE DROPDOWN TABS */}
+            <AnimatePresence>
+              {isMobileMenuOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="md:hidden overflow-hidden bg-white/95 backdrop-blur-3xl absolute left-0 right-0 top-full z-[200] shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-b-3xl"
+                >
+                  <div className="flex flex-col py-2 px-4 max-h-[50vh] overflow-y-auto w-[92%] mx-auto bg-white mb-6 rounded-2xl shadow-inner border border-black/5 pb-2 mt-4">
+                    {[
+                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                      { key: 'products', label: 'Catálogo', icon: ShoppingBag },
+                      { key: 'magic', label: 'A Mágica', icon: Sparkles },
+                      { key: 'hero', label: 'Hero Home', icon: ImageIcon },
+                      { key: 'banner', label: 'Ofertas', icon: ImageIcon },
+                      { key: 'testimonials', label: 'Elite Feedbacks', icon: Users },
+                      { key: 'shopTheLook', label: 'Mosaico', icon: ImageIcon },
+                      { key: 'order', label: 'Curadoria', icon: LayoutList },
+                      { key: 'integration', label: 'GGCheckout', icon: Zap },
+                      { key: 'promoBar', label: 'Alertas', icon: Bell },
+                      { key: 'analytics', label: 'Acessos', icon: Globe },
+                    ].map(({ key, label, icon: Icon }) => (
+                      <button 
+                        key={key} 
+                        onClick={() => { setActiveTab(key as any); setIsMobileMenuOpen(false); }} 
+                        className={`flex items-center gap-3 px-5 py-4 border-b border-black/[0.02] last:border-0 rounded-xl transition-all ${activeTab === key ? 'bg-black text-white shadow-md my-1' : 'hover:bg-gray-50 text-gray-950'}`}
+                      >
+                        <Icon size={16} className={`${activeTab === key ? 'text-white' : 'text-[#d82828]'}`} />
+                        <span className={`text-[10px] font-black uppercase tracking-[0.15em] ${activeTab === key ? 'text-white' : 'text-gray-600'}`}>{label}</span>
+                        {activeTab === key && <Check size={14} className="ml-auto opacity-50" />}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* TABS (DESKTOP) */}
+            <div className="hidden md:flex gap-1 overflow-x-auto no-scrollbar scroll-smooth py-1">
               {[
+                { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
                 { key: 'products', label: 'Catálogo', icon: ShoppingBag },
                 { key: 'magic', label: 'A Mágica', icon: Sparkles },
                 { key: 'hero', label: 'Hero Home', icon: ImageIcon },
@@ -726,6 +801,7 @@ export default function Admin() {
                 { key: 'order', label: 'Curadoria', icon: LayoutList },
                 { key: 'integration', label: 'GGCheckout', icon: Zap },
                 { key: 'promoBar', label: 'Alertas', icon: Bell },
+                { key: 'analytics', label: 'Acessos', icon: Globe },
               ].map(({ key, label, icon: Icon }) => (
                 <button 
                   key={key} 
@@ -750,6 +826,243 @@ export default function Admin() {
 
 
       <main className="container mx-auto px-4 md:px-10 py-8 md:py-16 relative z-10 flex-1">
+{/* DASHBOARD TAB */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                   <div className="w-8 h-8 rounded-lg bg-[#d82828]/10 flex items-center justify-center">
+                      <LayoutDashboard className="text-[#d82828] w-4 h-4" />
+                   </div>
+                   <h2 className="text-2xl md:text-4xl font-black uppercase tracking-tighter italic text-gray-950">Visão Geral</h2>
+                </div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] ml-11">Resumo Inteligente do Sistema</p>
+              </div>
+            </div>
+
+            {/* CHARTS ROW (AGORA EM PRIMEIRO LUGAR) */}
+            <div className="px-4 md:px-0 mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Chart 1: Tráfego da Semana */}
+              <div className="bg-white rounded-[2rem] p-8 border border-white shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative overflow-hidden group transition-all hover:shadow-[0_20px_50px_rgba(216,40,40,0.08)]">
+                <div className="flex items-center justify-between mb-8 relative z-10">
+                  <div>
+                    <h3 className="text-2xl font-black text-gray-950 tracking-tighter">Tráfego da Semana</h3>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1">Visitantes únicos por dia (útimos 7 dias)</p>
+                  </div>
+                  <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center shrink-0">
+                    <Globe size={20} />
+                  </div>
+                </div>
+                
+                {(() => {
+                  const days = 7;
+                  const chartData = [];
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  
+                  for (let i = days - 1; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    const count = visits.filter(v => v.created_at && v.created_at.startsWith(dateStr) && v.path !== 'CHECKOUT_CLICK').length;
+                    
+                    const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+                    const dayName = weekDays[d.getDay()];
+                    
+                    chartData.push({
+                      name: i === 0 ? 'HOJE' : dayName,
+                      Acessos: count
+                    });
+                  }
+
+                  const maxAcessos = Math.max(...chartData.map(d => d.Acessos), 1);
+
+                  return (
+                    <div className="h-[250px] w-full relative z-10 flex items-end justify-between gap-1 sm:gap-2 md:gap-4 lg:gap-6 pt-10 px-0">
+                       {chartData.map((d, i) => {
+                          const heightPercent = (d.Acessos / maxAcessos) * 100;
+                          return (
+                            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full relative group cursor-pointer w-full max-w-[50px] md:max-w-[60px]">
+                              <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-[#d82828] border-b-2 border-[#d82828] text-[10px] font-black px-3 py-1.5 rounded-lg whitespace-nowrap pointer-events-none z-20">
+                                <span className="text-white">{d.Acessos}</span> acessos
+                              </div>
+                              <div 
+                                className="w-full bg-gradient-to-t from-gray-100 to-gray-300 group-hover:from-[#d82828]/20 group-hover:to-[#d82828] rounded-t-[10px] transition-all duration-500 ease-out group-hover:shadow-[0_0_20px_rgba(216,40,40,0.4)]"
+                                style={{ height: `${Math.max(2, heightPercent)}%` }} 
+                              />
+                              <span className={`text-[8px] sm:text-[9px] mt-4 font-black uppercase tracking-widest ${i === 6 ? 'text-gray-950' : 'text-gray-400'}`}>
+                                {d.name}
+                              </span>
+                            </div>
+                          );
+                       })}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Chart 2: Conversão de Checkouts */}
+              <div className="bg-white rounded-[2rem] p-8 border border-white shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative overflow-hidden group transition-all hover:shadow-[0_20px_50px_rgba(216,40,40,0.08)]">
+                <div className="flex items-center justify-between mb-8 relative z-10">
+                  <div>
+                    <h3 className="text-2xl font-black text-gray-950 tracking-tighter">Cliques no Checkout</h3>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#d82828] mt-1">Interesse de compra por dia</p>
+                  </div>
+                  <div className="w-12 h-12 bg-red-50 text-[#d82828] rounded-2xl flex items-center justify-center shrink-0">
+                    <ShoppingBag size={20} />
+                  </div>
+                </div>
+                
+                {(() => {
+                  const days = 7;
+                  const chartData = [];
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  
+                  for (let i = days - 1; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    const count = visits.filter(v => v.created_at && v.created_at.startsWith(dateStr) && v.path === 'CHECKOUT_CLICK').length;
+                    
+                    const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+                    const dayName = weekDays[d.getDay()];
+                    
+                    chartData.push({
+                      name: i === 0 ? 'HOJE' : dayName,
+                      Acessos: count
+                    });
+                  }
+
+                  const maxAcessos = Math.max(...chartData.map(d => d.Acessos), 1);
+
+                  return (
+                    <div className="h-[250px] w-full relative z-10 flex items-end justify-between gap-1 sm:gap-2 md:gap-4 lg:gap-6 pt-10 px-0">
+                       {chartData.map((d, i) => {
+                          const heightPercent = (d.Acessos / maxAcessos) * 100;
+                          return (
+                            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full relative group cursor-pointer w-full max-w-[50px] md:max-w-[60px]">
+                              <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-[#d82828] border-b-2 border-[#d82828] text-[10px] font-black px-3 py-1.5 rounded-lg whitespace-nowrap pointer-events-none z-20">
+                                <span className="text-white">{d.Acessos}</span> cliques
+                              </div>
+                              <div 
+                                className="w-full bg-gradient-to-t from-[#d82828]/10 to-[#d82828] rounded-t-[10px] transition-all duration-500 ease-out group-hover:opacity-80 group-hover:shadow-[0_0_20px_rgba(216,40,40,0.4)]"
+                                style={{ height: `${Math.max(2, heightPercent)}%` }} 
+                              />
+                              <span className={`text-[8px] sm:text-[9px] mt-4 font-black uppercase tracking-widest ${i === 6 ? 'text-[#d82828]' : 'text-gray-400'}`}>
+                                {d.name}
+                              </span>
+                            </div>
+                          );
+                       })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* TABELAS MENORES (GRIDS) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-4 md:px-0">
+              {/* Card 1: Acessos */}
+              {(() => {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const todayVisits = visits.filter(v => v.created_at.startsWith(todayStr) && v.path !== 'CHECKOUT_CLICK').length;
+                return (
+                  <div className="bg-white rounded-3xl p-6 border border-white shadow-[0_10px_40px_rgba(0,0,0,0.03)] relative overflow-hidden group transition-all hover:shadow-[0_20px_50px_rgba(216,40,40,0.06)]">
+                     <div className="absolute -top-2 -right-2 p-4 text-gray-100 group-hover:text-[#d82828]/5 transition-colors duration-500">
+                       <Globe size={80} />
+                     </div>
+                     <div className="relative z-10 flex flex-col h-full">
+                       <div className="w-8 h-8 bg-[#d82828]/10 rounded-lg flex items-center justify-center mb-4">
+                         <Globe className="text-[#d82828] w-4 h-4" />
+                       </div>
+                       <h3 className="text-3xl font-black text-gray-950 tracking-tighter mb-1 select-none">{todayVisits}</h3>
+                       <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-6 select-none">Acessos Hoje</p>
+                       
+                       <div className="mt-auto">
+                         <button onClick={() => setActiveTab('analytics')} className="w-full h-10 bg-gray-50 hover:bg-black hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-between px-4">
+                           Ver Relatório <ChevronRight size={12} />
+                         </button>
+                       </div>
+                     </div>
+                  </div>
+                );
+              })()}
+
+              {/* Card 2: Produtos */}
+              <div className="bg-white rounded-3xl p-6 border border-white shadow-[0_10px_40px_rgba(0,0,0,0.03)] relative overflow-hidden group transition-all hover:shadow-[0_20px_50px_rgba(216,40,40,0.06)]">
+                 <div className="absolute -top-2 -right-2 p-4 text-gray-100 group-hover:text-[#d82828]/5 transition-colors duration-500">
+                   <ShoppingBag size={80} />
+                 </div>
+                 <div className="relative z-10 flex flex-col h-full">
+                   <div className="w-8 h-8 bg-[#d82828]/10 rounded-lg flex items-center justify-center mb-4">
+                     <ShoppingBag className="text-[#d82828] w-4 h-4" />
+                   </div>
+                   <h3 className="text-3xl font-black text-gray-950 tracking-tighter mb-1 select-none">{products.length}</h3>
+                   <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-6 select-none">Packs Cadastrados</p>
+                   
+                   <div className="mt-auto">
+                     <button onClick={() => setActiveTab('products')} className="w-full h-10 bg-gray-50 hover:bg-black hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-between px-4">
+                       Catálogo <ChevronRight size={12} />
+                     </button>
+                   </div>
+                 </div>
+              </div>
+
+              {/* Card 3: Vendas Estimadas */}
+              <div className="bg-white rounded-3xl p-6 border border-white shadow-[0_10px_40px_rgba(0,0,0,0.03)] relative overflow-hidden group transition-all hover:shadow-[0_20px_50px_rgba(216,40,40,0.06)]">
+                 <div className="absolute -top-2 -right-2 p-4 text-gray-100 group-hover:text-[#d82828]/5 transition-colors duration-500">
+                   <Star size={80} />
+                 </div>
+                 <div className="relative z-10 flex flex-col h-full">
+                   <div className="w-8 h-8 bg-[#d82828]/10 rounded-lg flex items-center justify-center mb-4">
+                     <Star className="text-[#d82828] w-4 h-4" />
+                   </div>
+                   <h3 className="text-3xl font-black text-gray-950 tracking-tighter mb-1 select-none">{products.reduce((acc, p) => acc + (p.salesCount || 0), 0)}+</h3>
+                   <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-6 select-none">Aprovação</p>
+                   
+                   <div className="mt-auto">
+                     <div className="w-full h-10 border border-gray-100 rounded-lg flex items-center justify-center bg-gray-50/50">
+                       <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap px-2">Automático</span>
+                     </div>
+                   </div>
+                 </div>
+              </div>
+
+              {/* Card 4: Alertas Ativos */}
+              <div className="bg-white rounded-3xl p-6 border border-white shadow-[0_10px_40px_rgba(0,0,0,0.03)] relative overflow-hidden group transition-all hover:shadow-[0_20px_50px_rgba(216,40,40,0.06)]">
+                 <div className="absolute -top-2 -right-2 p-4 text-gray-100 group-hover:text-[#d82828]/5 transition-colors duration-500">
+                   <Bell size={80} />
+                 </div>
+                 <div className="relative z-10 flex flex-col h-full">
+                   <div className="flex items-center justify-between mb-4">
+                     <div className="w-8 h-8 bg-[#d82828]/10 rounded-lg flex items-center justify-center">
+                       <Bell className="text-[#d82828] w-4 h-4" />
+                     </div>
+                     {siteSettings.promoBar.PT ? (
+                       <div className="h-5 px-2.5 bg-green-100 text-green-700 rounded-full flex items-center text-[8px] font-black uppercase tracking-widest gap-1"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/> Ativo</div>
+                     ) : (
+                       <div className="h-5 px-2.5 bg-red-100 text-red-700 rounded-full flex items-center text-[8px] font-black uppercase tracking-widest gap-1"><div className="w-1.5 h-1.5 rounded-full bg-red-500"/> Inativo</div>
+                     )}
+                   </div>
+                   
+                   <h3 className="text-sm font-black text-gray-950 tracking-tighter mb-1 line-clamp-2 min-h-[40px]">
+                     {siteSettings.promoBar.PT || "Nenhum aviso configurado"}
+                   </h3>
+                   <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-6 select-none">Alerta do Topo</p>
+                   
+                   <div className="mt-auto">
+                     <button onClick={() => setActiveTab('promoBar')} className="w-full h-10 bg-gray-50 hover:bg-black hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-between px-4">
+                       Avisos <ChevronRight size={12} />
+                     </button>
+                   </div>
+                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
 {/* PRODUCTS TAB */}
         {activeTab === 'products' && (
           <div className="space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -1401,6 +1714,74 @@ export default function Admin() {
                <div className="space-y-2"><p className="text-[10px] font-black uppercase text-gray-400">Mensagem (Espanhol)</p><input value={siteSettings.promoBar.ES} onChange={(e) => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, ES: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all" /></div>
             </div>
             <Button onClick={() => handleSaveSettings('promoBar')} className="w-full h-16 bg-black text-white rounded-2xl font-black uppercase shadow-xl transition-all active:scale-95 hover:bg-[#d82828] flex items-center justify-center gap-3"><Save size={20} /> SALVAR AVISOS MULTI-IDIOMA</Button>
+          </div>
+        )}
+        {/* ANALYTICS TAB */}
+        {activeTab === 'analytics' && (
+          <div className="max-w-7xl mx-auto space-y-6 md:space-y-10 animate-in fade-in duration-700">
+             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
+               <div className="space-y-2">
+                 <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#d82828]/10 flex items-center justify-center">
+                       <Globe className="text-[#d82828] w-4 h-4" />
+                    </div>
+                    <h2 className="text-2xl md:text-4xl font-black uppercase tracking-tighter italic text-gray-950">Acessos da Semana</h2>
+                 </div>
+                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] ml-11">Monitoramento de tráfego dos últimos 7 dias</p>
+               </div>
+               
+               <Button onClick={fetchVisits} className="h-12 px-8 rounded-full bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#d82828] flex items-center gap-3 shadow-xl transition-all">
+                  <RefreshCw className="w-4 h-4" />
+                  Atualizar
+               </Button>
+             </div>
+
+             <div className="bg-white rounded-[2.5rem] border border-black/5 shadow-xl p-8 overflow-hidden">
+                {visits.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-100">
+                          <th className="py-4 px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Horário</th>
+                          <th className="py-4 px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Localização</th>
+                          <th className="py-4 px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Dispositivo</th>
+                          <th className="py-4 px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Página Acessada</th>
+                          <th className="py-4 px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">IP</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {visits.map((v, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                            <td className="py-4 px-4 text-xs font-bold text-gray-950">
+                               {new Date(v.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td className="py-4 px-4 text-xs font-semibold text-gray-600 truncate max-w-[150px]">
+                               {v.location || 'Desconhecida'}
+                            </td>
+                            <td className="py-4 px-4 text-xs font-semibold text-gray-600">
+                               {v.device}
+                            </td>
+                            <td className="py-4 px-4 text-[10px] font-black uppercase text-gray-500 bg-gray-100/50 rounded-lg inline-block my-2 mx-4 px-2 py-1">
+                               {v.path}
+                            </td>
+                            <td className="py-4 px-4 text-[10px] font-mono font-bold text-gray-400">
+                               {v.ip}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="py-20 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-black/5">
+                      <Globe className="text-gray-300 w-8 h-8" />
+                    </div>
+                    <h3 className="text-lg font-black uppercase text-gray-950 tracking-tight">Nenhum acesso registrado hoje</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#d82828] mt-2 max-w-md bg-[#d82828]/10 px-4 py-2 rounded-lg">Aviso: É necessário criar a tabela "site_visits" no Supabase</p>
+                  </div>
+                )}
+             </div>
           </div>
         )}
       </main>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { trackCheckoutClick } from "@/components/SiteTracker";
 import { useParams, Link } from "react-router-dom";
 import { useProduct, useProducts } from "@/hooks/useProducts";
 import { 
@@ -66,12 +67,11 @@ export default function ProductDetail() {
     }
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (!product) return;
     
-    // Conforme sua regra: COMPRAR AGORA sempre leva para o checkout SOLO deste produto específico
-    // Não altera o conteúdo do carrinho do site, sendo uma compra direta e rápida.
     if (product.checkoutUrl && product.checkoutUrl !== "#") {
+      await trackCheckoutClick();
       window.location.href = product.checkoutUrl;
     } else {
       toast.info(language === 'PT' ? "Link de checkout não configurado." : "Checkout link not configured.");
