@@ -5,8 +5,7 @@
  * IMPORTANTE: A variável VITE_IRONPAY_API_TOKEN deve estar no .env
  */
 
-const API_TOKEN = import.meta.env.VITE_IRONPAY_API_TOKEN ?? "";
-const BASE_URL = "https://api.ironpayapp.com.br/api/public/v1";
+import { supabase } from "@/lib/supabase";
 
 // ────────────────────────────────────────────────────────────────
 // Tipos
@@ -71,8 +70,11 @@ export interface IronPayTransactionResponse {
 export async function createIronPayTransaction(
   params: CreateTransactionParams
 ): Promise<IronPayTransactionResponse> {
+  if (!supabase) {
+    return { success: false, message: 'Supabase não inicializado.' };
+  }
+
   const payload = {
-    api_token: API_TOKEN,
     offer_hash: params.offer_hash,
     amount: params.amount,
     payment_method: params.payment_method,
@@ -85,25 +87,23 @@ export async function createIronPayTransaction(
     customer: params.customer,
   };
 
-  const res = await fetch(`${BASE_URL}/transactions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${API_TOKEN}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const { data, error } = await supabase.functions.invoke('ironpay-checkout', {
+      body: payload
+    });
 
-  // Log para depuração (remover em produção)
-  console.log("[IronPay] Payload enviado:", JSON.stringify(payload, null, 2));
+    if (error) {
+      console.error('Supabase Function Invoke Error (Ironpay):', error);
+      return { success: false, message: `Erro de Conexão na Cloud: ${error.message || 'Falha ao comunicar com Ironpay.'}` };
+    }
 
-  const json = await res.json();
+    if (data?.success === false) {
+       return { success: false, message: data.message ?? "Pagamento não aprovado pela Ironpay.", errors: data.errors };
+    }
 
-  // Garante que erros HTTP virem como `success: false`
-  if (!res.ok) {
-    return { success: false, message: json.message ?? "Erro ao processar pagamento.", errors: json.errors };
+    return data as IronPayTransactionResponse;
+  } catch (err: any) {
+    console.error('Falha genérica Ironpay:', err);
+    return { success: false, message: `Erro crítico de comunicação: ${err?.message || "Tente novamente."}` };
   }
-
-  return json as IronPayTransactionResponse;
 }

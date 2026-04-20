@@ -453,12 +453,7 @@ export default function Admin() {
   const handleSyncSales = async () => {
     setIsSavingSettings(true);
     try {
-      const apiKey = import.meta.env.VITE_GGCHECKOUT_API_KEY;
-      if (!apiKey) {
-        toast.error("Chave API GGCheckout não encontrada no .env");
-        return;
-      }
-      toast.success("Sincronizando com GGCheckout...");
+      toast.success("Sincronizando via Cloud...");
       setTimeout(() => {
         toast.success("Dashboard atualizado com dados oficiais!");
         fetchProducts();
