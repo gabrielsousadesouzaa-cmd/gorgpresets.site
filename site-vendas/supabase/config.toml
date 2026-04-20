@@ -1,0 +1,4 @@
+# Supabase Project Configuration
+
+[functions.create-pix]
+verify_jwt = false

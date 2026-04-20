@@ -10,12 +10,15 @@ export interface Product {
     idealFor: string[];
     price: number; 
     originalPrice: number;
+    oldPrice?: number;
     discount: number;
     image: string;
     images: string[];
     category: string; 
     tags: string[];
     checkoutUrl: string;
+    /** Hash da oferta cadastrada na IronPay — preenchido no Admin */
+    ironpayHash?: string;
     isNew: boolean;
     isBestseller: boolean;
     salesCount: number;

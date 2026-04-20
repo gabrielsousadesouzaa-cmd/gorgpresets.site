@@ -12,27 +12,57 @@
 
 @layer base {
   * {
-    border-color: rgba(0, 0, 0, 0.05);
+    border-color: rgba(255, 255, 255, 0.08); /* Adjusted for dark theme by default */
   }
   body {
-    background-color: white;
-    color: #0d0d0d;
-    font-family: 'Poppins', sans-serif;
+    background-color: #050505;
+    color: #f4f4f5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 }
 
-/* Custom Scrollbar */
+/* Luxury Utilities */
+.glass-panel {
+  @apply bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl;
+}
+
+.text-gradient-red {
+  background: linear-gradient(135deg, #ff4d4d 0%, #d82828 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.animate-glow {
+  animation: glow 4s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 20px -10px rgba(216, 40, 40, 0.3); }
+  to { box-shadow: 0 0 50px -5px rgba(216, 40, 40, 0.6); }
+}
+
+/* Custom Scrollbar Premium */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.2);
 }
 ::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
-  border-radius: 10px;
+  background: rgba(216, 40, 40, 0.4);
+  border-radius: 100px;
+  transition: all 0.3s;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
+  background: rgba(216, 40, 40, 0.8);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

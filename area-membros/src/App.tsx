@@ -8,7 +8,7 @@ import { supabase } from './lib/supabase'
 const ADMIN_EMAIL = 'ggabriellgorgg@admin';
 
 // --- COMPONENTE DE CARD DE PRESET ---
-const PresetCard = ({ preset, isLocked, isAdmin, onEdit, onClick }: { preset: any, isLocked: boolean, isAdmin?: boolean, onEdit?: () => void, onClick?: () => void }) => {
+const PresetCard = ({ preset, isLocked, isAdmin, onEdit, onClick, isPersonal }: { preset: any, isLocked: boolean, isAdmin?: boolean, onEdit?: () => void, onClick?: () => void, isPersonal?: boolean }) => {
   const handleCardClick = () => { 
     if (isLocked && preset.upsell_link) { 
       window.open(preset.upsell_link, '_blank'); 
@@ -18,45 +18,24 @@ const PresetCard = ({ preset, isLocked, isAdmin, onEdit, onClick }: { preset: an
   }
   return (
     <motion.div 
-      onClick={handleCardClick} initial={{ opacity: 0, scale: 0.9, y: 15 }} whileInView={{ opacity: 1, scale: 1, y: 0 }} viewport={{ once: true }}
-      whileHover={isLocked && preset.upsell_link ? { y: -8, scale: 1.03 } : (!isLocked ? { scale: 1.02 } : {})}
-      className={`group relative flex-none w-[280px] sm:w-[320px] aspect-[4/5] rounded-[2.5rem] overflow-hidden transition-all duration-700 bg-black ${isLocked ? (preset.upsell_link ? 'cursor-pointer shadow-lg shadow-gray-200' : 'opacity-80 grayscale-[0.3]') : 'cursor-pointer shadow-2xl shadow-gray-200'}`}
+      onClick={handleCardClick} initial={{ opacity: 0, scale: 0.95, y: 20 }} whileInView={{ opacity: 1, scale: 1, y: 0 }} viewport={{ once: true }}
+      whileHover={{ y: -12, scale: isPersonal ? 1.02 : 1.03, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }}
+      className={`group relative flex-none w-[220px] sm:w-[280px] aspect-[2/3] ${isPersonal ? 'rounded-3xl' : 'rounded-[2.5rem]'} overflow-hidden transition-all duration-1000 bg-[#0a0a0a] ${isLocked ? (preset.upsell_link ? 'cursor-pointer shadow-3xl' : 'opacity-80 grayscale-[0.8]') : 'cursor-pointer shadow-[0_30px_60px_-15px_rgba(0,0,0,0.9)]'}`}
     >
-      <img src={preset.image} alt={preset.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-90" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent group-hover:via-black/60 transition-colors duration-700" />
+      <img src={preset.image} alt={preset.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-70 group-hover:opacity-100" />
       
       {isAdmin && (
-        <div className="absolute top-6 left-6 flex gap-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={(e) => { e.stopPropagation(); onEdit?.(); }} className="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 hover:bg-[#d82828] hover:border-[#d82828] transition-all text-white shadow-2xl">
-            <Edit size={18} />
+        <div className="absolute top-6 left-6 flex gap-3 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={(e) => { e.stopPropagation(); onEdit?.(); }} className="p-3 bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 hover:bg-[#d82828] hover:border-transparent transition-all text-white shadow-2xl">
+            <Edit size={16} />
           </button>
         </div>
       )}
-      
-      <div className="absolute inset-x-8 bottom-8 flex flex-col justify-end">
-         <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-4">Coleção Premium</p>
-         <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-none truncate italic">{preset.name}</h3>
-         
-         <AnimatePresence mode="wait">
-           {!isLocked ? (
-             <motion.div key="dl" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-8 overflow-hidden -mx-2">
-               <div className="w-full py-4 bg-[#d82828] text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-3 decoration-none hover:bg-white hover:text-black transition-all uppercase tracking-widest shadow-xl">
-                 <Play size={14} fill="currentColor" /> ACESSAR CONTEÚDO
-               </div>
-             </motion.div>
-           ) : preset.upsell_link && (
-             <motion.div key="up" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-8 overflow-hidden -mx-2">
-               <div className="w-full py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-3 uppercase tracking-tighter hover:bg-white hover:text-black transition-all">
-                 <ExternalLink size={14} /> ADQUIRIR ACESSO
-               </div>
-             </motion.div>
-           )}
-         </AnimatePresence>
-      </div>
-      
+
+      {/* Lock Icon strictly in Top Right for Locked content */}
       {isLocked && (
-        <div className="absolute top-6 right-6 bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-2xl text-white">
-          <Lock className="w-4 h-4" />
+        <div className="absolute top-6 right-6 z-30 p-4 bg-black/60 backdrop-blur-2xl rounded-2xl border border-white/10 text-white/40 shadow-2xl">
+          <Lock size={18} />
         </div>
       )}
     </motion.div>
@@ -101,91 +80,114 @@ const ProductDetailView = ({ product, isAdmin, onBack }: { product: any, isAdmin
   }
 
   return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-12">
-      <div className="flex items-center gap-8">
-        <button onClick={onBack} className="p-5 bg-black/5 border border-black/10 rounded-3xl hover:bg-white hover:text-black transition-all group shrink-0 shadow-2xl">
-          <ArrowLeft size={22} className="group-hover:-translate-x-1 transition-transform" />
-        </button>
-        <div className="flex border-l-4 border-[#d82828] pl-8 flex-col">
-          <h2 className="text-4xl font-black text-black uppercase italic tracking-tighter leading-none">{product.name}</h2>
-          <p className="text-gray-500 text-[11px] font-black uppercase mt-3 tracking-widest leading-none">Acesso VIP Protegido • Gorg Elite</p>
+    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="space-y-12 max-w-[1400px] mx-auto px-4">
+      {/* HEADER DINÂMICO */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 pt-8">
+        <div className="flex items-center gap-6">
+          <button onClick={onBack} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-[#d82828] transition-all group shadow-xl">
+            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+          </button>
+          <div className="space-y-1 border-l-2 border-[#d82828] pl-6">
+            <h2 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter leading-tight">{product.name}</h2>
+            <div className="flex items-center gap-3">
+              <span className="w-2 h-2 bg-[#d82828] rounded-full animate-pulse" />
+              <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Acesso VIP Gorg Elite • {lessons.length} Aulas</p>
+            </div>
+          </div>
         </div>
+
+        {isAdmin && (
+          <button onClick={addLesson} className="flex items-center gap-3 px-8 py-4 bg-[#d82828] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-red-500/20">
+            <Plus size={16} /> ADICIONAR AULA
+          </button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        <div className="lg:col-span-8 space-y-10">
-          {activeLesson ? (
-            <div className="bg-black/5 border border-black/10 rounded-[4rem] overflow-hidden shadow-2xl aspect-video relative group ring-1 ring-white/10">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+        {/* PLAYER E DETALHES */}
+        <div className="xl:col-span-8 space-y-8">
+          <div className="relative group rounded-[3rem] overflow-hidden bg-black border border-white/5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] aspect-video">
+            {activeLesson ? (
               <iframe 
                 src={activeLesson.video_url?.includes('youtube.com') ? activeLesson.video_url.replace('watch?v=', 'embed/') : activeLesson.video_url} 
                 className="w-full h-full border-0" 
                 allowFullScreen 
               />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center space-y-6 text-gray-500 italic font-black uppercase tracking-widest bg-gradient-to-br from-[#0a0a0a] to-black">
+                <PlayCircle size={64} className="opacity-20 animate-pulse" /> 
+                <p className="text-sm">Selecione uma aula para iniciar</p>
+              </div>
+            )}
+            
+            {/* OVERLAY DE CARREGAMENTO SUAVE */}
+            <div className="absolute inset-x-0 bottom-0 h-2 bg-white/5">
+              <motion.div initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ duration: 1.5 }} className="h-full bg-[#d82828]" />
             </div>
-          ) : (
-            <div className="aspect-video bg-black/5 rounded-[4rem] border-2 border-dashed border-black/5 flex flex-col items-center justify-center text-gray-700 italic font-black uppercase">
-              <PlayCircle size={80} className="mb-6 opacity-10" /> 
-              Nenhuma aula disponível ainda.
-            </div>
-          )}
+          </div>
 
-          <div className="bg-black/5 border border-black/10 p-12 rounded-[3.5rem] flex flex-col sm:flex-row items-center justify-between shadow-2xl group hover:border-[#d82828]/20 transition-all gap-8">
+          <div className="glass-panel p-10 rounded-[3rem] flex flex-col sm:flex-row items-center justify-between gap-8 group hover:border-[#d82828]/20 transition-all">
             <div className="flex items-center gap-8">
-              <div className="w-20 h-20 rounded-[2rem] bg-[#d82828] text-black flex items-center justify-center shadow-2xl shadow-[#d82828]/30 group-hover:scale-105 transition-all">
+              <div className="w-20 h-20 rounded-[2rem] bg-gradient-to-br from-[#d82828] to-[#921d1d] text-white flex items-center justify-center shadow-2xl shadow-red-900/40 group-hover:rotate-6 transition-transform">
                 <Download size={32} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-black uppercase italic tracking-tight italic">Arquivos Master</h3>
-                <p className="text-gray-500 text-[11px] font-bold uppercase mt-2 tracking-widest leading-none">Download Seguro de Alta Performance</p>
+                <h3 className="text-2xl font-black text-white uppercase italic tracking-tight">Conteúdo Master</h3>
+                <p className="text-gray-400 text-[10px] font-bold uppercase mt-2 tracking-widest opacity-60">Arquivos RAW e Presets Inclusos</p>
               </div>
             </div>
-            <a href={product.download_link} target="_blank" rel="noreferrer" className="w-full sm:w-auto px-12 py-6 bg-black text-white rounded-3xl font-black text-[12px] uppercase tracking-widest hover:bg-[#d82828] hover:text-black transition-all shadow-2xl text-center">
-              BAIXAR AGORA
+            <a href={product.download_link} target="_blank" rel="noreferrer" className="w-full sm:w-auto px-12 py-6 bg-white text-black rounded-3xl font-black text-[12px] uppercase tracking-widest hover:bg-[#d82828] hover:text-white transition-all shadow-2xl">
+              BAIXAR MATERIAL
             </a>
           </div>
         </div>
 
-        <div className="lg:col-span-4 space-y-8">
-          <div className="flex items-center justify-between border-l-4 border-[#d82828] pl-8">
-            <h3 className="text-[14px] font-black text-black uppercase italic tracking-widest">Aulas Protegidas</h3>
-            {isAdmin && (
-              <button onClick={addLesson} className="p-4 bg-emerald-500 text-black rounded-2xl hover:bg-white hover:text-emerald-500 transition-all shadow-xl">
-                <Plus size={20} />
-              </button>
-            )}
+        {/* LISTA DE AULAS */}
+        <div className="xl:col-span-4 space-y-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[12px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
+              <List size={14} className="text-[#d82828]" /> Grade de Aulas
+            </h3>
           </div>
 
-          <div className="space-y-5 max-h-[700px] overflow-y-auto no-scrollbar pr-4">
+          <div className="space-y-4 max-h-[800px] overflow-y-auto no-scrollbar pr-2 pb-10">
             {lessons.map((lesson, idx) => (
-              <div key={lesson.id} className="relative group">
+              <motion.div 
+                key={lesson.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="relative group"
+              >
                 <div 
                   onClick={() => setActiveLesson(lesson)} 
-                  className={`p-7 rounded-[3rem] border transition-all cursor-pointer flex items-center gap-6 ${activeLesson?.id === lesson.id ? 'bg-[#d82828] border-[#d82828] shadow-2xl scale-[1.02]' : 'bg-black/5 border-black/5 hover:border-black/10'}`}
+                  className={`p-6 rounded-[2.5rem] border transition-all cursor-pointer flex items-center gap-5 ${activeLesson?.id === lesson.id ? 'bg-white text-black border-white shadow-[0_20px_40px_-5px_rgba(255,255,255,0.1)]' : 'bg-white/5 border-white/5 hover:border-white/10 hover:bg-white/10'}`}
                 >
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm ${activeLesson?.id === lesson.id ? 'bg-black text-white shadow-lg' : 'bg-black/5 text-gray-500'}`}>
-                    {idx + 1}
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 ${activeLesson?.id === lesson.id ? 'bg-black text-white' : 'bg-white/5 text-gray-500'}`}>
+                    {String(idx + 1).padStart(2, '0')}
                   </div>
                   <div className="flex-1 truncate">
-                    <h4 className={`text-[12px] font-black uppercase truncate italic ${activeLesson?.id === lesson.id ? 'text-black' : 'text-gray-700'}`}>
+                    <h4 className={`text-[12px] font-black uppercase truncate italic tracking-tight ${activeLesson?.id === lesson.id ? 'text-black' : 'text-gray-200'}`}>
                       {lesson.title}
                     </h4>
                     {activeLesson?.id === lesson.id && (
-                      <p className="text-[9px] font-black text-black/40 uppercase tracking-[0.25em] mt-2 italic animate-pulse">Assistindo</p>
+                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">Reproduzindo agora</p>
                     )}
                   </div>
-                  <Play size={14} fill="currentColor" className={activeLesson?.id === lesson.id ? 'text-black' : 'text-gray-700 opacity-0 group-hover:opacity-100 transition-all'} />
+                  <Play size={14} fill="currentColor" className={activeLesson?.id === lesson.id ? 'text-black animate-pulse' : 'text-gray-500 opacity-0 group-hover:opacity-100 transition-all'} />
                 </div>
+                
                 {isAdmin && (
-                  <div className="absolute top-1/2 -translate-y-1/2 -right-4 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4">
-                    <button onClick={(e) => { e.stopPropagation(); setIsEditingLesson(lesson); }} className="p-3 bg-black text-white rounded-xl shadow-2xl hover:bg-[#d82828] hover:text-black transition-all">
-                      <Edit size={14} />
+                  <div className="absolute top-1/2 -translate-y-1/2 -right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 z-20">
+                    <button onClick={(e) => { e.stopPropagation(); setIsEditingLesson(lesson); }} className="p-3 bg-white/10 backdrop-blur-md text-white rounded-xl border border-white/10 hover:bg-emerald-500 hover:text-black transition-all">
+                      <Edit size={12} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir aula?')) { supabase.from('lessons').delete().eq('id', lesson.id).then(() => fetchLessons()); } }} className="p-3 bg-red-500 text-black rounded-xl shadow-2xl hover:bg-black transition-all">
-                      <Trash2 size={14} />
+                    <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir aula?')) { supabase.from('lessons').delete().eq('id', lesson.id).then(() => fetchLessons()); } }} className="p-3 bg-white/10 backdrop-blur-md text-white rounded-xl border border-white/10 hover:bg-[#d82828] hover:text-black transition-all">
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -193,23 +195,23 @@ const ProductDetailView = ({ product, isAdmin, onBack }: { product: any, isAdmin
 
       <AnimatePresence>
         {isEditingLesson && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 backdrop-blur-3xl z-[300] flex items-center justify-center p-6 text-gray-950">
-            <motion.div initial={{ scale: 0.95, y: 30 }} animate={{ scale: 1, y: 0 }} className="bg-white w-full max-w-lg rounded-[4.5rem] p-16 relative shadow-2xl border border-black/20">
-              <button onClick={() => setIsEditingLesson(null)} className="absolute top-12 right-12 text-gray-800 hover:text-black transition-all">
-                <X size={40} />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-[300] flex items-center justify-center p-6">
+            <motion.div initial={{ scale: 0.95, y: 30 }} animate={{ scale: 1, y: 0 }} className="bg-[#111] w-full max-w-xl rounded-[4rem] p-12 relative border border-white/10 shadow-2xl">
+              <button onClick={() => setIsEditingLesson(null)} className="absolute top-10 right-10 text-gray-500 hover:text-white transition-all">
+                <X size={28} />
               </button>
-              <h3 className="text-3xl font-black uppercase italic mb-12 tracking-tighter">Editar Aula Elite</h3>
-              <form onSubmit={handleEditLesson} className="space-y-8">
-                <div className="space-y-3">
-                  <label className="text-[11px] font-black uppercase text-gray-400">Título Sincronizado</label>
-                  <input name="ltitle" defaultValue={isEditingLesson.title} className="w-full bg-gray-50 border-2 border-gray-100 rounded-[1.5rem] p-6 font-black uppercase italic outline-none focus:border-[#d82828] transition-all" />
+              <h3 className="text-2xl font-black uppercase italic mb-10 text-white tracking-tighter">Configurações da Aula</h3>
+              <form onSubmit={handleEditLesson} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Título da Aula</label>
+                  <input name="ltitle" defaultValue={isEditingLesson.title} className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold outline-none focus:border-[#d82828] transition-all" />
                 </div>
-                <div className="space-y-3">
-                  <label className="text-[11px] font-black uppercase text-gray-400">URL do Vídeo</label>
-                  <input name="lvideo" defaultValue={isEditingLesson.video_url} className="w-full bg-gray-50 border-2 border-gray-100 rounded-[1.5rem] p-6 font-bold outline-none focus:border-[#d82828] transition-all" />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">URL do Vídeo</label>
+                  <input name="lvideo" defaultValue={isEditingLesson.video_url} className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold outline-none focus:border-[#d82828] transition-all" />
                 </div>
-                <button type="submit" className="w-full py-7 bg-gray-950 text-black rounded-[2rem] font-black uppercase tracking-widest flex items-center justify-center gap-5 hover:bg-[#d82828] transition-all shadow-2xl shadow-red-500/10">
-                  <Save size={24} /> SALVAR AGORA
+                <button type="submit" className="w-full py-6 bg-[#d82828] text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-4 hover:scale-[1.02] transition-all shadow-xl shadow-red-900/20">
+                  <Save size={20} /> SALVAR ALTERAÇÕES
                 </button>
               </form>
             </motion.div>
@@ -228,7 +230,6 @@ const AdminPanel = ({ portalData, onUpdate, modules }: { portalData: any, onUpda
   const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
   const [salesSettings, setSalesSettings] = useState<any>(null);
   const [emailSettings, setEmailSettings] = useState<any>({ body: '', subject: '', sender: '', api_key: '' });
-  const [emailTab, setEmailTab] = useState<'editor' | 'preview'>('editor');
   const [isUploading, setIsUploading] = useState<'before' | 'after' | null>(null);
 
   useEffect(() => { fetchData(); }, [adminSection]);
@@ -244,12 +245,8 @@ const AdminPanel = ({ portalData, onUpdate, modules }: { portalData: any, onUpda
       if (data) setWebhookLogs(data); 
     }
     if (adminSection === 'sales') { 
-      const { data } = await supabase.from('sales_settings').select('*').eq('id', 'main').single(); 
-      if (data) setSalesSettings(data); 
-    }
-    if (adminSection === 'email') {
-      const { data } = await supabase.from('portal_settings').select('email_config').eq('id', 'main').single();
-      if (data?.email_config) setEmailSettings(data.email_config);
+      const { data: sData } = await supabase.from('sales_settings').select('*').eq('id', 'main').single();
+      if (sData) setSalesSettings(sData);
     }
     setLoading(false);
   }
@@ -263,167 +260,217 @@ const AdminPanel = ({ portalData, onUpdate, modules }: { portalData: any, onUpda
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(fileName);
       await supabase.from('sales_settings').update({ [`magic_${role}_url`]: publicUrl }).eq('id', 'main');
-      alert(`Foto de ${role === 'before' ? 'Antes' : 'Depois'} Subida com Sucesso! ✅🚀`);
+      toast.success(`Foto de ${role === 'before' ? 'Antes' : 'Depois'} atualizada! ✅`);
       fetchData();
-    } catch (err: any) { alert(`Erro no Upload: ${err.message}`); } finally { setIsUploading(null); }
-  }
-
-  const saveEmailConfig = async (e: any) => {
-    e.preventDefault();
-    const config = {
-      api_key: e.target.apiKey.value,
-      sender: e.target.sender.value,
-      subject: e.target.subject.value,
-      body: e.target.body.value
-    };
-    const { error } = await supabase.from('portal_settings').update({ email_config: config }).eq('id', 'main');
-    if (!error) { setEmailSettings(config); alert('E-mail Automatizado com Sucesso! 🛰️🔴'); }
+    } catch (err: any) { toast.error(`Erro no Upload: ${err.message}`); } finally { setIsUploading(null); }
   }
 
   return (
-    <div className="space-y-16 pb-32 selection:bg-[#d82828] selection:text-black">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-10 border-b border-black/5 pb-14">
+    <div className="space-y-16 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10 border-b border-black/5 pb-10">
         <div className="flex border-l-4 border-[#d82828] pl-10 flex-col">
-          <div className="flex items-center gap-4 text-amber-500 mb-3">
-             <ShieldCheck size={22} />
-             <span className="text-[12px] font-black uppercase tracking-[0.3em]">COMANDO MESTRE</span>
+          <div className="flex items-center gap-3 text-[#d82828] mb-3">
+             <ShieldCheck size={18} />
+             <span className="text-[10px] font-black uppercase tracking-[0.4em]">Cockpit de Comando</span>
           </div>
-          <h2 className="text-4xl lg:text-5xl font-black text-black uppercase italic tracking-tighter leading-none italic">COCKPIT GORG</h2>
+          <h2 className="text-4xl font-black text-black uppercase italic tracking-tighter leading-tight">Painel de Gestão</h2>
         </div>
         
-        <div className="flex bg-black/5 p-2 rounded-[2.5rem] border border-black/5 shadow-[0_30px_60px_rgba(0,0,0,0.5)] overflow-x-auto no-scrollbar scroll-smooth">
+        <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-[2rem] border border-black/5 shadow-inner overflow-x-auto no-scrollbar">
           {[
             { id: 'content', label: 'Cofre', icon: Layout },
-            { id: 'users', label: 'Elite', icon: Users },
+            { id: 'users', label: 'Membros', icon: Users },
             { id: 'sales', label: 'Vitrine', icon: Sparkles },
-            { id: 'email', label: 'Automate', icon: Mail },
-            { id: 'webhooks', label: 'Integrações', icon: Zap }
+            { id: 'webhooks', label: 'Conexões', icon: Zap }
           ].map(tab => (
-            <button key={tab.id} onClick={() => setAdminSection(tab.id as any)} className={`flex items-center gap-3 px-10 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-widest transition-all ${adminSection === tab.id ? 'bg-[#d82828] text-white shadow-2xl shadow-[#d82828]/20' : 'text-gray-500 hover:text-black'}`}>
-              <tab.icon size={16} /> {tab.label}
+            <button key={tab.id} onClick={() => setAdminSection(tab.id as any)} className={`flex items-center gap-3 px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all ${adminSection === tab.id ? 'bg-[#d82828] text-white shadow-xl shadow-red-900/10' : 'text-gray-400 hover:text-black'}`}>
+              <tab.icon size={14} /> {tab.label}
             </button>
           ))}
         </div>
       </div>
 
       <AnimatePresence mode="wait">
-        {adminSection === 'sales' && (
-          <motion.div key="v" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="bg-black/5 border border-black/10 p-12 rounded-[4rem] space-y-12 shadow-[0_40px_80px_rgba(0,0,0,0.5)]">
-             <div className="flex items-center gap-6 border-l-4 border-[#d82828] pl-10">
-                <div className="w-16 h-16 bg-[#d82828]/10 text-[#d82828] rounded-3xl flex items-center justify-center shadow-2xl shadow-[#d82828]/5"><Sparkles size={32} /></div>
-                <div><h3 className="text-3xl font-black text-black uppercase italic">A Mágica Acontece</h3><p className="text-gray-500 text-[11px] font-bold uppercase mt-2 tracking-widest leading-none">Gestão de Impacto Visual da Vitrine</p></div>
-             </div>
-             {salesSettings ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                   {['before', 'after'].map(role => (
-                     <div key={role} className="space-y-8">
-                        <label className="text-[12px] font-black uppercase text-gray-400 tracking-widest italic">{role === 'before' ? 'FOTO ORIGINAL (ANTES)' : 'FOTO REVELADA (DEPOIS)'}</label>
-                        <div className="relative group overflow-hidden rounded-[3.5rem] aspect-square bg-black border border-black/5 shadow-2xl ring-1 ring-white/10">
-                           <img src={role === 'before' ? salesSettings.magic_before_url : salesSettings.magic_after_url} className={`w-full h-full object-cover ${role === 'before' ? 'grayscale opacity-60' : 'opacity-80 group-hover:scale-105 transition-transform duration-1000'}`} />
-                           <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-md">
-                              <label className="cursor-pointer flex flex-col items-center gap-6">
-                                 {isUploading === role ? <RefreshCw className="animate-spin text-black" size={32} /> : <Upload className="text-black" size={40} />}
-                                 <div className="px-10 py-5 bg-black text-white rounded-3xl font-black text-[12px] uppercase tracking-widest shadow-2xl">UPAR FOTO</div>
-                                 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleMagicUpload(e, role as any)} />
-                              </label>
-                           </div>
-                        </div>
+        {adminSection === 'content' && (
+          <motion.div key="c" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="space-y-12">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <button onClick={() => { const t = prompt('Título Módulo:'); if (t) supabase.from('modules_presets').insert([{ module_title: t, order_index: modules.length }]).then(() => onUpdate()); }} className="aspect-[16/10] bg-white border-2 border-dashed border-gray-100 rounded-[3rem] flex flex-col items-center justify-center gap-4 group hover:border-[#d82828]/20 hover:bg-[#d82828]/5 transition-all outline-none shadow-sm">
+                   <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#d82828] group-hover:text-white transition-all"><Plus size={24} /></div>
+                   <span className="text-[10px] font-black uppercase text-gray-400 group-hover:text-black tracking-[0.2em]">Novo Módulo Elite</span>
+                </button>
+                
+                {modules.map((mod, idx) => (
+                  <div key={mod.id} className="bg-white border border-black/5 p-8 rounded-[3rem] space-y-8 shadow-xl relative group">
+                     <div className="flex items-center justify-between">
+                        <div className="px-5 py-2 bg-black/5 rounded-xl font-black text-[9px] uppercase tracking-widest italic text-gray-500">Módulo {String(idx + 1).padStart(2, '0')}</div>
+                        <button onClick={() => { if (confirm('Excluir módulo?')) supabase.from('modules_presets').delete().eq('id', mod.id).then(() => onUpdate()); }} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                      </div>
-                   ))}
-                </div>
-             ) : <div className="p-20 text-center animate-pulse"><RefreshCw size={40} className="mx-auto mb-6 text-[#d82828]" /> <p className="text-gray-500 font-black uppercase tracking-widest">Conectando ao Supabase...</p></div>}
+                     <h3 className="text-xl font-black text-black uppercase italic leading-tight truncate">{mod.module_title}</h3>
+                     <div className="flex gap-3">
+                        <button onClick={async () => { const name = prompt('Nome Preset:'); if (name) { const npd = [...(mod.presets_data || []), { id: Date.now().toString(), name, image: '', download_link: '', upsell_link: '' }]; await supabase.from('modules_presets').update({ presets_data: npd }).eq('id', mod.id); onUpdate(); } }} className="flex-1 py-4 bg-[#d82828] text-white rounded-2xl font-black text-[9px] uppercase tracking-widest shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2"><Plus size={12} /> ADD PRESET</button>
+                        <button className="p-4 bg-black/5 text-gray-500 rounded-2xl hover:bg-black hover:text-white transition-all"><Edit size={14} /></button>
+                     </div>
+                  </div>
+                ))}
+             </div>
+          </motion.div>
+        )}
+
+        {adminSection === 'users' && (
+          <motion.div key="u" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+            <div className="bg-white border border-black/5 rounded-[3.5rem] overflow-hidden shadow-2xl">
+              <div className="p-8 border-b border-black/5 flex items-center justify-between">
+                 <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-400 flex items-center gap-3"><Users size={14} /> Base de Membros Elite</h4>
+                 <div className="px-4 py-2 bg-[#d82828]/5 text-[#d82828] rounded-full text-[9px] font-black uppercase tracking-widest">{users.length} ATIVOS</div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead><tr className="bg-gray-50/50"><th className="px-10 py-5 text-[9px] font-black uppercase text-gray-400 tracking-widest">Identidade</th><th className="px-10 py-5 text-[9px] font-black uppercase text-gray-400 tracking-widest">Produto</th><th className="px-10 py-5 text-[9px] font-black uppercase text-gray-400 tracking-widest text-right">Ações</th></tr></thead>
+                  <tbody className="divide-y divide-black/5">
+                    {users.map(u => (
+                      <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-10 py-6">
+                          <div className="flex items-center gap-5">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-black to-gray-800 flex items-center justify-center font-black text-[#d82828] text-xs shadow-lg">{getInitials(u.full_name)}</div>
+                            <div>
+                               <p className="font-black text-black uppercase italic text-xs">{u.full_name}</p>
+                               <p className="text-[10px] text-gray-400 mt-1 font-mono">{u.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-10 py-6"><span className="px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">Membro Ativo</span></td>
+                        <td className="px-10 py-6 text-right">
+                           <button className="p-3 bg-black/5 border border-black/10 rounded-xl hover:bg-black hover:text-white transition-all"><Edit size={12} /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </motion.div>
         )}
 
         {adminSection === 'webhooks' && (
-          <motion.div key="w" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-            <div className="flex items-center gap-6 border-l-4 border-[#d82828] pl-10 mb-8">
-               <div className="w-16 h-16 bg-[#d82828]/10 text-[#d82828] rounded-3xl flex items-center justify-center shadow-2xl shadow-[#d82828]/5"><Zap size={32} /></div>
-               <div><h3 className="text-3xl font-black text-black uppercase italic">Plataformas e Webhooks</h3><p className="text-gray-500 text-[11px] font-bold uppercase mt-2 tracking-widest leading-none">Conecte com GGCHECKOUT, Kiwify, Hotmart, etc.</p></div>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <div className="bg-black/5 border border-black/10 p-10 rounded-[3rem] space-y-8 shadow-2xl relative">
-                <h4 className="text-[14px] font-black text-black uppercase italic tracking-widest flex items-center gap-3"><Globe className="text-[#d82828]"/> URL do Webhook Universal</h4>
-                <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest">Cole este link na sua plataforma de vendas para receber as confirmações de compra automaticamente.</p>
-                <div className="flex items-center gap-4 bg-black/5 p-5 rounded-2xl border border-black/5 cursor-pointer hover:border-black/20 transition-all" onClick={() => { navigator.clipboard.writeText('https://ibsnizsdascywkonvcvu.supabase.co/functions/v1/webhook-vendas'); toast('URL Copiada!'); }}>
-                  <code className="text-[#d82828] font-black text-sm truncate flex-1 flex items-center gap-2">
-                     <span className="text-gray-500">POST</span> /functions/v1/webhook-vendas
-                  </code>
-                  <Download size={18} className="text-black/40" />
+          <motion.div key="w" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-10">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white border border-black/5 p-10 rounded-[3.5rem] space-y-8 shadow-xl">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#d82828] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-red-900/10"><Globe size={20} /></div>
+                      <div>
+                         <h4 className="text-sm font-black text-black uppercase italic">API Endpoint</h4>
+                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Sincronização Automática</p>
+                      </div>
+                   </div>
+                   <div className="bg-gray-50 border border-black/5 p-6 rounded-2xl flex items-center gap-4 group cursor-pointer" onClick={() => { navigator.clipboard.writeText('https://ibsnizsdascywkonvcvu.supabase.co/functions/v1/webhook-vendas'); toast.success('Link copiado!'); }}>
+                      <code className="text-[#d82828] font-black text-xs truncate flex-1">.../functions/v1/webhook-vendas</code>
+                      <Download size={16} className="text-gray-300 group-hover:text-black transition-colors" />
+                   </div>
+                   <p className="text-[10px] text-gray-500 font-medium leading-relaxed italic">Cole este link na aba "Webhooks" da sua plataforma de vendas (Kiwify, Hotmart, GG) para liberar os acessos automaticamente.</p>
                 </div>
-              </div>
 
-              <div className="bg-black/5 border border-black/10 p-10 rounded-[3rem] space-y-8 shadow-2xl relative">
-                <h4 className="text-[14px] font-black text-black uppercase italic tracking-widest flex items-center gap-3"><Database className="text-[#d82828]" /> Plataformas Cadastradas</h4>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between bg-black/5 p-5 rounded-2xl border border-black/5">
-                     <div className="flex items-center gap-4">
-                       <div className="w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center font-black">GG</div>
-                       <div><p className="font-black text-black uppercase text-xs italic">GGCHECKOUT</p><p className="text-[9px] text-emerald-500 uppercase tracking-widest mt-1">Ativo e Ouvindo</p></div>
-                     </div>
-                     <button className="text-gray-500 hover:text-black transition-all"><Settings size={16} /></button>
-                  </div>
-                  <button onClick={() => alert('Em breve: Modal para adicionar nova plataforma (Hotmart, Kiwify, etc).')} className="w-full flex items-center justify-center gap-3 py-6 bg-black/5 border-2 border-dashed border-black/10 rounded-2xl text-gray-500 hover:text-black hover:border-black/20 transition-all font-black text-[10px] uppercase tracking-widest">
-                    <Plus size={16} /> ADICIONAR NOVA PLATAFORMA
-                  </button>
+                <div className="bg-white border border-black/5 p-10 rounded-[3.5rem] space-y-8 shadow-xl">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center shadow-lg"><Zap size={20} /></div>
+                      <div>
+                         <h4 className="text-sm font-black text-black uppercase italic">Status Gate</h4>
+                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Monitoramento de Fluxo</p>
+                      </div>
+                   </div>
+                   <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100/50 rounded-2xl">
+                         <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">GGCHECKOUT Ativo</span>
+                         </div>
+                         <Settings size={14} className="text-emerald-300" />
+                      </div>
+                      <button className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-gray-100 hover:border-[#d82828]/20 hover:text-[#d82828] text-gray-400 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all">
+                        <Plus size={14} /> ADICIONAR GATEWAY
+                      </button>
+                   </div>
                 </div>
-              </div>
-            </div>
-            
-            <div className="bg-black/5 border border-black/10 rounded-[3rem] p-10 space-y-6">
-              <h4 className="text-[14px] font-black text-black uppercase italic tracking-widest mb-4">Log de Recebimentos</h4>
-              <div className="space-y-3 max-h-[300px] overflow-y-auto no-scrollbar">
-                {webhookLogs.length > 0 ? webhookLogs.map((log: any) => (
-                  <div key={log.id} className="text-xs text-gray-500 font-mono p-3 bg-black/5 rounded-xl flex items-center gap-3">
-                    <span className="text-emerald-500">[{new Date(log.received_at).toLocaleTimeString()}]</span> <span className="font-bold text-black">POST /webhook-vendas</span> <span className="text-gray-400">{log.payload?.email || 'Sem email'}</span>
-                  </div>
-                )) : <p className="text-[10px] uppercase text-gray-500 font-bold tracking-widest text-center py-10">Nenhum webhook recebido recentemente.</p>}
-              </div>
-            </div>
-          </motion.div>
-        )}
-        
-        {/* ... (Other Admin sections omitted for space but assume they are here or restored) */}
-        {adminSection === 'users' && (
-          <motion.div key="u" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-            <div className="bg-black/5 border border-black/10 rounded-[4rem] overflow-hidden shadow-2xl">
-              <table className="w-full text-left">
-                <thead><tr className="border-b border-black/5"><th className="p-10 text-[11px] font-black uppercase text-gray-500 tracking-[0.3em]">ALUNO ELITE</th><th className="p-10 text-[11px] font-black uppercase text-gray-500 tracking-[0.3em]">SITUAÇÃO</th><th className="p-10 text-[11px] font-black uppercase text-gray-500 tracking-[0.3em] text-right">AÇÕES</th></tr></thead>
-                <tbody className="divide-y divide-white/5">
-                  {users.map(u => (
-                    <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-10"><div className="flex items-center gap-6"><div className="w-14 h-14 rounded-2xl bg-black/5 border border-black/10 flex items-center justify-center font-black text-[#d82828]">{u.full_name?.charAt(0)}</div><div><p className="font-black text-black uppercase italic text-sm">{u.full_name}</p><p className="text-[10px] text-gray-500 mt-2 font-bold">{u.email}</p></div></div></td>
-                      <td className="p-10"><div className="flex items-center gap-3"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /><span className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">Membro Ativo</span></div></td>
-                      <td className="p-10 text-right"><button className="p-4 bg-black/5 border border-black/10 rounded-2xl hover:bg-[#d82828] hover:text-black transition-all"><Edit size={16} /></button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
-        )}
-
-        {adminSection === 'content' && (
-          <motion.div key="c" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-16">
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                <button onClick={() => { const t = prompt('Título Módulo:'); const d = prompt('Descrição:'); if (t) supabase.from('modules_presets').insert([{ module_title: t, module_desc: d, order_index: modules.length }]).then(() => onUpdate()); }} className="aspect-video bg-black/5 border-2 border-dashed border-black/5 rounded-[3.5rem] flex flex-col items-center justify-center gap-6 group hover:border-[#d82828]/40 hover:bg-[#d82828]/5 transition-all outline-none">
-                   <div className="w-20 h-20 bg-black/5 rounded-[2rem] flex items-center justify-center text-gray-700 group-hover:bg-[#d82828] group-hover:text-black transition-all shadow-2xl"><Plus size={32} /></div>
-                   <span className="text-[11px] font-black uppercase text-gray-700 group-hover:text-black tracking-[0.3em]">Nova Coleção Master</span>
-                </button>
              </div>
-             {modules.map((mod, idx) => (
-               <div key={mod.id} className="bg-black/5 border border-black/10 p-12 rounded-[4rem] space-y-10 shadow-2xl relative overflow-hidden">
-                  <div className="absolute -top-5 left-12 px-8 py-3 bg-[#d82828] text-black rounded-2xl font-black text-[10px] uppercase tracking-widest italic shadow-2xl">MÓDULO {String(idx + 1).padStart(2, '0')}</div>
-                  <div className="flex items-end justify-between border-l-4 border-[#d82828] pl-10 pt-6">
-                     <div><h3 className="text-3xl font-black text-black uppercase italic leading-none">{mod.module_title}</h3><p className="text-gray-500 text-[11px] uppercase font-black tracking-[0.2em] mt-4">{mod.module_desc}</p></div>
-                     <div className="flex gap-4">
-                        <button onClick={async () => { const name = prompt('Nome Preset:'); const img = prompt('Imagem:'); const dl = prompt('Download:'); if (name) { const npd = [...(mod.presets_data || []), { id: Date.now().toString(), name, image: img, download_link: dl, upsell_link: '' }]; await supabase.from('modules_presets').update({ presets_data: npd }).eq('id', mod.id); onUpdate(); } }} className="flex items-center gap-3 px-8 py-4 bg-emerald-500 text-black rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 transition-all"><Plus size={14} /> ADICIONAR PRESET</button>
-                        <button onClick={() => { if (confirm('Excluir módulo?')) supabase.from('modules_presets').delete().eq('id', mod.id).then(() => onUpdate()); }} className="p-4 bg-black/5 border border-black/10 rounded-2xl hover:bg-black transition-all text-gray-500 hover:text-red-500"><Trash2 size={18} /></button>
-                     </div>
-                  </div>
-               </div>
-             ))}
+
+             <div className="bg-white border border-black/5 rounded-[3.5rem] p-10 space-y-8 shadow-2xl">
+                <div className="flex items-center justify-between">
+                   <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-400 flex items-center gap-3"><Terminal size={14} /> Log de Requisições</h4>
+                   <RefreshCw size={14} className="text-gray-300 hover:text-[#d82828] cursor-pointer transition-colors" onClick={fetchData} />
+                </div>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto no-scrollbar font-mono">
+                  {webhookLogs.map((log: any) => (
+                    <div key={log.id} className="p-4 bg-gray-50 border border-black/5 rounded-2xl text-[10px] flex items-center gap-4 hover:border-[#d82828]/20 transition-all">
+                       <span className="text-[#d82828] font-black">200 OK</span>
+                       <span className="text-gray-300">|</span>
+                       <span className="text-black font-bold uppercase">{new Date(log.received_at).toLocaleTimeString()}</span>
+                       <span className="text-gray-400 truncate flex-1">{log.payload?.email || "Payload Vazio"}</span>
+                    </div>
+                  ))}
+                  {webhookLogs.length === 0 && <p className="text-center py-10 text-[10px] font-black uppercase tracking-[0.5em] text-gray-300 italic">Nenhuma atividade registrada.</p>}
+                </div>
+             </div>
+          </motion.div>
+        )}
+
+        {adminSection === 'sales' && (
+          <motion.div key="s" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-10">
+             <div className="bg-white border border-black/5 p-10 rounded-[3.5rem] shadow-xl space-y-10">
+                <div className="flex items-center gap-4 border-b border-black/5 pb-8">
+                   <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center shadow-lg"><Sparkles size={20} /></div>
+                   <div>
+                      <h4 className="text-sm font-black text-black uppercase italic">Vitrine Principal</h4>
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Gestão de Comparativos Antes & Depois</p>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                   <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Foto Antes (Original)</span>
+                         {isUploading === 'before' && <RefreshCw size={14} className="animate-spin text-[#d82828]" />}
+                      </div>
+                      <div className="relative group aspect-[2/3] max-w-[220px] mx-auto bg-gray-50 rounded-[2rem] overflow-hidden border border-black/5 shadow-inner">
+                         {salesSettings?.magic_before_url ? (
+                            <img src={salesSettings.magic_before_url} className="w-full h-full object-cover" alt="" />
+                         ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-300"><Plus size={32} /></div>
+                         )}
+                         <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm">
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest">Alterar</span>
+                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleMagicUpload(e, 'before')} />
+                         </label>
+                      </div>
+                   </div>
+
+                   <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Foto Depois (Preset)</span>
+                         {isUploading === 'after' && <RefreshCw size={14} className="animate-spin text-[#d82828]" />}
+                      </div>
+                      <div className="relative group aspect-[2/3] max-w-[220px] mx-auto bg-gray-50 rounded-[2rem] overflow-hidden border border-black/5 shadow-inner">
+                         {salesSettings?.magic_after_url ? (
+                            <img src={salesSettings.magic_after_url} className="w-full h-full object-cover" alt="" />
+                         ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-300"><Plus size={32} /></div>
+                         )}
+                         <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm">
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest">Alterar</span>
+                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleMagicUpload(e, 'after')} />
+                         </label>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="pt-10 border-t border-black/5 flex flex-col md:flex-row justify-end items-center gap-6">
+                   <p className="text-[10px] font-bold text-gray-400 italic text-center md:text-right">As fotos são enviadas automaticamente ao selecionar, mas use o botão ao lado para confirmar.</p>
+                   <button 
+                     onClick={() => { fetchData(); toast.success('Vitrine sincronizada com sucesso! ✅'); }}
+                     className="px-10 py-5 bg-black text-white rounded-[1.8rem] font-black text-[10px] uppercase tracking-widest hover:bg-[#d82828] transition-all flex items-center gap-3 shadow-xl hover:shadow-red-900/20 active:scale-95"
+                   >
+                     <CheckCircle2 size={14} /> SALVAR ALTERAÇÕES
+                   </button>
+                </div>
+             </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -531,8 +578,8 @@ const LoginView = ({ onLogin, logoUrl }: { onLogin: (e: string, p: string, r: bo
                     className="overflow-hidden"
                   >
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col items-center justify-center gap-2 mt-1 shadow-inner">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mx-auto block text-center">E-MAIL DO SUPORTE</span>
-                      <a href="mailto:suporte@gorgpresets.com" className="text-[12px] sm:text-[13px] font-black text-gray-800 tracking-[0.1em] hover:text-[#d82828] transition-colors mx-auto block text-center">
+                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mx-auto block text-center">E-MAIL DO SUPORTE</span>
+                       <a href="mailto:suporte@gorgpresets.com" className="text-[12px] sm:text-[13px] font-black text-gray-800 tracking-[0.1em] hover:text-[#d82828] transition-colors mx-auto block text-center">
                         suporte@gorgpresets.com
                       </a>
                     </div>
@@ -593,7 +640,7 @@ const SupportView = () => {
             Como podemos<br/><span className="text-[#d82828]">te ajudar?</span>
           </h1>
           <p className="text-gray-400 text-[15px] font-medium max-w-md mx-auto">
-            Nossa equipe está pronta para garantir que você tenha a melhor experiência possível.
+            Nossa equipe está pronta para garantir que você tenha a melhor experiêcia possível.
           </p>
         </div>
 
@@ -704,10 +751,8 @@ export default function App() {
   const [isEditingPreset, setIsEditingPreset] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [isReady, setIsReady] = useState(false);
-  const [portalSettings, setPortalSettings] = useState<any>({ 
-    hero_title: 'SEU IMPÉRIO VISUAL COMEÇA AQUI', 
-    hero_image: '' 
-  });
+  const [portalSettings, setPortalSettings] = useState<any>({});
+  const [salesSettings, setSalesSettings] = useState<any>(null);
 
   useEffect(() => {
     const initApp = async () => {
@@ -732,6 +777,8 @@ export default function App() {
   }, []);
 
   const fetchInitialData = async () => {
+    const { data: sales } = await supabase.from('sales_settings').select('*').eq('id', 'main').single();
+    if (sales) setSalesSettings(sales);
     const { data: settings } = await supabase.from('portal_settings').select('*').eq('id', 'main').single();
     if (settings) setPortalSettings(settings);
     const { data: modData } = await supabase.from('modules_presets').select('*').order('order_index');
@@ -867,87 +914,174 @@ export default function App() {
           ) : activeTab === 'home' ? (
             <div className="flex flex-col min-h-screen">
               {/* HERO SECTION DE LOGIN/DASHBOARD BASEADO NA IMAGEM */}
-              <section className="relative w-full pt-[90px] pb-16 lg:pt-[160px] lg:pb-56 px-6 lg:px-14 flex flex-col items-center overflow-hidden" style={{ background: 'linear-gradient(to bottom, #f0f0f0 0%, #d4d4d4 50%, rgba(0,0,0,1) 100%)' }}>
-                 <div className="w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-12 relative z-10">
-                    <div className="w-full lg:w-[45%] flex flex-col items-center lg:items-start text-center lg:text-left z-20">
+              <section className="relative w-full pt-[120px] pb-[180px] lg:pt-[150px] lg:pb-[300px] px-6 lg:px-14 flex flex-col items-center overflow-hidden">
+                 {/* Cinematic Background Gradient */}
+                 <div className="absolute inset-0 bg-gradient-to-br from-[#f8f8f8] via-[#e5e5e5] to-[#c5c5c5] dark:from-[#111] dark:via-[#0a0a0a] dark:to-[#000]" />
+                 <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_120%,rgba(216,40,40,0.1)_0%,transparent_50%)]" />
+                 
+                 <div className="w-full max-w-[1440px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-24 relative z-10">
+                    <div className="w-full lg:w-[48%] flex flex-col items-center lg:items-start text-center lg:text-left z-20">
+                      <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 mb-8 bg-black/5 px-6 py-2.5 rounded-full border border-black/5 backdrop-blur-sm">
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">Área de Membros • GORG PRESETS</span>
+                      </motion.div>
+                      
                       <motion.img 
                         initial={{ opacity: 0, y: -20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ duration: 0.8 }}
-                        src="/logo_preta.png" alt="Gorg Presets" className="w-[75%] max-w-[280px] lg:max-w-[450px] drop-shadow-xl mb-4 lg:mb-8" 
+                        src="/logo_preta.png" alt="Gorg Presets" className="w-[70%] max-w-[260px] lg:max-w-[420px] drop-shadow-2xl mb-8 lg:mb-12" 
                       />
+                      
                       <motion.p 
-                        initial={{ opacity: 0, y: 20 }} 
-                        animate={{ opacity: 1, y: 0 }} 
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                        className="text-[13px] lg:text-[20px] font-medium text-gray-600 mb-3 lg:mb-5 tracking-wide max-w-[80%] lg:max-w-none leading-snug"
-                      >
-                        Eleve os padrões das suas fotos em poucos cliques, com os nossos
-                      </motion.p>
+                         initial={{ opacity: 0, y: 10 }} 
+                         animate={{ opacity: 1, y: 0 }} 
+                         transition={{ duration: 0.8, delay: 0.3 }}
+                         className="text-[10px] lg:text-[12px] font-bold text-gray-800 uppercase tracking-[0.25em] mb-4 lg:mb-6"
+                       >
+                         Eleve os padrões das suas fotos em poucos cliques com os nossos
+                       </motion.p>
+                      
                       <motion.h1 
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ duration: 0.8, delay: 0.4 }}
-                        className="text-[24px] lg:text-[52px] font-black text-gray-900 uppercase tracking-tighter leading-[1.05] mb-4 lg:mb-12"
+                        className="text-[32px] lg:text-[62px] font-black text-gray-900 uppercase tracking-tighter leading-[1.1] lg:leading-[0.95] mb-6 lg:mb-14"
                       >
-                        PRESETS EXCLUSIVOS<br/>
+                        PRESETS <span className="text-[#d82828] italic">EXCLUSIVOS</span><br/>
                         EM UM SÓ LUGAR!
                       </motion.h1>
+                      
+                      <div className="flex flex-wrap items-center justify-center lg:justify-start gap-10">
+                         <div className="flex flex-col"><span className="text-xl font-black text-[#d82828]">500+</span><span className="text-[9px] font-black uppercase tracking-widest text-gray-700">USUÁRIOS</span></div>
+                         <div className="w-px h-8 bg-gray-300" />
+                         <div className="flex flex-col"><span className="text-xl font-black text-black">1.2k+</span><span className="text-[9px] font-black uppercase tracking-widest text-gray-700">EDIÇÕES</span></div>
+                      </div>
                     </div>
                     
-                    <div className="w-full lg:w-[55%] relative h-[340px] lg:h-[550px] flex justify-center lg:justify-end mt-0 lg:mt-0">
-                       {/* Mock devices that resemble the image */}
-                       {/* Tablet */}
-                       <div className="absolute left-[8%] top-[8%] lg:left-[5%] lg:top-[5%] w-[130px] lg:w-[280px] aspect-[3/4] bg-gray-900 rounded-[1.2rem] lg:rounded-[2rem] border-[4px] lg:border-[8px] border-[#1a1a1a] shadow-[0_20px_40px_rgba(0,0,0,0.6)] overflow-hidden z-10 -rotate-12">
-                          <img src="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=600&q=80" className="w-full h-full object-cover opacity-80 mix-blend-luminosity grayscale-[0.5]" alt="Tablet" />
-                       </div>
-                       
-                       {/* Laptop */}
-                       <div className="absolute pt-3 lg:pt-6 left-1/2 -translate-x-1/2 bottom-[40px] lg:left-[25%] lg:translate-x-0 lg:bottom-[2%] w-[230px] lg:w-[520px] aspect-[16/10] bg-black rounded-t-lg lg:rounded-t-2xl border-[5px] lg:border-[10px] border-[#2a2a2a] border-b-[14px] lg:border-b-[30px] shadow-[0_40px_80px_rgba(0,0,0,0.7)] overflow-hidden z-20">
-                          <img src="https://images.unsplash.com/photo-1621360841013-c76831f125b4?w=800&q=80" className="w-full h-full object-cover opacity-90 scale-105" alt="Laptop" />
-                       </div>
-                       
-                       {/* Phone */}
-                       <div className="absolute right-[8%] top-[4%] lg:right-[-2%] lg:top-[2%] w-[85px] lg:w-[170px] aspect-[9/19] bg-black rounded-[1.5rem] lg:rounded-[2.5rem] border-[3px] lg:border-[6px] border-[#333] shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden z-30 rotate-12">
-                          <img src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80" className="w-full h-full object-cover opacity-90" alt="Phone" />
+                    <div className="hidden lg:flex lg:w-[45%] relative lg:h-[600px] items-center justify-end">
+                       <div className="relative w-full h-full flex items-center justify-end gap-6">
+                          
+                          {/* ANTES Card */}
+                          <motion.div 
+                            initial={{ opacity: 0, x: -30 }} 
+                            animate={{ opacity: 1, x: 0 }} 
+                            transition={{ duration: 0.8 }}
+                            className="relative w-[180px] lg:w-[240px] aspect-[2/3] rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl group"
+                          >
+                             <img src={salesSettings?.magic_before_url || "https://images.unsplash.com/photo-1621360841013-c76831f125b4?w=800&q=80"} className="w-full h-full object-cover brightness-90 transition-all duration-700" alt="Antes" />
+                             <div className="absolute inset-0 bg-black/20" />
+                             <div className="absolute top-6 left-6 px-4 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10">
+                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Antes</span>
+                             </div>
+                          </motion.div>
+
+                          {/* DEPOIS Card */}
+                          <motion.div 
+                            initial={{ opacity: 0, x: 30 }} 
+                            animate={{ opacity: 1, x: 0 }} 
+                            transition={{ duration: 0.8, delay: 0.2 }}
+                            className="relative w-[180px] lg:w-[240px] aspect-[2/3] rounded-[2.5rem] overflow-hidden border-2 border-[#d82828]/30 shadow-[0_40px_80px_rgba(216,40,40,0.15)] group"
+                          >
+                             <img src={salesSettings?.magic_after_url || "https://images.unsplash.com/photo-1621360841013-c76831f125b4?w=800&q=80"} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Depois" />
+                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                             <div className="absolute top-6 right-6 px-4 py-1.5 bg-[#d82828] rounded-full shadow-lg shadow-red-900/40 animate-pulse">
+                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Depois</span>
+                             </div>
+                          </motion.div>
+
+                          {/* Background Glow behind duo */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#d82828]/10 rounded-full blur-[100px] -z-10" />
                        </div>
                     </div>
                  </div>
 
-                 {/* BOTTOM LOGO ICON (G) */}
-                 <div className="absolute bottom-6 lg:bottom-24 left-1/2 -translate-x-1/2 z-30">
-                    <img src="/favicon.png" alt="Icon" className="w-14 lg:w-20 drop-shadow-xl" />
+                 {/* Transition Gradient to Black Section */}
+                 <div className="absolute bottom-0 left-0 w-full h-[400px] bg-gradient-to-t from-[#050505] to-transparent z-10 flex items-end justify-center pb-20">
+                    <motion.img 
+                      initial={{ opacity: 0 }} 
+                      whileInView={{ opacity: 0.15 }} 
+                      src="/logo_icon.png" 
+                      alt="Gorg Icon" 
+                      className="h-10 lg:h-14 object-contain grayscale brightness-200" 
+                    />
                  </div>
               </section>
 
               {/* COLLECTIONS LIST */}
-              <section className="bg-black w-full relative z-20 pt-2 lg:pt-10 pb-40 px-6 lg:px-14 min-h-[500px]">
-                 <div className="max-w-[1400px] mx-auto space-y-20">
+              <section className="bg-[#050505] w-full relative z-20 pt-20 pb-40 px-6 lg:px-14 min-h-[500px]">
+                  {/* Atmospheric Background Glows */}
+                  <div className="absolute top-0 left-0 w-full h-[800px] bg-[radial-gradient(circle_at_20%_30%,rgba(216,40,40,0.05)_0%,transparent_50%)] pointer-events-none" />
+                  <div className="absolute bottom-0 right-0 w-full h-[800px] bg-[radial-gradient(circle_at_80%_70%,rgba(216,40,40,0.05)_0%,transparent_50%)] pointer-events-none" />
+                  
+                  <div className="max-w-[1440px] mx-auto space-y-40 relative z-10">
+                    <AnimatePresence mode="popLayout">
+                       {modules.map((mod, modIdx) => {
+                         const isSuaColecao = mod.module_title?.toUpperCase().includes('COLEÇÃO') && mod.module_title?.toUpperCase().includes('PARTICULAR');
+                         const presetsToShow = isSuaColecao 
+                           ? mod.presets_data?.filter((p: any) => isAdmin || activeProducts.includes(p.id) || activeProducts.includes('*'))
+                           : mod.presets_data;
 
+                         if (isSuaColecao && (!presetsToShow || presetsToShow.length === 0)) return null;
 
-                   <AnimatePresence mode="popLayout">
-                     {modules.map((mod, modIdx) => (
-                       <motion.div key={mod.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="space-y-10">
-                          <div className="flex items-center gap-6">
-                            <div className="w-2 h-10 bg-[#d82828] rounded-full" />
-                            <h3 className="text-2xl lg:text-3xl font-black text-white uppercase italic">{mod.module_title}</h3>
-                          </div>
-                          
-                          <div className="flex gap-6 lg:gap-10 overflow-x-auto pb-10 no-scrollbar items-stretch snap-x">
-                            {mod.presets_data?.map((p: any, pIdx: number) => { 
-                              const isLocked = !isAdmin && !activeProducts.includes(p.id) && !activeProducts.includes('*'); 
-                              return (
-                                <div key={modIdx + '-' + pIdx} className="snap-start shrink-0">
-                                   <PresetCard preset={p} isLocked={isLocked} isAdmin={isAdmin} onClick={() => setViewingProduct(p)} onEdit={() => setIsEditingPreset({modIdx, pIdx, p})} />
+                         return (
+                           <motion.div 
+                             key={mod.id} 
+                             initial={{ opacity: 0, y: 60 }} 
+                             whileInView={{ opacity: 1, y: 0 }} 
+                             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }} 
+                             viewport={{ once: true, margin: "-100px" }} 
+                             className="relative group"
+                           >
+                              {/* Background Numbering (Hide only for personal collection) */}
+                              {!isSuaColecao && (
+                                <div className="absolute -top-20 -left-10 text-[180px] font-black text-white/[0.02] select-none leading-none tracking-tighter hidden lg:block">
+                                   {String(modIdx + 1).padStart(2, '0')}
                                 </div>
-                              );
-                            })}
-                          </div>
-                       </motion.div>
-                     ))}
-                   </AnimatePresence>
-                 </div>
-              </section>
+                              )}
+
+                              <div className="flex flex-col gap-6 mb-16 relative z-10">
+                                <div className="flex items-center gap-6">
+                                  <div className="w-2 h-14 bg-[#d82828] rounded-full shadow-[0_0_25px_rgba(216,40,40,0.6)]" />
+                                  <div className="flex flex-col">
+                                    {!isSuaColecao && (
+                                      <span className="text-[10px] font-black text-[#d82828] uppercase tracking-[0.5em] mb-2 px-1">Módulo Elite Collection</span>
+                                    )}
+                                    <h3 className={`text-4xl lg:text-5xl font-black text-white uppercase tracking-tighter leading-none ${isSuaColecao ? '' : 'italic'}`}>
+                                      {isSuaColecao ? 'A SUA COLEÇÃO PARTICULAR' : mod.module_title}
+                                    </h3>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Horizontal Row with refined spacing */}
+                              <div className="relative group/scroll">
+                                 <div className="flex gap-8 lg:gap-10 overflow-x-auto pb-16 pt-4 no-scrollbar items-stretch snap-x scroll-smooth px-2">
+                                   {presetsToShow?.map((p: any, pIdx: number) => { 
+                                     const isLocked = !isAdmin && !activeProducts.includes(p.id) && !activeProducts.includes('*'); 
+                                     return (
+                                       <motion.div 
+                                         key={modIdx + '-' + pIdx} 
+                                         initial={{ opacity: 0, y: 20 }} 
+                                         whileInView={{ opacity: 1, y: 0 }} 
+                                         transition={{ delay: pIdx * 0.1, duration: 0.8 }} 
+                                         viewport={{ once: true }} 
+                                         className="snap-start shrink-0 first:pl-2"
+                                       >
+                                          <PresetCard preset={p} isLocked={isLocked} isAdmin={isAdmin} isPersonal={isSuaColecao} onClick={() => setViewingProduct(p)} onEdit={() => setIsEditingPreset({modIdx, pIdx, p})} />
+                                       </motion.div>
+                                     );
+                                   })}
+                                 </div>
+                                 
+                                 {/* Visual Indicator of more content */}
+                                 <div className="absolute right-0 top-0 bottom-16 w-32 bg-gradient-to-l from-[#050505] to-transparent pointer-events-none opacity-0 group-hover/scroll:opacity-100 transition-opacity duration-700" />
+                              </div>
+                           </motion.div>
+                         );
+                       })}
+                    </AnimatePresence>
+                  </div>
+               </section>
             </div>
           ) : activeTab === 'admin' ? (
             <div className="p-6 lg:p-14 max-w-7xl mx-auto bg-[#f4f4f5] text-black min-h-screen rounded-[3rem] mt-6 shadow-2xl overflow-hidden">
@@ -966,34 +1100,52 @@ export default function App() {
                 <button onClick={() => setIsEditingPreset(null)} className="absolute top-12 right-12 text-gray-800 hover:text-black transition-all">
                   <X size={40} />
                 </button>
-                <h3 className="text-4xl font-black uppercase italic mb-12 tracking-tighter italic">Editar Preset</h3>
-                <form onSubmit={async (e: any) => { 
-                  e.preventDefault(); 
-                  const { modIdx, pIdx } = isEditingPreset; 
-                  const moduleToUpdate = modules[modIdx]; 
-                  const newPresets = [...moduleToUpdate.presets_data]; 
-                  newPresets[pIdx] = { 
-                    ...newPresets[pIdx], 
-                    name: e.currentTarget.pname.value, 
-                    image: e.currentTarget.pimage.value, 
-                    download_link: e.currentTarget.pdownload.value, 
-                    upsell_link: e.currentTarget.pupsell.value 
-                  }; 
-                  const { error } = await supabase.from('modules_presets').update({ presets_data: newPresets }).eq('id', moduleToUpdate.id); 
-                  if (!error) {
-                    setIsEditingPreset(null); 
-                    fetchInitialData();
-                    toast('Preset sincronizado! ✅');
-                  }
-                }} className="space-y-10">
-                   <div className="space-y-3">
-                     <label className="text-[11px] font-black uppercase text-gray-400 italic">Identidade Visual</label>
-                     <input name="pname" defaultValue={isEditingPreset.p.name} className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-7 font-black uppercase italic text-xl outline-none focus:border-[#d82828] transition-all" />
-                   </div>
-                   <div className="space-y-3">
-                     <label className="text-[11px] font-black uppercase text-gray-400 italic">Capa Master (URL)</label>
-                     <input name="pimage" defaultValue={isEditingPreset.p.image} className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-6 font-bold text-sm outline-none focus:border-[#d82828]" />
-                   </div>
+                 <h3 className="text-4xl font-black uppercase italic mb-12 tracking-tighter">Editar Preset</h3>
+                 <form onSubmit={async (e: any) => { 
+                   e.preventDefault(); 
+                   const { modIdx, pIdx } = isEditingPreset; 
+                   const moduleToUpdate = modules[modIdx]; 
+                   const newPresets = [...moduleToUpdate.presets_data]; 
+                   newPresets[pIdx] = { 
+                     ...newPresets[pIdx], 
+                     name: e.currentTarget.pname.value, 
+                     image: e.currentTarget.pimage.value, 
+                     download_link: e.currentTarget.pdownload.value, 
+                     upsell_link: e.currentTarget.pupsell.value 
+                   }; 
+                   const { error } = await supabase.from('modules_presets').update({ presets_data: newPresets }).eq('id', moduleToUpdate.id); 
+                   if (!error) {
+                     setIsEditingPreset(null); 
+                     fetchInitialData();
+                     toast('Preset sincronizado! ✅');
+                   }
+                 }} className="space-y-10">
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase text-gray-400 italic">Identidade Visual</label>
+                      <input name="pname" defaultValue={isEditingPreset.p.name} className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-7 font-black uppercase italic text-xl outline-none focus:border-[#d82828] transition-all" />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase text-gray-400 italic">Capa Master (URL ou Upload)</label>
+                      <div className="flex gap-4">
+                        <input name="pimage" id="pimage_input" defaultValue={isEditingPreset.p.image} className="flex-1 bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-6 font-bold text-sm outline-none focus:border-[#d82828]" />
+                        <label className="w-20 h-20 bg-black text-white rounded-[1.8rem] flex items-center justify-center cursor-pointer hover:bg-[#d82828] transition-all shrink-0 shadow-lg group">
+                           <Upload size={24} className="group-hover:scale-110 transition-transform" />
+                           <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                              const file = e.target.files?.[0]; if (!file) return;
+                              const loadingToast = toast.loading('Enviando imagem...');
+                              try {
+                                const fileName = `preset_${Date.now()}.${file.name.split('.').pop()}`;
+                                const { error: upErr } = await supabase.storage.from('assets').upload(fileName, file);
+                                if (upErr) throw upErr;
+                                const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(fileName);
+                                const input = document.getElementById('pimage_input') as HTMLInputElement;
+                                if (input) input.value = publicUrl;
+                                toast.success('Imagem carregada! 📸', { id: loadingToast });
+                              } catch (err: any) { toast.error(`Erro: ${err.message}`, { id: loadingToast }); }
+                           }} />
+                        </label>
+                      </div>
+                    </div>
                    <div className="space-y-3">
                      <label className="text-[11px] font-black uppercase text-gray-400 italic">Vault de Download</label>
                      <input name="pdownload" defaultValue={isEditingPreset.p.download_link} className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-6 font-bold text-sm outline-none focus:border-[#d82828]" />
@@ -1002,7 +1154,7 @@ export default function App() {
                      <label className="text-[11px] font-black uppercase text-gray-400 italic text-[#d82828]">Link de Redirecionamento (Upsell)</label>
                      <input name="pupsell" defaultValue={isEditingPreset.p.upsell_link} className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-6 font-bold text-sm outline-none focus:border-[#d82828]" />
                    </div>
-                   <button type="submit" className="w-full py-8 bg-gray-950 text-black rounded-[2.5rem] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-6 shadow-2xl hover:bg-[#d82828] transition-all">
+                   <button type="submit" className="w-full py-8 bg-gray-950 text-white rounded-[2.5rem] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-6 shadow-2xl hover:bg-[#d82828] transition-all">
                      <Save size={28} /> SINCRONIZAR ITEM
                    </button>
                 </form>

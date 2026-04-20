@@ -24,6 +24,7 @@ const Refund = lazy(() => import("./pages/Refund"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Admin = lazy(() => import("./pages/Admin"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Checkout = lazy(() => import("./pages/Checkout"));
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,14 @@ function App() {
                       element={
                         <Suspense fallback={<div className="min-h-screen bg-white" />}>
                           <Admin />
+                        </Suspense>
+                      } 
+                    />
+                    <Route 
+                      path="/checkout" 
+                      element={
+                        <Suspense fallback={<div className="min-h-screen bg-[#f4f5f5]" />}>
+                          <Checkout />
                         </Suspense>
                       } 
                     />

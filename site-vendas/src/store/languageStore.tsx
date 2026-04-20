@@ -265,6 +265,7 @@ export const translations = {
   refundSec2Desc: { PT: "Basta enviar um e-mail para suporte@gorgpresets.com com o título 'Solicitação de Reembolso' acompanhado do seu número de pedido ou email de compra. O estorno será processado diretamente pelo processador de pagamento utilizado (Cartão, Pix ou Boleto).", EN: "Just send an email to suporte@gorgpresets.com with the subject 'Refund Request' along with your order number or purchase email. The reversal will be processed directly by the payment processor used (Card, Pix or Bank Slip).", ES: "Basta con enviar un correo a soporte@gorgpresets.com con el asunto 'Solicitud de Reembolso' junto con su número de pedido o correo de compra. El reembolso será procesado directamente por el procesador de pagos utilizado (Tarjeta, Pix o Boleto)." },
 
   // Cart Drawer
+  // Cart Drawer
   cartMyPresets: { PT: "Meus Presets", EN: "My Presets", ES: "Mis Presets" },
   cartPack: { PT: "Pack Selecionado", EN: "Pack Selected", ES: "Pack Seleccionado" },
   cartPacks: { PT: "Packs Selecionados", EN: "Packs Selected", ES: "Packs Seleccionados" },
@@ -279,6 +280,31 @@ export const translations = {
   cartContinue: { PT: "CONTINUAR NAVEGANDO", EN: "CONTINUE SHOPPING", ES: "CONTINUAR NAVEGANDO" },
   cartExplore: { PT: "Começar a Explorar", EN: "Start Exploring", ES: "Empezar a Explorar" },
   cartTotalOrder: { PT: "Total do Pedido", EN: "Order Total", ES: "Total del Pedido" },
+  
+  // Checkout
+  chkSummary: { PT: "Resumo do pedido", EN: "Order Summary", ES: "Resumen del pedido" },
+  chkPixDisc: { PT: "Desconto PIX", EN: "PIX Discount", ES: "Descuento PIX" },
+  chkCouponLabel: { PT: "Código do cupom", EN: "Coupon Code", ES: "Código del cupón" },
+  chkCouponPlace: { PT: "Digite seu cupom", EN: "Enter your coupon", ES: "Introduce tu cupón" },
+  chkApplyBtn: { PT: "Aplicar", EN: "Apply", ES: "Aplicar" },
+  chkIdentification: { PT: "Identificação", EN: "Identification", ES: "Identificación" },
+  chkFullName: { PT: "Nome completo", EN: "Full name", ES: "Nombre completo" },
+  chkEmailLab: { PT: "E-mail", EN: "Email", ES: "Correo electrónico" },
+  chkPhoneLab: { PT: "Celular/WhatsApp", EN: "Phone/WhatsApp", ES: "Celular/WhatsApp" },
+  chkOfferTitle: { PT: "Oferta especial para você!", EN: "Special offer for you!", ES: "¡Oferta especial para ti!" },
+  chkOfferDesc: { PT: "Adicione este item exclusivo ao seu pedido", EN: "Add this exclusive item to your order", ES: "Añade este artículo exclusivo a tu pedido" },
+  chkPaymentMethod: { PT: "Forma de pagamento", EN: "Payment method", ES: "Forma de pago" },
+  chkCard: { PT: "Cartão de Crédito", EN: "Credit Card", ES: "Tarjeta de Crédito" },
+  chkPixOnlySight: { PT: "Pagamento somente à vista", EN: "Payment only upfront", ES: "Pago solo al contado" },
+  chkPixRelease: { PT: "A liberação da compra ocorre após a confirmação do pagamento", EN: "Release occurs after payment confirmation", ES: "La liberación ocurre después de confirmar el pago" },
+  chkPixExpiration: { PT: "Ao gerar o código atente para a data de expiração", EN: "Pay attention to expiration date", ES: "Presta atención a la fecha de vencimiento" },
+  chkTermTotal: { PT: "Total a prazo:", EN: "Total in installments:", ES: "Total a plazos:" },
+  chkCardDetail: { PT: "Preencha os dados no próximo passo ou no checkout seguro.", EN: "Fill in details on the next step.", ES: "Completa los datos en el siguiente paso." },
+  chkProcessing: { PT: "Processando...", EN: "Processing...", ES: "Procesando..." },
+  chkContinueBtn: { PT: "CONTINUAR", EN: "CONTINUE", ES: "CONTINUAR" },
+  chkGenPixBtn: { PT: "$$ GERAR PIX", EN: "$$ MINT PIX", ES: "$$ GENERAR PIX" },
+  chkSafePage: { PT: "Você está em uma página de checkout segura, criada com a tecnologia ggCheckout. A responsabilidade pela oferta é do vendedor.", EN: "You are on a secure checkout page, created with ggCheckout. Responsability for offer relies on the seller.", ES: "Estás en una página de pago segura. La responsabilidad de la oferta recae en el vendedor." },
+  chkAllRights: { PT: "Todos os direitos reservados.", EN: "All rights reserved.", ES: "Todos los derechos reservados." }
 };
 
 export type TranslationKey = keyof typeof translations;

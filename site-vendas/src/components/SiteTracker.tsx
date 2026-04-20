@@ -49,7 +49,8 @@ export function SiteTracker() {
           location: city,
           device: device,
           path: location.pathname,
-          user_agent: userAgent
+          user_agent: userAgent,
+          referrer: document.referrer || 'Direto'
         }]);
 
         if (!error) {
@@ -68,7 +69,7 @@ export function SiteTracker() {
   return null;
 }
 
-export const trackCheckoutClick = async () => {
+export const trackCheckoutClick = async (productName?: string) => {
   try {
     let sessionId = sessionStorage.getItem('visit_session_id');
     if (!sessionId) {
@@ -82,12 +83,12 @@ export const trackCheckoutClick = async () => {
     if (/tablet|ipad/i.test(userAgent)) device = 'Tablet';
     if (/android/i.test(userAgent) && !/mobile/i.test(userAgent)) device = 'Tablet';
 
-    await supabase.from('site_visits').insert([{
+     await supabase.from('site_visits').insert([{
       session_id: sessionId,
       ip: 'Checkout Click',
       location: 'Intent',
       device: device,
-      path: 'CHECKOUT_CLICK',
+      path: productName ? `CHECKOUT_CLICK:${productName}` : 'CHECKOUT_CLICK',
       user_agent: userAgent
     }]);
   } catch (err) {

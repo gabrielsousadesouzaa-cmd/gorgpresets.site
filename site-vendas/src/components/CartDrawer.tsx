@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/store/cartStore";
 import { useCurrency } from "@/store/currencyStore";
 import { useLanguage } from "@/store/languageStore";
@@ -12,57 +12,20 @@ import { trackCheckoutClick } from "@/components/SiteTracker";
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, getTotal, addItem, getPromoDiscount, getSavings } = useCart();
   const location = useLocation();
+  const navigate = useNavigate();
   const { formatCurrency, currency } = useCurrency();
   const { t } = useLanguage();
   const { products } = useProducts();
   const { settings } = useSiteSettings();
 
-  const extractId = (url: string) => {
-    if (!url || url === "#") return "";
-    try {
-      const urlObj = new URL(url);
-      const parts = urlObj.pathname.split('/').filter(Boolean);
-      return parts[parts.length - 1];
-    } catch {
-      const parts = url.split("?")[0].split("/").filter(Boolean);
-      return parts[parts.length - 1];
-    }
-  };
-
   const handleCheckout = async () => {
     if (items.length === 0) return;
+    const productNames = items.map(item => item.product.name).join(' + ');
+    await trackCheckoutClick(productNames);
     
-    await trackCheckoutClick();
-    
-    // CASO 1: Apenas 1 produto - Checkout Individual (Solo)
-    if (items.length === 1) {
-      const linkIndividual = items[0].product.checkoutUrl;
-      if (linkIndividual && linkIndividual !== "#") {
-        window.location.href = linkIndividual;
-        return;
-      }
-    }
-
-    // CASO 2: Múltiplos produtos - Checkout de Vários Produtos
-    // Vamos construir a URL Multi-Add: ?add=ID1&add=ID2...
-    const ids = items
-      .map(item => extractId(item.product.checkoutUrl))
-      .filter(id => id !== "");
-
-    if (ids.length > 1) {
-      // Base da URL do carrinho (ex: https://ggcheckout.app/s/F3LEikOi-0/cart)
-      const baseUrl = settings.integration.checkoutBaseUrl;
-      // Monta os parâmetros ?add=ID1&add=ID2...
-      const queryParams = ids.map(id => `add=${id}`).join("&");
-      const finalUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${queryParams}`;
-      
-      console.log("Redirecionando para Multi-Checkout:", finalUrl);
-      window.location.href = finalUrl;
-      return;
-    }
-
-    // Fallback caso algo dê errado ou capture apenas 1 ID no loop
-    window.location.href = settings.integration.checkoutBaseUrl;
+    // Redirect to local hosted custom transparent checkout
+    navigate('/checkout');
+    closeCart();
   };
   // Sugestão baseada em produtos REAIS que NÃO estão no carrinho
   const upsellProduct = products.find(p => !items.some(item => item.product.id === p.id));

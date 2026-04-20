@@ -48,6 +48,7 @@ export interface HomeSectionOrder {
 export interface IntegrationSettings {
   checkoutBaseUrl: string;
   isCartEnabled: boolean;
+  gateway: 'buckpay' | 'ggcheckout' | 'ironpay';
 }
 
 export interface SiteSettings {
@@ -86,6 +87,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   integration: {
     checkoutBaseUrl: "https://ggcheckout.app/s/F3LEikOi-0/cart",
     isCartEnabled: true,
+    gateway: 'buckpay',
   },
   shopTheLook: [
     { id: "1", src: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&q=80", presetName: "VERÃO", productId: "1" },

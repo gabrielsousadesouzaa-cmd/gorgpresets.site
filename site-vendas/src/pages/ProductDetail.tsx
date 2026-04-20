@@ -71,7 +71,7 @@ export default function ProductDetail() {
     if (!product) return;
     
     if (product.checkoutUrl && product.checkoutUrl !== "#") {
-      await trackCheckoutClick();
+      await trackCheckoutClick(product.name);
       window.location.href = product.checkoutUrl;
     } else {
       toast.info(language === 'PT' ? "Link de checkout não configurado." : "Checkout link not configured.");
