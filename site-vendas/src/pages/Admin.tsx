@@ -1005,55 +1005,38 @@ export default function Admin() {
                </div>
             </div>
 
-            {/* BIG GLOBE CARD - ORIGEM DOS ACESSOS */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              
-              <div className="xl:col-span-2 bg-black rounded-[3rem] overflow-hidden relative min-h-[500px] shadow-2xl group border border-white/10 flex items-center justify-center">
-                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center scale-[1.3] md:scale-110 opacity-60 group-hover:opacity-80 transition-opacity duration-700">
-                  <AdminGlobe cities={stats.sortedCities as any} />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40 pointer-events-none" />
-                
-                <div className="absolute top-10 left-10 z-10">
-                  <h3 className="text-white text-3xl font-black uppercase tracking-tighter italic">Mapa de Calor</h3>
-                  <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1">De onde vêm os seus clientes</p>
-                </div>
-
-                <div className="absolute top-10 right-10 z-10 hidden md:flex flex-col items-end gap-2">
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] min-w-[220px]">
-                    <div className="flex items-center gap-2 mb-4">
-                       <div className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
-                       <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Ao Vivo</span>
-                    </div>
-                    <div className="text-white">
-                      <span className="text-5xl font-black tracking-tighter leading-none">{stats.liveVisitors}</span>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Pessoas no site agora</p>
-                    </div>
+            {/* DEDICATED GLOBE CARD */}
+            <div className="bg-black rounded-[3rem] overflow-hidden relative min-h-[500px] md:min-h-[700px] shadow-2xl border border-white/10 flex items-center justify-center">
+               <div className="w-full h-full flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity duration-700 mt-10 md:mt-0">
+                  <div className="w-full max-w-[800px] scale-[1.2] md:scale-100">
+                    <AdminGlobe cities={stats.sortedCities as any} />
                   </div>
-                </div>
+               </div>
+               
+               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/20 pointer-events-none" />
+               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none" />
+               
+               <div className="absolute top-10 left-10 z-10 pointer-events-none">
+                 <h3 className="text-white text-3xl font-black uppercase tracking-tighter italic">Visão Global</h3>
+                 <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1">Gire o globo para ver as conexões</p>
+               </div>
 
-                <div className="absolute bottom-10 inset-x-10 z-10">
-                   <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-8 rounded-[2rem] shadow-2xl">
-                      <div className="flex items-center justify-between mb-6">
-                        <p className="text-[11px] font-black text-white uppercase tracking-widest flex items-center gap-2 italic">
-                          <Globe size={14} className="text-[#d82828]" /> Atividade Recente por Localização
-                        </p>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sincronizado</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {visits.filter(v => v.event_type !== 'CHECKOUT_CLICK').slice(0, 4).map((v, i) => (
-                           <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: `${i*100}ms` }}>
-                             <div className="flex items-center gap-3">
-                               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                               <span className="text-[11px] font-bold text-white truncate max-w-[150px] uppercase">{v.location || 'Localização Oculta'}</span>
-                             </div>
-                             <span className="text-[9px] font-black text-gray-400 uppercase italic">Acesso Detectado</span>
-                           </div>
-                        ))}
-                      </div>
+               <div className="absolute top-10 right-10 z-10 hidden md:flex flex-col items-end gap-2 pointer-events-none">
+                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] min-w-[220px]">
+                   <div className="flex items-center gap-2 mb-4">
+                      <div className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Ao Vivo</span>
                    </div>
-                </div>
-              </div>
+                   <div className="text-white">
+                     <span className="text-5xl font-black tracking-tighter leading-none">{stats.liveVisitors}</span>
+                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Pessoas no site agora</p>
+                   </div>
+                 </div>
+               </div>
+            </div>
+
+            {/* LOWER STATS GRID */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
               {/* TOP CITIES LIST */}
               <div className="bg-white rounded-[3rem] p-10 border border-black/5 shadow-xl relative overflow-hidden flex flex-col">

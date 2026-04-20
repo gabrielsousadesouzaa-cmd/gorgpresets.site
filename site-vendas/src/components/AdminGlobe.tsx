@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import createGlobe from 'cobe';
-import { useSpring } from 'react-spring';
+import { useSpring, useMotionValue } from 'framer-motion';
 
 const CITY_COORDS: Record<string, [number, number]> = {
   "São Paulo": [-23.5505, -46.6333],
@@ -36,15 +36,12 @@ export function AdminGlobe({ cities }: { cities: Array<[string, number]> }) {
   const pointerInteracting = useRef<number | null>(null);
   const pointerInteractionMovement = useRef(0);
   
-  const [{ r }, api] = useSpring(() => ({
-    r: 0,
-    config: {
-      mass: 1,
-      tension: 280,
-      friction: 40,
-      precision: 0.001,
-    },
-  }));
+  const rSet = useMotionValue(0);
+  const r = useSpring(rSet, {
+    stiffness: 280,
+    damping: 40,
+    mass: 1,
+  });
 
   useEffect(() => {
     let phi = 0;
@@ -119,14 +116,14 @@ export function AdminGlobe({ cities }: { cities: Array<[string, number]> }) {
           if (pointerInteracting.current !== null) {
             const delta = e.clientX - pointerInteracting.current;
             pointerInteractionMovement.current = delta;
-            api.start({ r: delta / 200 });
+            rSet.set(delta / 200);
           }
         }}
         onTouchMove={(e) => {
           if (pointerInteracting.current !== null && e.touches[0]) {
             const delta = e.touches[0].clientX - pointerInteracting.current;
             pointerInteractionMovement.current = delta;
-            api.start({ r: delta / 100 });
+            rSet.set(delta / 100);
           }
         }}
         style={{
