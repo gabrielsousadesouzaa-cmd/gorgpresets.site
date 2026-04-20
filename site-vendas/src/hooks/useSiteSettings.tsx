@@ -48,7 +48,7 @@ export interface HomeSectionOrder {
 export interface IntegrationSettings {
   checkoutBaseUrl: string;
   isCartEnabled: boolean;
-  gateway: 'buckpay' | 'ggcheckout' | 'ironpay';
+  gateway: 'buckpay' | 'ggcheckout';
 }
 
 export interface SiteSettings {

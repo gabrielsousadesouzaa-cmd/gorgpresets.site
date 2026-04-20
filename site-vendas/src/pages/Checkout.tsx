@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPixTransaction, getPixStatus } from "@/services/buckpay";
-import { createIronPayTransaction } from "@/services/ironpay";
+
 import { createGGCheckoutSession } from "@/services/ggcheckout";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { toast } from "sonner";
@@ -156,47 +156,14 @@ export default function Checkout() {
         }
       }
 
-      if (activeGateway === 'ironpay') {
-        const ironResult = await createIronPayTransaction({
-          offer_hash: items[0]?.product?.ironpayHash ?? "axgjvdsnxv",
-          amount: finalTotal, // IronPay service handles the cents conversion
-          payment_method: "pix",
-          cart: items.map(i => ({
-            product_hash: i.product?.ironpayHash ?? "axgjvdsnxv",
-            title: i.product.name,
-            price: i.product.price,
-            quantity: 1
-          })),
-          customer: {
-            name: name.trim(),
-            email: email.trim(),
-            document: cleanCpf,
-            mobile: cleanPhone
-          }
-        });
-
-        if (ironResult.success && ironResult.data?.pix) {
-          result = {
-            success: true,
-            pix: {
-              code: ironResult.data.pix.qr_code,
-              qrcode_base64: ironResult.data.pix.qr_code_image
-            },
-            external_id: String(ironResult.data.id)
-          };
-        } else {
-          result = { success: false, error: ironResult.message };
-        }
-      } else {
-        // Default: BuckPay
-        result = await createPixTransaction({
-          name: name.trim(),
-          email: email.trim(),
-          document: cleanCpf,
-          phone: cleanPhone,
-          amount: amountCents,
-        });
-      }
+      // Default: BuckPay
+      result = await createPixTransaction({
+        name: name.trim(),
+        email: email.trim(),
+        document: cleanCpf,
+        phone: cleanPhone,
+        amount: amountCents,
+      });
 
       if (!result.success || !result.pix) {
         const msg = result.error ?? "Erro ao gerar PIX. Tente novamente.";

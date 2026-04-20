@@ -17,8 +17,7 @@ export interface Product {
     category: string; 
     tags: string[];
     checkoutUrl: string;
-    /** Hash da oferta cadastrada na IronPay — preenchido no Admin */
-    ironpayHash?: string;
+
     isNew: boolean;
     isBestseller: boolean;
     salesCount: number;
