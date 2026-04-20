@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { saveSetting, DEFAULT_SETTINGS, SiteSettings } from "@/hooks/useSiteSettings";
+import { AdminGlobe } from "@/components/AdminGlobe";
 
 interface ProductFormData {
   id?: string;
@@ -1007,13 +1008,11 @@ export default function Admin() {
             {/* BIG GLOBE CARD - ORIGEM DOS ACESSOS */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               
-              <div className="xl:col-span-2 bg-black rounded-[3rem] overflow-hidden relative min-h-[500px] shadow-2xl group border border-white/10">
-                <img 
-                  src="/cyber_world_globe_dark_1776631381472.png" 
-                  alt="Global Connections" 
-                  className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-1000 ease-in-out select-none pointer-events-none" 
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
+              <div className="xl:col-span-2 bg-black rounded-[3rem] overflow-hidden relative min-h-[500px] shadow-2xl group border border-white/10 flex items-center justify-center">
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center scale-[1.3] md:scale-110 opacity-60 group-hover:opacity-80 transition-opacity duration-700">
+                  <AdminGlobe cities={stats.sortedCities as any} />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40 pointer-events-none" />
                 
                 <div className="absolute top-10 left-10 z-10">
                   <h3 className="text-white text-3xl font-black uppercase tracking-tighter italic">Mapa de Calor</h3>
