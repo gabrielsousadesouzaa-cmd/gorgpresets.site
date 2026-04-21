@@ -66,13 +66,13 @@ export function AdminGlobe({ cities }: { cities: Array<[string, number]> }) {
       height: 600 * 2,
       phi: 0,
       theta: 0.2,
-      dark: 1,
+      dark: 1, // Ativa modo noturno onde oceanos são escuros e a terra é clara
       diffuse: 1.2,
       mapSamples: 24000,
       mapBrightness: 6,
-      baseColor: [0.05, 0.05, 0.1], // Fundo noturno estiloso
-      markerColor: [1, 0.1, 0.1],   // Ícone Vermelho (como pedido)
-      glowColor: [0.05, 0.05, 0.12], // Brilho levemente roxo/azul escuro
+      baseColor: [0.8, 0.8, 0.8], // Terra em cinza claro para destacar no fundo preto
+      markerColor: [1, 0.1, 0.1],   // Ícone Vermelho
+      glowColor: [0.2, 0.2, 0.2], // Brilho levemente prateado
       markers: markers,
       onRender: (state) => {
         // Rotação automática suave
