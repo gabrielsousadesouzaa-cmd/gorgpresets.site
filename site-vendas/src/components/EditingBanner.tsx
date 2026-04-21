@@ -26,6 +26,8 @@ export function EditingBanner() {
                <img 
                  src={settings.banner.image} 
                  alt="Preview" 
+                 loading="lazy"
+                 decoding="async"
                  className="w-full h-auto object-contain transition-transform duration-1000 group-hover:scale-[1.03]" 
                />
             </div>

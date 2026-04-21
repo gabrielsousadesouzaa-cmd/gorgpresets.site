@@ -31,12 +31,16 @@ export function HeroSection() {
           initial={{ scale: 1.15, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-x-0 -inset-y-20 bg-cover bg-center"
-          style={{ 
-            backgroundImage: `url("${settings.hero.backgroundImage}")`,
-            y: yBg
-          }}
+          className="absolute inset-x-0 -inset-y-20"
+          style={{ y: yBg }}
         >
+          <img 
+            src={settings.hero.backgroundImage} 
+            alt=""
+            fetchPriority="high"
+            loading="eager"
+            className="w-full h-full object-cover"
+          />
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
         </motion.div>

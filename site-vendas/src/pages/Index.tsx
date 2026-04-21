@@ -3,15 +3,18 @@ import { HeroSection } from "@/components/HeroSection";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { EditingBanner } from "@/components/EditingBanner";
 import { CategoriesCarousel } from "@/components/CategoriesCarousel";
-import { TestimonialsSection } from "@/components/TestimonialsSection";
-import { FeaturesBanner } from "@/components/FeaturesBanner";
-import { FaqAccordion } from "@/components/FaqAccordion";
-import { ShopTheLook } from "@/components/ShopTheLook";
-import { BeforeAfterSlider } from "@/components/BeforeAfterSlider";
 import { useProducts } from "@/hooks/useProducts";
 import { useLanguage } from "@/store/languageStore";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Skeleton } from "@/components/ui/skeleton";
+import { lazy, Suspense } from "react";
+
+// Componentes pesados carregados sob demanda
+const TestimonialsSection = lazy(() => import("@/components/TestimonialsSection").then(m => ({ default: m.TestimonialsSection })));
+const FaqAccordion = lazy(() => import("@/components/FaqAccordion").then(m => ({ default: m.FaqAccordion })));
+const ShopTheLook = lazy(() => import("@/components/ShopTheLook").then(m => ({ default: m.ShopTheLook })));
+const BeforeAfterSlider = lazy(() => import("@/components/BeforeAfterSlider").then(m => ({ default: m.BeforeAfterSlider })));
+const FeaturesBanner = lazy(() => import("@/components/FeaturesBanner").then(m => ({ default: m.FeaturesBanner })));
 
 export default function Index() {
   const { t, language } = useLanguage();
@@ -141,9 +144,11 @@ export default function Index() {
   return (
     <div className="w-full max-w-[1300px] mx-auto overflow-x-hidden">
       {!hiddenSections.includes('hero') && <HeroSection />}
-      {(settings.homeSectionOrder.sections || [])
-        .filter(sec => !hiddenSections.includes(sec))
-        .map(renderSection)}
+      <Suspense fallback={<div className="h-40 flex items-center justify-center"><Skeleton className="w-full h-32 rounded-3xl" /></div>}>
+        {(settings.homeSectionOrder.sections || [])
+          .filter(sec => !hiddenSections.includes(sec))
+          .map(renderSection)}
+      </Suspense>
     </div>
   );
 }

@@ -81,6 +81,8 @@ export function ProductCard({ product }: ProductCardProps) {
           <img
             src={slideshowImages[currentImgIndex]}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = "https://images.unsplash.com/photo-1542038784456-1ea8e935640e";

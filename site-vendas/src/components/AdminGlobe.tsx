@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import createGlobe from 'cobe';
-import { useSpring, useMotionValue } from 'framer-motion';
 
+// Coordenadas das principais cidades
 const CITY_COORDS: Record<string, [number, number]> = {
   "São Paulo": [-23.5505, -46.6333],
   "Rio de Janeiro": [-22.9068, -43.1729],
@@ -24,7 +24,6 @@ const CITY_COORDS: Record<string, [number, number]> = {
   "Orlando": [28.5383, -81.3792]
 };
 
-// Faz um fallback para lugares desconhecidos espalhados pelo Brasil
 const getRandomCoordInBrazil = (): [number, number] => {
   const lat = -23.5 + (Math.random() * 15);
   const lon = -46.6 + (Math.random() * 15 - 7.5);
@@ -33,22 +32,16 @@ const getRandomCoordInBrazil = (): [number, number] => {
 
 export function AdminGlobe({ cities }: { cities: Array<[string, number]> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Interações de Mouse
   const pointerInteracting = useRef<number | null>(null);
   const pointerInteractionMovement = useRef(0);
-  
-  const rSet = useMotionValue(0);
-  const r = useSpring(rSet, {
-    stiffness: 280,
-    damping: 40,
-    mass: 1,
-  });
+  const currentPhi = useRef(0);
 
   useEffect(() => {
     let phi = 0;
     if (!canvasRef.current) return;
 
-    // Constrói os markers com base nas cidades ativas
-    // Tamanho do marcador é baseado no número de visitantes, máx de 0.1
     const highestCount = cities.length > 0 ? cities[0][1] : 1;
     const markers = cities.map(([city, count]) => {
       const coord = CITY_COORDS[city] || getRandomCoordInBrazil();
@@ -57,81 +50,73 @@ export function AdminGlobe({ cities }: { cities: Array<[string, number]> }) {
     });
 
     if (markers.length === 0) {
-      markers.push({ location: [-23.5505, -46.6333], size: 0.05 }); // SP como base
+      markers.push({ location: [-23.5505, -46.6333], size: 0.1 }); 
     }
 
     const globe = createGlobe(canvasRef.current, {
       devicePixelRatio: 2,
-      width: 600 * 2,
-      height: 600 * 2,
+      width: 1200,   // Resolução aumentada para nitidez
+      height: 1200,
       phi: 0,
-      theta: 0.2,
-      dark: 1, // Ativa modo noturno onde oceanos são escuros e a terra é clara
+      theta: 0.1,
+      dark: 1,       // Modo escuro (pontos claros no fundo escuro)
       diffuse: 1.2,
-      mapSamples: 24000,
-      mapBrightness: 6,
-      baseColor: [0.8, 0.8, 0.8], // Terra em cinza claro para destacar no fundo preto
-      markerColor: [1, 0.1, 0.1],   // Ícone Vermelho
-      glowColor: [0.2, 0.2, 0.2], // Brilho levemente prateado
+      mapSamples: 12000,
+      mapBrightness: 12,
+      baseColor: [1, 1, 1], // Branco puro para os pontos do continente
+      markerColor: [0.85, 0.16, 0.16], // Vermelho alerta
+      glowColor: [1, 1, 1], // Brilho branco intenso
       markers: markers,
       onRender: (state) => {
-        // Rotação automática suave
         if (!pointerInteracting.current) {
-          phi += 0.003;
+          phi += 0.005; // Rotação infinita
         }
-        state.phi = phi + r.get();
-        state.width = 600 * 2;
-        state.height = 600 * 2;
+        state.phi = phi + currentPhi.current;
       },
     });
 
     return () => globe.destroy();
-  }, [cities]); // Recria o globo quando as cidades atualizarem
+  }, [cities]); // Refaz apenas se a lista de cidades atualizar
 
   return (
     <div style={{
       width: '100%',
       maxWidth: 600,
-      aspectRatio: 1,
-      margin: 'auto',
-      position: 'relative',
-      cursor: 'grab'
+      aspectRatio: '1 / 1',
+      margin: '0 auto',
+      position: 'relative'
     }}>
       <canvas
         ref={canvasRef}
+        width={1000}
+        height={1000}
         onPointerDown={(e) => {
-          pointerInteracting.current =
-            e.clientX - pointerInteractionMovement.current;
-          canvasRef.current!.style.cursor = 'grabbing';
+          pointerInteracting.current = e.clientX - pointerInteractionMovement.current;
         }}
         onPointerUp={() => {
           pointerInteracting.current = null;
-          canvasRef.current!.style.cursor = 'grab';
         }}
         onPointerOut={() => {
           pointerInteracting.current = null;
-          canvasRef.current!.style.cursor = 'grab';
         }}
         onMouseMove={(e) => {
           if (pointerInteracting.current !== null) {
             const delta = e.clientX - pointerInteracting.current;
             pointerInteractionMovement.current = delta;
-            rSet.set(delta / 200);
+            currentPhi.current = delta / 200;
           }
         }}
         onTouchMove={(e) => {
           if (pointerInteracting.current !== null && e.touches[0]) {
             const delta = e.touches[0].clientX - pointerInteracting.current;
             pointerInteractionMovement.current = delta;
-            rSet.set(delta / 100);
+            currentPhi.current = delta / 100;
           }
         }}
         style={{
           width: '100%',
           height: '100%',
-          contain: 'layout paint size',
-          opacity: 1,
-          transition: 'opacity 1s ease',
+          cursor: 'grab',
         }}
       />
     </div>

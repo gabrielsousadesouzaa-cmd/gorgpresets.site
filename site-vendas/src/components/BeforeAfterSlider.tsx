@@ -75,6 +75,8 @@ export function BeforeAfterSlider({ beforeImage, afterImage }: BeforeAfterSlider
       <img 
         src={afterImage} 
         alt="After" 
+        loading="lazy"
+        decoding="async"
         className="absolute inset-0 w-full h-full object-cover pointer-events-none brightness-110 contrast-105"
         draggable={false}
       />
@@ -88,6 +90,8 @@ export function BeforeAfterSlider({ beforeImage, afterImage }: BeforeAfterSlider
       <img 
         src={beforeImage} 
         alt="Before" 
+        loading="lazy"
+        decoding="async"
         className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10"
         style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
         draggable={false}

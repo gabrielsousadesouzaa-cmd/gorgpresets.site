@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { saveSetting, DEFAULT_SETTINGS, SiteSettings } from "@/hooks/useSiteSettings";
-import { AdminGlobe } from "@/components/AdminGlobe";
+import { AdminMap } from "@/components/AdminMap";
 
 interface ProductFormData {
   id?: string;
@@ -929,165 +929,165 @@ export default function Admin() {
       <main className="container mx-auto px-4 md:px-10 py-8 md:py-16 relative z-10 flex-1">
 {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
-          <div className="space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="space-y-8 md:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
             
-            {/* FILTROS DE TEMPO + RESET */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white p-6 rounded-[2rem] border border-black/5 shadow-sm">
-               <div className="flex items-center gap-2 p-1 bg-gray-50 rounded-2xl border border-black/[0.03]">
-                  {[
-                    { id: '24h', label: 'Diário' },
-                    { id: '7d', label: 'Semanal' },
-                    { id: '30d', label: 'Mensal' },
-                    { id: 'all', label: 'Todo Período' }
-                  ].map((filter) => (
-                    <button
-                      key={filter.id}
-                      onClick={() => setTimeRange(filter.id as any)}
-                      className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${timeRange === filter.id ? 'bg-black text-white shadow-lg' : 'text-gray-400 hover:text-black'}`}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
+            {/* 1. TOP STRATEGIC CONTROLS */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+               <div className="flex flex-col gap-1">
+                 <h2 className="text-3xl font-black uppercase tracking-tighter italic text-gray-950">Controle Estratégico</h2>
+                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Métricas de Conversão em Tempo Real</p>
                </div>
 
-               <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full">
-                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                     <span className="text-[10px] font-black uppercase tracking-widest">Monitoramento 24/7 Ativo</span>
+               <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-black/5 shadow-sm">
+                  <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl">
+                    {[
+                      { id: '24h', label: '24H' },
+                      { id: '7d', label: '7D' },
+                      { id: '30d', label: '30D' },
+                      { id: 'all', label: 'ALL' }
+                    ].map((filter) => (
+                      <button
+                        key={filter.id}
+                        onClick={() => setTimeRange(filter.id as any)}
+                        className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${timeRange === filter.id ? 'bg-black text-white shadow-md' : 'text-gray-400 hover:text-black'}`}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
                   </div>
                   <button 
                     onClick={resetAllData}
-                    className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all border border-red-100 group"
-                    title="Resetar Tudo"
+                    className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all border border-red-100"
                   >
-                    <Trash2 size={18} className="group-active:scale-90 transition-transform" />
+                    <Trash2 size={16} />
                   </button>
                </div>
             </div>
 
-            {/* TOP SUMMARY CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 md:px-0">
-               <div className="bg-white rounded-[2.5rem] p-8 border border-black/5 shadow-xl relative overflow-hidden group hover:shadow-2xl transition-all">
+            {/* 2. THE THREE KEY METRICS (Visitors, Clicks, Conversion) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               {/* Total Visitors */}
+               <div className="bg-white rounded-[2.5rem] p-8 border border-black/5 shadow-xl relative overflow-hidden group hover:shadow-2xl transition-all border-l-4 border-l-blue-500">
                   <div className="relative z-10">
-                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                      <Users size={24} />
-                    </div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Pessoas no Site</p>
                     <div className="flex items-baseline gap-2">
-                      <h3 className="text-5xl font-black text-gray-950 tracking-tighter mb-1">{stats.sessions}</h3>
-                      <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">Pessoas</span>
+                      <h3 className="text-5xl font-black text-gray-950 tracking-tighter">{stats.sessions}</h3>
+                      <Users size={20} className="text-blue-500" />
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 mt-2 italic">Total de Acessos ao Site</p>
+                    <p className="text-[9px] font-bold text-blue-500 mt-4 uppercase tracking-widest">Total de Acessos Únicos</p>
                   </div>
-                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Users size={80} className="text-blue-600" />
+                  <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                    <Users size={160} />
                   </div>
                </div>
 
-               <div className="bg-white rounded-[2.5rem] p-8 border border-black/5 shadow-xl relative overflow-hidden group hover:shadow-2xl transition-all border-b-4 border-b-[#d82828]/20">
+               {/* Checkout Clicks */}
+               <div className="bg-white rounded-[2.5rem] p-8 border border-black/5 shadow-xl relative overflow-hidden group hover:shadow-2xl transition-all border-l-4 border-l-[#d82828]">
                   <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="w-12 h-12 bg-red-50 text-[#d82828] rounded-2xl flex items-center justify-center shadow-sm">
-                        <ShoppingBag size={24} />
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full">{stats.conversion}% Conversão</p>
-                      </div>
-                    </div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Intenção de Compra</p>
                     <div className="flex items-baseline gap-2">
-                      <h3 className="text-5xl font-black text-gray-950 tracking-tighter mb-1">{stats.intents}</h3>
-                      <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">Cliques</span>
+                      <h3 className="text-5xl font-black text-gray-950 tracking-tighter">{stats.intents}</h3>
+                      <ShoppingBag size={20} className="text-[#d82828]" />
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d82828] mt-2 italic">Interessados na Compra</p>
+                    <p className="text-[9px] font-bold text-[#d82828] mt-4 uppercase tracking-widest">Cliques no Botão Checkout</p>
                   </div>
-                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <ShoppingBag size={80} className="text-[#d82828]" />
-                  </div>
-               </div>
-            </div>
-
-            {/* DEDICATED GLOBE CARD */}
-            <div className="bg-black rounded-[3rem] overflow-hidden relative min-h-[500px] md:min-h-[700px] shadow-2xl border border-white/10 flex items-center justify-center">
-               <div className="w-full h-full flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity duration-700 mt-10 md:mt-0">
-                  <div className="w-full max-w-[800px] scale-[1.2] md:scale-100">
-                    <AdminGlobe cities={stats.sortedCities as any} />
+                  <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                    <ShoppingBag size={160} />
                   </div>
                </div>
-               
-               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/20 pointer-events-none" />
-               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] pointer-events-none" />
-               
-               <div className="absolute top-10 left-10 z-10 pointer-events-none">
-                 <h3 className="text-white text-3xl font-black uppercase tracking-tighter italic">Visão Global</h3>
-                 <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1">Gire o globo para ver as conexões</p>
-               </div>
 
-               <div className="absolute top-10 right-10 z-10 hidden md:flex flex-col items-end gap-2 pointer-events-none">
-                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] min-w-[220px]">
-                   <div className="flex items-center gap-2 mb-4">
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
-                      <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Ao Vivo</span>
-                   </div>
-                   <div className="text-white">
-                     <span className="text-5xl font-black tracking-tighter leading-none">{stats.liveVisitors}</span>
-                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Pessoas no site agora</p>
-                   </div>
-                 </div>
-               </div>
-            </div>
-
-            {/* LOWER STATS GRID */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-              {/* TOP CITIES LIST */}
-              <div className="bg-white rounded-[3rem] p-10 border border-black/5 shadow-xl relative overflow-hidden flex flex-col">
-                 <div className="flex items-center justify-between mb-10">
-                   <div className="space-y-1">
-                     <h4 className="text-lg font-black uppercase tracking-tighter text-gray-950 italic">Top Cidades</h4>
-                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Ranking de Acessos</p>
-                   </div>
-                   <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400">
-                     <Globe size={24} />
-                   </div>
-                 </div>
-
-                 <div className="space-y-6 flex-1">
-                    {stats.sortedCities.map(([city, count], i) => (
-                      <div key={i} className="group">
-                        <div className="flex justify-between items-end mb-2">
-                          <span className="text-xs font-black uppercase tracking-widest text-gray-950 italic">
-                            {i+1}. {city}
-                          </span>
-                          <span className="text-xs font-black text-[#d82828] italic">
-                            {count}
-                          </span>
-                        </div>
-                        <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
-                           <motion.div 
-                             initial={{ width: 0 }}
-                             animate={{ width: `${(count / (stats.sortedCities[0][1] || 1)) * 100}%` }}
-                             transition={{ duration: 0.8, delay: i * 0.1 }}
-                             className="h-full bg-black rounded-full group-hover:bg-[#d82828] transition-colors" 
-                           />
-                        </div>
-                      </div>
-                    ))}
-                    {stats.sortedCities.length === 0 && (
-                      <div className="flex flex-col items-center justify-center py-20 opacity-20">
-                        <Globe size={48} className="mb-4" />
-                        <p className="text-[10px] font-black uppercase tracking-widest">Aguardando Dados...</p>
-                      </div>
-                    )}
-                 </div>
-
-                 <div className="mt-10 pt-8 border-t border-black/5 bg-gray-50/50 -mx-10 px-10 pb-10 rounded-b-[3rem]">
-                    <div className="flex items-center justify-between">
-                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total de Cidades</p>
-                       <span className="text-2xl font-black text-gray-950 italic">{stats.sortedCities.length}</span>
+               {/* Conversion Rate */}
+               <div className="bg-black text-white rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group border border-white/5">
+                  <div className="relative z-10">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2">Taxa de Conversão</p>
+                    <div className="flex items-baseline gap-2">
+                      <h3 className="text-5xl font-black text-white tracking-tighter">{stats.conversion}%</h3>
+                      <Zap size={20} className="text-amber-400 fill-amber-400" />
                     </div>
-                 </div>
-              </div>
-
+                    <p className="text-[9px] font-bold text-amber-400 mt-4 uppercase tracking-widest">Acessos vs. Cliques</p>
+                  </div>
+                  <div className="absolute -right-4 -bottom-4 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
+                    <Zap size={160} />
+                  </div>
+               </div>
             </div>
+
+            {/* 3. GEOGRAPHICAL HUB (Globe + Top Cities) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+               {/* The Globe - Takes 2 columns */}
+               <div className="lg:col-span-2 bg-black rounded-[3rem] overflow-hidden relative aspect-square md:aspect-auto md:min-h-[600px] shadow-2xl border border-white/10 flex items-center justify-center group">
+                  <div className="w-full h-full flex items-center justify-center p-4 md:p-10">
+                    <div className="w-full max-w-[600px] aspect-square relative flex items-center justify-center">
+                    <div className="w-full h-full relative flex items-center justify-center">
+                      <AdminMap cities={stats.sortedCities as any} />
+                    </div>
+                    </div>
+                  </div>
+                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/10 pointer-events-none" />
+                  
+                  <div className="absolute top-8 left-8 md:top-12 md:left-12 z-10">
+                    <h3 className="text-white text-2xl md:text-3xl font-black uppercase tracking-tighter italic">Fluxo Geográfico</h3>
+                    <p className="text-gray-400 text-[9px] font-black uppercase tracking-[0.3em] mt-1">Origem dos seus visitantes</p>
+                  </div>
+
+                  <div className="absolute bottom-8 right-8 md:bottom-12 md:right-12 z-10 bg-white/5 backdrop-blur-xl border border-white/10 p-5 md:p-7 rounded-[2rem] hidden sm:block">
+                     <div className="flex items-center gap-3 mb-2">
+                        <div className="w-2 h-2 bg-[#d82828] rounded-full animate-ping" />
+                        <span className="text-[9px] font-black text-white uppercase tracking-widest italic">Ao Vivo</span>
+                     </div>
+                     <div className="flex items-baseline gap-1">
+                        <span className="text-4xl md:text-5xl font-black text-white tracking-tighter">{stats.liveVisitors}</span>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest italic">Users</span>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Top Cities List - Takes 1 column */}
+               <div className="bg-white rounded-[3rem] p-10 border border-black/5 shadow-xl flex flex-col relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-10">
+                    <div className="space-y-1">
+                      <h4 className="text-lg font-black uppercase tracking-tighter text-gray-950 italic">Top Cidades</h4>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Volume por Localização</p>
+                    </div>
+                    <Globe size={20} className="text-[#d82828]" />
+                  </div>
+
+                  <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                     {stats.sortedCities.map(([city, count], i) => (
+                       <div key={i} className="group">
+                         <div className="flex justify-between items-end mb-2">
+                           <span className="text-[11px] font-black uppercase tracking-widest text-gray-950 italic truncate max-w-[150px]">
+                             {i+1}. {city}
+                           </span>
+                           <span className="text-[11px] font-black text-[#d82828] italic">
+                             {count}
+                           </span>
+                         </div>
+                         <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${(count / (stats.sortedCities[0][1] || 1)) * 100}%` }}
+                              className="h-full bg-black rounded-full group-hover:bg-[#d82828] transition-colors" 
+                            />
+                         </div>
+                       </div>
+                     ))}
+                     {stats.sortedCities.length === 0 && (
+                       <div className="flex flex-col items-center justify-center py-20 opacity-20">
+                         <Globe size={48} className="mb-4" />
+                         <p className="text-[9px] font-black uppercase tracking-widest">Aguardando Dados...</p>
+                       </div>
+                     )}
+                  </div>
+
+                  <div className="mt-10 pt-6 border-t border-black/5 flex items-center justify-between">
+                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Cidades Mapeadas</p>
+                     <span className="text-xl font-black text-gray-950 italic">{stats.sortedCities.length}</span>
+                  </div>
+               </div>
+            </div>
+
 
             {/* SECOND ROW: TRAFFIC SOURCES + TOP PRODUCTS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
