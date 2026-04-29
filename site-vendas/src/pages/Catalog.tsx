@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { PageTransition } from "@/components/PageTransition";
 import { useSearchParams } from "react-router-dom";
 import { useProducts } from "@/hooks/useProducts";
 import { ProductCard } from "@/components/ProductCard";
@@ -186,7 +187,7 @@ export default function Catalog() {
   }
 
   return (
-    <>
+    <PageTransition>
       <div className="min-h-screen bg-white pb-24">
       <div className="container mx-auto px-4 sm:px-6 max-w-[1400px] pt-0 lg:pt-12">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start relative -mt-2 lg:mt-0">

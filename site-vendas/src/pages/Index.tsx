@@ -8,6 +8,7 @@ import { useLanguage } from "@/store/languageStore";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { lazy, Suspense } from "react";
+import { PageTransition } from "@/components/PageTransition";
 
 // Componentes pesados carregados sob demanda
 const TestimonialsSection = lazy(() => import("@/components/TestimonialsSection").then(m => ({ default: m.TestimonialsSection })));
@@ -142,15 +143,15 @@ export default function Index() {
   const hiddenSections = settings.homeSectionOrder.hiddenSections || [];
 
   return (
-    <div className="w-full max-w-[1300px] mx-auto overflow-x-hidden">
-      {!hiddenSections.includes('hero') && <HeroSection />}
-      <Suspense fallback={<div className="h-40 flex items-center justify-center"><Skeleton className="w-full h-32 rounded-3xl" /></div>}>
-        {(settings.homeSectionOrder.sections || [])
-          .filter(sec => !hiddenSections.includes(sec))
-          .map(renderSection)}
-      </Suspense>
-    </div>
+    <PageTransition>
+      <div className="w-full max-w-[1300px] mx-auto overflow-x-hidden">
+        {!hiddenSections.includes('hero') && <HeroSection />}
+        <Suspense fallback={<div className="h-40 flex items-center justify-center"><Skeleton className="w-full h-32 rounded-3xl" /></div>}>
+          {(settings.homeSectionOrder.sections || [])
+            .filter(sec => !hiddenSections.includes(sec))
+            .map(renderSection)}
+        </Suspense>
+      </div>
+    </PageTransition>
   );
 }
-
-

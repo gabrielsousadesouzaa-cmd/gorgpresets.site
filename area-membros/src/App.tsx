@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Lock, Home, LogOut, Headphones, Menu, Mail, ArrowRight, ChevronRight, Settings, Plus, Edit, Trash2, Layout, Save, Eye, Palette, Layers, Image as ImageIcon, Users, Activity, Terminal, CheckCircle2, AlertCircle, RefreshCw, Smartphone, Monitor, Download, X, List, MoreVertical, ExternalLink, ShieldCheck, Zap, UserCheck, Globe, Database, Cpu, Search, Send, Key, Code, Smartphone as PhoneIcon, Play, Video, Box, ArrowLeft, PlayCircle, Sparkles, Image, Upload } from 'lucide-react'
+import { Lock, Home, LogOut, Headphones, Menu, Mail, ArrowRight, ChevronRight, ChevronUp, ChevronDown, Settings, Plus, Edit, Trash2, Layout, Save, Eye, Palette, Layers, Image as ImageIcon, Users, Activity, Terminal, CheckCircle2, AlertCircle, RefreshCw, Smartphone, Monitor, Download, X, List, MoreVertical, ExternalLink, ShieldCheck, Zap, UserCheck, Globe, Database, Cpu, Search, Send, Key, Code, Smartphone as PhoneIcon, Play, Video, Box, ArrowLeft, PlayCircle, Sparkles, Image, Upload } from 'lucide-react'
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
 import { toast, Toaster } from 'sonner'
 import { supabase } from './lib/supabase'
@@ -48,7 +48,10 @@ const ProductDetailView = ({ product, isAdmin, onBack }: { product: any, isAdmin
   const [activeLesson, setActiveLesson] = useState<any>(null);
   const [isEditingLesson, setIsEditingLesson] = useState<any>(null);
 
-  useEffect(() => { fetchLessons(); }, [product.id]);
+  useEffect(() => { 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    fetchLessons(); 
+  }, [product.id]);
 
   const fetchLessons = async () => { 
     const { data } = await supabase.from('lessons').select('*').eq('product_id', product.id).order('order_index', { ascending: true }); 
@@ -78,27 +81,47 @@ const ProductDetailView = ({ product, isAdmin, onBack }: { product: any, isAdmin
        toast('Aula atualizada! ✅');
     }
   }
+  const getEmbedUrl = (url: string) => {
+    if (!url) return '';
+    try {
+      if (url.includes('youtube.com/watch')) {
+        const videoId = new URL(url).searchParams.get('v');
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+      }
+      if (url.includes('youtu.be/')) {
+        const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+      }
+      if (url.includes('vimeo.com/')) {
+        const videoId = url.split('vimeo.com/')[1]?.split('?')[0];
+        return `https://player.vimeo.com/video/${videoId}?autoplay=1`;
+      }
+      return url;
+    } catch {
+      return url;
+    }
+  };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="space-y-12 max-w-[1400px] mx-auto px-4">
+    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="space-y-12 max-w-[1400px] mx-auto px-0 md:px-4">
       {/* HEADER DINÂMICO */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 pt-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 pt-8 lg:pt-12 mb-4">
         <div className="flex items-center gap-6">
-          <button onClick={onBack} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-[#d82828] transition-all group shadow-xl">
-            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+          <button onClick={onBack} className="p-4 bg-black/5 border border-black/10 rounded-full hover:bg-black transition-all group shadow-sm backdrop-blur-md">
+            <ArrowLeft size={20} className="text-gray-600 group-hover:text-white group-hover:-translate-x-1 transition-all" />
           </button>
-          <div className="space-y-1 border-l-2 border-[#d82828] pl-6">
-            <h2 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter leading-tight">{product.name}</h2>
-            <div className="flex items-center gap-3">
-              <span className="w-2 h-2 bg-[#d82828] rounded-full animate-pulse" />
-              <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Acesso VIP Gorg Elite • {lessons.length} Aulas</p>
+          <div className="space-y-1">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="px-2 py-0.5 bg-[#d82828]/10 text-[#d82828] rounded font-black uppercase text-[8px] tracking-widest border border-[#d82828]/20">Módulo Vip</span>
+              <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">{lessons.length} Aulas Disponíveis</span>
             </div>
+            <h2 className="text-3xl md:text-5xl font-black text-black uppercase tracking-tighter leading-none">{product.name}</h2>
           </div>
         </div>
 
         {isAdmin && (
-          <button onClick={addLesson} className="flex items-center gap-3 px-8 py-4 bg-[#d82828] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-red-500/20">
-            <Plus size={16} /> ADICIONAR AULA
+          <button onClick={addLesson} className="flex items-center gap-3 px-6 py-3 bg-[#d82828] text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-red-900/20">
+            <Plus size={14} /> NOVA AULA
           </button>
         )}
       </div>
@@ -106,43 +129,45 @@ const ProductDetailView = ({ product, isAdmin, onBack }: { product: any, isAdmin
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
         {/* PLAYER E DETALHES */}
         <div className="xl:col-span-8 space-y-8">
-          <div className="relative group rounded-[3rem] overflow-hidden bg-black border border-white/5 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] aspect-video">
+          <div className="relative group rounded-xl md:rounded-3xl overflow-hidden bg-[#050505] border border-white/10 shadow-[0_30px_80px_rgba(0,0,0,0.8)] aspect-video">
             {activeLesson ? (
               <iframe 
-                src={activeLesson.video_url?.includes('youtube.com') ? activeLesson.video_url.replace('watch?v=', 'embed/') : activeLesson.video_url} 
+                src={getEmbedUrl(activeLesson.video_url)} 
                 className="w-full h-full border-0" 
                 allowFullScreen 
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center space-y-6 text-gray-500 italic font-black uppercase tracking-widest bg-gradient-to-br from-[#0a0a0a] to-black">
-                <PlayCircle size={64} className="opacity-20 animate-pulse" /> 
-                <p className="text-sm">Selecione uma aula para iniciar</p>
+              <div className="w-full h-full flex flex-col items-center justify-center space-y-6 text-gray-600 font-black uppercase tracking-widest bg-gradient-to-br from-[#0a0a0a] to-black">
+                <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                   <PlayCircle size={40} className="opacity-50 animate-pulse text-white" /> 
+                </div>
+                <p className="text-xs tracking-[0.3em]">Selecione uma aula</p>
               </div>
             )}
             
             {/* OVERLAY DE CARREGAMENTO SUAVE */}
-            <div className="absolute inset-x-0 bottom-0 h-2 bg-white/5">
-              <motion.div initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ duration: 1.5 }} className="h-full bg-[#d82828]" />
+            <div className="absolute inset-x-0 bottom-0 h-1 bg-white/5">
+              <motion.div initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ duration: 1.5, ease: "easeOut" }} className="h-full bg-gradient-to-r from-[#d82828] to-red-500 shadow-[0_0_10px_rgba(216,40,40,0.8)]" />
             </div>
           </div>
 
-          <div className="glass-panel p-10 rounded-[3rem] flex flex-col sm:flex-row items-center justify-between gap-8 group hover:border-[#d82828]/20 transition-all">
-            <div className="flex items-center gap-8">
-              <div className="w-20 h-20 rounded-[2rem] bg-gradient-to-br from-[#d82828] to-[#921d1d] text-white flex items-center justify-center shadow-2xl shadow-red-900/40 group-hover:rotate-6 transition-transform">
-                <Download size={32} />
+          <div className="bg-[#0a0a0a] border border-white/5 p-8 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-8 group transition-all relative overflow-hidden mt-8">
+             <div className="absolute top-0 right-0 w-64 h-64 bg-[#d82828]/5 rounded-full blur-[80px] -z-10 group-hover:bg-[#d82828]/10 transition-colors" />
+            <div className="flex items-center gap-6 z-10">
+              <div className="w-16 h-16 rounded-2xl bg-[#111] border border-white/5 text-gray-300 flex items-center justify-center group-hover:text-white transition-colors">
+                <Download size={24} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-white uppercase italic tracking-tight">Conteúdo Master</h3>
-                <p className="text-gray-400 text-[10px] font-bold uppercase mt-2 tracking-widest opacity-60">Arquivos RAW e Presets Inclusos</p>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">Material de Apoio</h3>
+                <p className="text-gray-500 text-[10px] font-bold uppercase mt-1.5 tracking-widest">Presets e arquivos em alta qualidade</p>
               </div>
             </div>
-            <a href={product.download_link} target="_blank" rel="noreferrer" className="w-full sm:w-auto px-12 py-6 bg-white text-black rounded-3xl font-black text-[12px] uppercase tracking-widest hover:bg-[#d82828] hover:text-white transition-all shadow-2xl">
-              BAIXAR MATERIAL
+            <a href={product.download_link} target="_blank" rel="noreferrer" className="w-full sm:w-auto px-10 py-5 bg-white text-black rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-[#d82828] hover:text-white transition-all shadow-xl z-10 text-center">
+              Fazer Download
             </a>
           </div>
         </div>
 
-        {/* LISTA DE AULAS */}
         <div className="xl:col-span-4 space-y-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[12px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
@@ -157,32 +182,42 @@ const ProductDetailView = ({ product, isAdmin, onBack }: { product: any, isAdmin
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                className="relative group"
+                className="relative group/lesson"
               >
                 <div 
                   onClick={() => setActiveLesson(lesson)} 
-                  className={`p-6 rounded-[2.5rem] border transition-all cursor-pointer flex items-center gap-5 ${activeLesson?.id === lesson.id ? 'bg-white text-black border-white shadow-[0_20px_40px_-5px_rgba(255,255,255,0.1)]' : 'bg-white/5 border-white/5 hover:border-white/10 hover:bg-white/10'}`}
+                  className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center gap-4 relative overflow-hidden ${activeLesson?.id === lesson.id ? 'bg-[#111] border-[#d82828]/30 shadow-lg' : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/5'}`}
                 >
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 ${activeLesson?.id === lesson.id ? 'bg-black text-white' : 'bg-white/5 text-gray-500'}`}>
+                  {activeLesson?.id === lesson.id && (
+                     <motion.div layoutId="active-indicator" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-[#d82828] rounded-r-full shadow-[0_0_10px_rgba(216,40,40,0.5)]" />
+                  )}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-[11px] shrink-0 transition-colors ${activeLesson?.id === lesson.id ? 'bg-[#d82828]/10 text-[#d82828]' : 'bg-white/5 text-gray-500 group-hover/lesson:bg-white/10 group-hover/lesson:text-gray-300'}`}>
                     {String(idx + 1).padStart(2, '0')}
                   </div>
-                  <div className="flex-1 truncate">
-                    <h4 className={`text-[12px] font-black uppercase truncate italic tracking-tight ${activeLesson?.id === lesson.id ? 'text-black' : 'text-gray-200'}`}>
+                  <div className="flex-1 truncate pr-4">
+                    <h4 className={`text-[13px] font-black uppercase truncate tracking-tight transition-colors ${activeLesson?.id === lesson.id ? 'text-white' : 'text-gray-400 group-hover/lesson:text-gray-200'}`}>
                       {lesson.title}
                     </h4>
                     {activeLesson?.id === lesson.id && (
-                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1">Reproduzindo agora</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <div className="flex gap-0.5 items-end h-2.5">
+                           <motion.div animate={{ height: ['40%', '100%', '40%'] }} transition={{ duration: 1, repeat: Infinity }} className="w-0.5 bg-[#d82828] rounded-full" />
+                           <motion.div animate={{ height: ['60%', '100%', '60%'] }} transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} className="w-0.5 bg-[#d82828] rounded-full" />
+                           <motion.div animate={{ height: ['80%', '60%', '80%'] }} transition={{ duration: 1, repeat: Infinity, delay: 0.4 }} className="w-0.5 bg-[#d82828] rounded-full" />
+                        </div>
+                        <p className="text-[9px] font-black text-[#d82828] uppercase tracking-[0.2em]">Rodando</p>
+                      </div>
                     )}
                   </div>
-                  <Play size={14} fill="currentColor" className={activeLesson?.id === lesson.id ? 'text-black animate-pulse' : 'text-gray-500 opacity-0 group-hover:opacity-100 transition-all'} />
+                  <Play size={14} className={activeLesson?.id === lesson.id ? 'text-[#d82828]' : 'text-gray-600 opacity-0 group-hover/lesson:opacity-100 transition-all'} />
                 </div>
                 
                 {isAdmin && (
-                  <div className="absolute top-1/2 -translate-y-1/2 -right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 z-20">
-                    <button onClick={(e) => { e.stopPropagation(); setIsEditingLesson(lesson); }} className="p-3 bg-white/10 backdrop-blur-md text-white rounded-xl border border-white/10 hover:bg-emerald-500 hover:text-black transition-all">
+                  <div className="absolute top-1/2 -translate-y-1/2 -right-2 flex flex-col gap-2 opacity-0 group-hover/lesson:opacity-100 transition-all translate-x-4 z-20">
+                    <button onClick={(e) => { e.stopPropagation(); setIsEditingLesson(lesson); }} className="p-2.5 bg-white/10 backdrop-blur-md text-white rounded-lg border border-white/10 hover:bg-emerald-500 hover:text-black transition-all">
                       <Edit size={12} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir aula?')) { supabase.from('lessons').delete().eq('id', lesson.id).then(() => fetchLessons()); } }} className="p-3 bg-white/10 backdrop-blur-md text-white rounded-xl border border-white/10 hover:bg-[#d82828] hover:text-black transition-all">
+                    <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir aula?')) { supabase.from('lessons').delete().eq('id', lesson.id).then(() => fetchLessons()); } }} className="p-2.5 bg-white/10 backdrop-blur-md text-white rounded-lg border border-white/10 hover:bg-[#d82828] hover:text-black transition-all">
                       <Trash2 size={12} />
                     </button>
                   </div>
@@ -224,7 +259,7 @@ const ProductDetailView = ({ product, isAdmin, onBack }: { product: any, isAdmin
 
 // --- ADMIN CONTROL PANEL (COCKPIT) ---
 const AdminPanel = ({ portalData, onUpdate, modules }: { portalData: any, onUpdate: () => void, modules: any[] }) => {
-  const [adminSection, setAdminSection] = useState<'users' | 'content' | 'webhooks' | 'email' | 'sales'>('content');
+  const [adminSection, setAdminSection] = useState<'users' | 'content' | 'webhooks' | 'email' | 'sales' | 'structure'>('content');
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
@@ -279,6 +314,7 @@ const AdminPanel = ({ portalData, onUpdate, modules }: { portalData: any, onUpda
         <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-[2rem] border border-black/5 shadow-inner overflow-x-auto no-scrollbar">
           {[
             { id: 'content', label: 'Cofre', icon: Layout },
+            { id: 'structure', label: 'Seções', icon: List },
             { id: 'users', label: 'Membros', icon: Users },
             { id: 'sales', label: 'Vitrine', icon: Sparkles },
             { id: 'webhooks', label: 'Conexões', icon: Zap }
@@ -299,20 +335,160 @@ const AdminPanel = ({ portalData, onUpdate, modules }: { portalData: any, onUpda
                    <span className="text-[10px] font-black uppercase text-gray-400 group-hover:text-black tracking-[0.2em]">Novo Módulo Elite</span>
                 </button>
                 
-                {modules.map((mod, idx) => (
-                  <div key={mod.id} className="bg-white border border-black/5 p-8 rounded-[3rem] space-y-8 shadow-xl relative group">
-                     <div className="flex items-center justify-between">
-                        <div className="px-5 py-2 bg-black/5 rounded-xl font-black text-[9px] uppercase tracking-widest italic text-gray-500">Módulo {String(idx + 1).padStart(2, '0')}</div>
-                        <button onClick={() => { if (confirm('Excluir módulo?')) supabase.from('modules_presets').delete().eq('id', mod.id).then(() => onUpdate()); }} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                {modules.map((mod, modIdx) => (
+                  <div key={mod.id} className="bg-white border border-black/5 p-8 rounded-[3rem] space-y-6 shadow-xl relative group overflow-hidden">
+                     <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-100 transition-all">
+                       <Layout size={40} className="text-[#d82828]" />
                      </div>
-                     <h3 className="text-xl font-black text-black uppercase italic leading-tight truncate">{mod.module_title}</h3>
-                     <div className="flex gap-3">
-                        <button onClick={async () => { const name = prompt('Nome Preset:'); if (name) { const npd = [...(mod.presets_data || []), { id: Date.now().toString(), name, image: '', download_link: '', upsell_link: '' }]; await supabase.from('modules_presets').update({ presets_data: npd }).eq('id', mod.id); onUpdate(); } }} className="flex-1 py-4 bg-[#d82828] text-white rounded-2xl font-black text-[9px] uppercase tracking-widest shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2"><Plus size={12} /> ADD PRESET</button>
-                        <button className="p-4 bg-black/5 text-gray-500 rounded-2xl hover:bg-black hover:text-white transition-all"><Edit size={14} /></button>
+                     <div className="flex items-center gap-4">
+                       <div className="w-1.5 h-6 bg-[#d82828] rounded-full" />
+                       <h3 className="text-xl font-black text-black uppercase italic leading-tight truncate">{mod.module_title}</h3>
                      </div>
+                     
+                     <div className="space-y-3 max-h-[300px] overflow-y-auto no-scrollbar pr-2">
+                        {mod.presets_data?.map((p: any, pIdx: number) => (
+                          <div key={p.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl group/item hover:bg-black hover:text-white transition-all">
+                            <div className="flex items-center gap-3">
+                              {p.image ? (
+                                <img src={p.image} className="w-10 h-10 rounded-lg object-cover" />
+                              ) : (
+                                <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 group-hover/item:bg-white/10"><ImageIcon size={16} /></div>
+                              )}
+                              <div>
+                                <p className="text-[10px] font-black uppercase truncate max-w-[120px]">{p.name}</p>
+                                <p className="text-[8px] font-bold text-gray-400 group-hover/item:text-white/50 uppercase tracking-widest">Preset #{pIdx + 1}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-all">
+                              <button onClick={() => setIsEditingPreset({ modIdx, pIdx, p })} className="p-2 hover:bg-white/10 rounded-lg"><Edit size={12} /></button>
+                              <button onClick={async () => {
+                                if (confirm('Remover este preset?')) {
+                                  const npd = mod.presets_data.filter((_: any, i: number) => i !== pIdx);
+                                  await supabase.from('modules_presets').update({ presets_data: npd }).eq('id', mod.id);
+                                  onUpdate();
+                                }
+                              }} className="p-2 hover:bg-red-500 rounded-lg"><Trash2 size={12} /></button>
+                            </div>
+                          </div>
+                        ))}
+                        {(!mod.presets_data || mod.presets_data.length === 0) && (
+                          <div className="py-8 text-center border-2 border-dashed border-gray-100 rounded-2xl">
+                            <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Nenhum Preset Adicionado</p>
+                          </div>
+                        )}
+                     </div>
+
+                     <button onClick={async () => { 
+                       const name = prompt('Nome do Novo Preset:'); 
+                       if (name) { 
+                         const npd = [...(mod.presets_data || []), { id: Date.now().toString(), name, image: '', download_link: '', upsell_link: '' }]; 
+                         const { error } = await supabase.from('modules_presets').update({ presets_data: npd }).eq('id', mod.id); 
+                         if (!error) {
+                           toast.success('Novo card adicionado! 🚀');
+                           onUpdate(); 
+                         } else {
+                           toast.error('Erro ao adicionar card.');
+                         }
+                       } 
+                     }} className="w-full py-4 bg-[#d82828] text-white rounded-2xl font-black text-[9px] uppercase tracking-widest shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
+                       <Plus size={12} /> NOVO CARD (PRESET)
+                     </button>
                   </div>
                 ))}
              </div>
+          </motion.div>
+        )}
+
+        {adminSection === 'structure' && (
+          <motion.div key="st" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
+            <div className="flex items-center justify-between bg-white/50 backdrop-blur-sm p-6 rounded-[2.5rem] border border-black/5">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center text-white shadow-xl shadow-black/10">
+                  <List size={20} />
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-black">Estrutura da Vitrine</h4>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{modules.length} BLOCOS DE CONTEÚDO ATIVOS</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { const t = prompt('Título da Nova Seção:'); if (t) supabase.from('modules_presets').insert([{ module_title: t, order_index: modules.length, module_desc: '' }]).then(() => onUpdate()); }}
+                className="px-6 py-3 bg-[#d82828] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-red-900/20 flex items-center gap-2"
+              >
+                <Plus size={14} /> ADICIONAR BLOCO
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6">
+              {modules.map((mod, idx) => (
+                <div key={mod.id} className="bg-white border border-black/5 p-8 rounded-[2.5rem] shadow-xl space-y-6 group hover:border-[#d82828]/20 transition-all">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex-1 space-y-4">
+                      <div className="flex items-center gap-4">
+                        <span className="px-3 py-1 bg-black text-white rounded-lg font-black text-[9px] uppercase tracking-widest">#{idx + 1}</span>
+                        <input 
+                          defaultValue={mod.module_title}
+                          onBlur={async (e) => {
+                            if (e.target.value !== mod.module_title) {
+                              const { error } = await supabase.from('modules_presets').update({ module_title: e.target.value }).eq('id', mod.id);
+                              if (!error) { toast.success('Título atualizado! ✅'); onUpdate(); }
+                            }
+                          }}
+                          className="text-xl font-black text-black uppercase italic bg-transparent border-b-2 border-transparent focus:border-[#d82828] outline-none transition-all w-full max-w-md"
+                          placeholder="Título da Seção"
+                        />
+                      </div>
+                      <textarea 
+                        defaultValue={mod.module_desc}
+                        onBlur={async (e) => {
+                          if (e.target.value !== mod.module_desc) {
+                            const { error } = await supabase.from('modules_presets').update({ module_desc: e.target.value }).eq('id', mod.id);
+                            if (!error) { toast.success('Descrição atualizada! ✅'); onUpdate(); }
+                          }
+                        }}
+                        className="text-[12px] font-medium text-gray-500 bg-gray-50/50 border border-transparent focus:border-[#d82828]/20 rounded-xl p-4 outline-none transition-all w-full resize-none h-20"
+                        placeholder="Adicione uma descrição para esta seção..."
+                      />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col gap-2">
+                         <button onClick={async () => {
+                           if (idx > 0) {
+                             const prev = modules[idx-1];
+                             await supabase.from('modules_presets').update({ order_index: mod.order_index }).eq('id', prev.id);
+                             await supabase.from('modules_presets').update({ order_index: prev.order_index }).eq('id', mod.id);
+                             onUpdate();
+                           }
+                         }} title="Mover para Cima" className="p-3 bg-gray-50 hover:bg-[#d82828] hover:text-white rounded-xl transition-all">
+                           <ChevronUp size={14} />
+                         </button>
+                         <button onClick={async () => {
+                           if (idx < modules.length - 1) {
+                             const next = modules[idx+1];
+                             await supabase.from('modules_presets').update({ order_index: mod.order_index }).eq('id', next.id);
+                             await supabase.from('modules_presets').update({ order_index: next.order_index }).eq('id', mod.id);
+                             onUpdate();
+                           }
+                         }} title="Mover para Baixo" className="p-3 bg-gray-50 hover:bg-[#d82828] hover:text-white rounded-xl transition-all">
+                           <ChevronDown size={14} />
+                         </button>
+                      </div>
+                      <button onClick={() => { if (confirm('Excluir seção inteira?')) supabase.from('modules_presets').delete().eq('id', mod.id).then(() => onUpdate()); }} className="p-4 bg-gray-50 text-gray-300 hover:bg-red-500 hover:text-white rounded-2xl transition-all">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              <button 
+                onClick={() => { const t = prompt('Título da Nova Seção:'); if (t) supabase.from('modules_presets').insert([{ module_title: t, order_index: modules.length, module_desc: '' }]).then(() => onUpdate()); }}
+                className="py-10 border-2 border-dashed border-gray-200 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 group hover:border-[#d82828]/20 hover:bg-[#d82828]/5 transition-all"
+              >
+                <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 group-hover:bg-[#d82828] group-hover:text-white transition-all"><Plus size={24} /></div>
+                <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.3em]">Criar Nova Seção Elite</span>
+              </button>
+            </div>
           </motion.div>
         )}
 
@@ -517,7 +693,7 @@ const LoginView = ({ onLogin, logoUrl }: { onLogin: (e: string, p: string, r: bo
       <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="w-full max-w-[360px] sm:max-w-[380px] bg-white rounded-[2.5rem] sm:rounded-[3rem] p-8 sm:p-10 shadow-[0_30px_60px_rgba(0,0,0,0.08)] relative z-10 mx-auto">
         
         <div className="flex flex-col items-center mb-6 sm:mb-8 text-center">
-          <motion.div initial={{ opacity: 0, scale: 0.9, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="w-36 sm:w-40 mb-4 sm:mb-6 flex items-center justify-center min-h-[40px]">
+          <motion.div initial={{ opacity: 0, scale: 0.9, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="w-48 sm:w-56 mb-4 sm:mb-6 flex items-center justify-center min-h-[40px]">
             {logoUrl && <img src={logoUrl} alt="" className="max-w-full h-auto object-contain drop-shadow-sm" />}
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
@@ -824,7 +1000,7 @@ export default function App() {
 
   if (!isReady) return <div className="min-h-[100dvh] bg-[#f4f4f5] flex items-center justify-center"><div className="w-10 h-10 border-4 border-gray-200 border-t-[#d82828] rounded-full animate-spin" /></div>;
 
-  if (!isLoggedIn) return <LoginView onLogin={onLogin} logoUrl={portalSettings.hero_image} />
+  if (!isLoggedIn) return <LoginView onLogin={onLogin} logoUrl={portalSettings.logo_url || "/logo_preta.png"} />
 
   return (
     <div className="var-wrapper min-h-[100dvh] bg-black text-white flex flex-col font-sans selection:bg-[#d82828] selection:text-white overflow-x-hidden">
@@ -908,13 +1084,13 @@ export default function App() {
       <main className="flex-1 flex flex-col relative bg-black">
         <div className="w-full relative z-10 flex-1">
           {viewingProduct ? (
-            <div className="p-6 lg:p-14 max-w-7xl mx-auto w-full text-black bg-[#f4f4f5] min-h-screen rounded-[3rem] mt-[100px] mb-10 shadow-2xl">
+            <div className="p-2 sm:p-6 lg:p-14 max-w-7xl mx-auto w-full text-black bg-[#f4f4f5] min-h-screen rounded-3xl sm:rounded-[3rem] mt-[100px] mb-10 shadow-2xl">
                <ProductDetailView product={viewingProduct} isAdmin={isAdmin} onBack={() => setViewingProduct(null)} />
             </div>
           ) : activeTab === 'home' ? (
             <div className="flex flex-col min-h-screen">
               {/* HERO SECTION DE LOGIN/DASHBOARD BASEADO NA IMAGEM */}
-              <section className="relative w-full pt-[120px] pb-[180px] lg:pt-[150px] lg:pb-[300px] px-6 lg:px-14 flex flex-col items-center overflow-hidden">
+              <section className="relative w-full pt-[100px] pb-[60px] lg:pt-[120px] lg:pb-[80px] px-6 lg:px-14 flex flex-col items-center overflow-hidden">
                  {/* Cinematic Background Gradient */}
                  <div className="absolute inset-0 bg-gradient-to-br from-[#f8f8f8] via-[#e5e5e5] to-[#c5c5c5] dark:from-[#111] dark:via-[#0a0a0a] dark:to-[#000]" />
                  <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_120%,rgba(216,40,40,0.1)_0%,transparent_50%)]" />
@@ -951,11 +1127,7 @@ export default function App() {
                         EM UM SÓ LUGAR!
                       </motion.h1>
                       
-                      <div className="flex flex-wrap items-center justify-center lg:justify-start gap-10">
-                         <div className="flex flex-col"><span className="text-xl font-black text-[#d82828]">500+</span><span className="text-[9px] font-black uppercase tracking-widest text-gray-700">USUÁRIOS</span></div>
-                         <div className="w-px h-8 bg-gray-300" />
-                         <div className="flex flex-col"><span className="text-xl font-black text-black">1.2k+</span><span className="text-[9px] font-black uppercase tracking-widest text-gray-700">EDIÇÕES</span></div>
-                      </div>
+
                     </div>
                     
                     <div className="hidden lg:flex lg:w-[45%] relative lg:h-[600px] items-center justify-end">
@@ -996,24 +1168,18 @@ export default function App() {
                  </div>
 
                  {/* Transition Gradient to Black Section */}
-                 <div className="absolute bottom-0 left-0 w-full h-[400px] bg-gradient-to-t from-[#050505] to-transparent z-10 flex items-end justify-center pb-20">
-                    <motion.img 
-                      initial={{ opacity: 0 }} 
-                      whileInView={{ opacity: 0.15 }} 
-                      src="/logo_icon.png" 
-                      alt="Gorg Icon" 
-                      className="h-10 lg:h-14 object-contain grayscale brightness-200" 
-                    />
+                  <div className="absolute bottom-0 left-0 w-full h-[150px] bg-gradient-to-t from-[#050505] to-transparent z-10 flex items-end justify-center pb-10">
+
                  </div>
               </section>
 
               {/* COLLECTIONS LIST */}
-              <section className="bg-[#050505] w-full relative z-20 pt-20 pb-40 px-6 lg:px-14 min-h-[500px]">
+              <section className="bg-[#050505] w-full relative z-20 pt-8 pb-16 px-6 lg:px-14 min-h-[500px]">
                   {/* Atmospheric Background Glows */}
                   <div className="absolute top-0 left-0 w-full h-[800px] bg-[radial-gradient(circle_at_20%_30%,rgba(216,40,40,0.05)_0%,transparent_50%)] pointer-events-none" />
                   <div className="absolute bottom-0 right-0 w-full h-[800px] bg-[radial-gradient(circle_at_80%_70%,rgba(216,40,40,0.05)_0%,transparent_50%)] pointer-events-none" />
                   
-                  <div className="max-w-[1440px] mx-auto space-y-40 relative z-10">
+                  <div className="max-w-[1440px] mx-auto space-y-12 relative z-10">
                     <AnimatePresence mode="popLayout">
                        {modules.map((mod, modIdx) => {
                          const isSuaColecao = mod.module_title?.toUpperCase().includes('COLEÇÃO') && mod.module_title?.toUpperCase().includes('PARTICULAR');
@@ -1026,10 +1192,10 @@ export default function App() {
                          return (
                            <motion.div 
                              key={mod.id} 
-                             initial={{ opacity: 0, y: 60 }} 
-                             whileInView={{ opacity: 1, y: 0 }} 
-                             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }} 
-                             viewport={{ once: true, margin: "-100px" }} 
+                             initial={{ opacity: 0, y: isSuaColecao ? 30 : 60 }} 
+                              whileInView={{ opacity: 1, y: 0 }} 
+                              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: isSuaColecao ? 0.2 : 0 }} 
+                              viewport={{ once: true, margin: isSuaColecao ? "0px" : "-100px" }} 
                              className="relative group"
                            >
                               {/* Background Numbering (Hide only for personal collection) */}
@@ -1039,16 +1205,19 @@ export default function App() {
                                 </div>
                               )}
 
-                              <div className="flex flex-col gap-6 mb-16 relative z-10">
+                              <div className="flex flex-col gap-3 mb-4 relative z-10">
                                 <div className="flex items-center gap-6">
-                                  <div className="w-2 h-14 bg-[#d82828] rounded-full shadow-[0_0_25px_rgba(216,40,40,0.6)]" />
+                                  <div className="w-1.5 h-10 bg-[#d82828] rounded-full shadow-[0_0_20px_rgba(216,40,40,0.5)]" />
                                   <div className="flex flex-col">
-                                    {!isSuaColecao && (
-                                      <span className="text-[10px] font-black text-[#d82828] uppercase tracking-[0.5em] mb-2 px-1">Módulo Elite Collection</span>
-                                    )}
-                                    <h3 className={`text-4xl lg:text-5xl font-black text-white uppercase tracking-tighter leading-none ${isSuaColecao ? '' : 'italic'}`}>
+
+                                    <h3 className={`text-2xl lg:text-3xl font-black text-white uppercase tracking-tighter leading-none ${isSuaColecao ? '' : 'italic'}`}>
                                       {isSuaColecao ? 'A SUA COLEÇÃO PARTICULAR' : mod.module_title}
                                     </h3>
+                                    {mod.module_desc && !isSuaColecao && (
+                                      <p className="text-[12px] lg:text-[13px] font-medium text-gray-400 mt-2 max-w-2xl leading-relaxed">
+                                        {mod.module_desc}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                               </div>
