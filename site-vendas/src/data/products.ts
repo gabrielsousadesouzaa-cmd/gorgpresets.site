@@ -17,6 +17,7 @@ export interface Product {
     category: string; 
     tags: string[];
     checkoutUrl: string;
+    ggCheckoutId?: string;
 
     isNew: boolean;
     isBestseller: boolean;

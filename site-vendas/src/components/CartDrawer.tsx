@@ -20,17 +20,52 @@ export function CartDrawer() {
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
+    
+    // Tracking do clique para analytics interno
     const productNames = items.map(item => item.product.name).join(' + ');
     await trackCheckoutClick(productNames);
     
-    // Redirect to local hosted custom transparent checkout
-    navigate('/checkout');
-    closeCart();
+    // 1. Obter a URL base do checkout (Atualizado para V2 conforme solicitado)
+    let baseUrl = settings.integration.checkoutBaseUrl;
+    
+    // Fallback prioritário para o link v2 funcional
+    if (!baseUrl || baseUrl === "" || baseUrl.includes('/s/') || baseUrl.includes('/v5/')) {
+      baseUrl = "https://checkout.gorgpresets.com/checkout/v2/gRcT1osCycxdAJSbMWyN";
+    }
+
+    // 2. Coletar IDs de todos os produtos no carrinho
+    const ggProductIds = items
+      .map(item => {
+        if (item.product.ggCheckoutId && item.product.ggCheckoutId.trim() !== "") {
+          return item.product.ggCheckoutId.trim();
+        }
+        const url = item.product.checkoutUrl;
+        if (!url) return null;
+        const parts = url.split("?")[0].split("/").filter(Boolean);
+        return parts[parts.length - 1];
+      })
+      .filter(Boolean);
+
+    if (ggProductIds.length === 0) {
+      alert("Atenção: Os IDs dos produtos não foram encontrados. Verifique o Catálogo no painel Admin.");
+      return;
+    }
+
+    // 3. Montar a URL final (v2 + parâmetros)
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    const cartParam = ggProductIds.join(';');
+    let finalUrl = `${baseUrl}${separator}cart=${cartParam}`;
+
+    if (items.length >= 3) {
+      finalUrl += `&coupon=LEVE3PAGUE2`;
+    }
+
+    // 4. Redirecionar
+    window.location.href = finalUrl;
   };
-  // Sugestão baseada em produtos REAIS que NÃO estão no carrinho
+
   const upsellProduct = products.find(p => !items.some(item => item.product.id === p.id));
 
-  // Travar o scroll do fundo quando o carrinho abrir
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -42,7 +77,6 @@ export function CartDrawer() {
     };
   }, [isOpen]);
 
-  // Fechar carrinho ao trocar de página
   useEffect(() => {
     closeCart();
   }, [location.pathname]);
@@ -54,15 +88,15 @@ export function CartDrawer() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[3000] flex items-center justify-center p-0 overflow-hidden"
+          className="fixed inset-0 z-[3000] flex items-center justify-end p-0 overflow-hidden"
         >
-          {/* Backdrop Minimalista - Blur mais intenso */}
-          <motion.div
+          {/* Backdrop com Blur Premium */}
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeCart}
-            className="absolute inset-0 bg-black/50 backdrop-blur-xl"
+            className="absolute inset-0 bg-black/40 backdrop-blur-md" 
           />
 
           <motion.div

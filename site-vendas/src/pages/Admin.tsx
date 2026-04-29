@@ -200,7 +200,8 @@ export default function Admin() {
       tags: product.tags || [],
       whatsIncluded: product.whatsIncluded || [""],
       idealFor: product.idealFor || [""],
-      checkoutUrl: product.checkoutUrl,
+      checkoutUrl: product.checkoutUrl || "",
+      ggCheckoutId: product.ggCheckoutId || "",
       isNew: product.isNew,
       isBestseller: product.isBestseller,
       salesCount: product.salesCount
@@ -506,6 +507,7 @@ export default function Admin() {
         whatsIncluded: Array.isArray(p.whats_included) ? p.whats_included : JSON.parse(p.whats_included || '[]'),
         idealFor: Array.isArray(p.ideal_for) ? p.ideal_for : JSON.parse(p.ideal_for || '[]'),
         checkoutUrl: p.checkout_url,
+        ggCheckoutId: p.gg_checkout_id || "",
         detailedDescription: p.detailed_description,
       }));
       
@@ -579,6 +581,7 @@ export default function Admin() {
         whats_included: formData.whatsIncluded.filter(item => item.trim() !== ""),
         ideal_for: formData.idealFor.filter(item => item.trim() !== ""),
         checkout_url: formData.checkoutUrl,
+        gg_checkout_id: formData.ggCheckoutId,
         is_new: formData.isNew,
         is_bestseller: formData.isBestseller,
         sales_count: parseInt(String(formData.salesCount)) || 0
@@ -1995,6 +1998,45 @@ export default function Admin() {
                                 </div>
                               </div>
                             </div>
+                          </div>
+
+                          {/* Integração & Checkout */}
+                          <div className="bg-gray-50/50 p-6 md:p-8 rounded-[2rem] border border-black/[0.03] space-y-6">
+                             <div className="flex items-center gap-3">
+                               <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center shrink-0">
+                                 <Zap size={14} className="text-amber-500 fill-amber-500" />
+                               </div>
+                               <div>
+                                 <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-950">Integração de Checkout</h4>
+                                 <p className="text-[9px] font-medium text-gray-400 mt-0.5">Link de Compra Direta e ID do Produto</p>
+                               </div>
+                             </div>
+                             
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                               <div className="space-y-3">
+                                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">ID na GGCheckout (Para o Carrinho)</label>
+                                 <input 
+                                   name="ggCheckoutId" 
+                                   value={formData.ggCheckoutId || ''} 
+                                   onChange={handleInputChange} 
+                                   placeholder="Ex: PROD-12345" 
+                                   className="w-full h-14 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl px-4 outline-none font-mono text-[10px] transition-all shadow-sm" 
+                                 />
+                                 <p className="text-[9px] text-gray-400 font-medium px-2">Usado quando o carrinho está ativo para compra com múltiplos produtos.</p>
+                               </div>
+
+                               <div className="space-y-3">
+                                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Link de Compra Direta (Individual)</label>
+                                 <input 
+                                   name="checkoutUrl" 
+                                   value={formData.checkoutUrl || ''} 
+                                   onChange={handleInputChange} 
+                                   placeholder="Ex: https://ggcheckout.app/..." 
+                                   className="w-full h-14 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl px-4 outline-none font-mono text-[10px] transition-all shadow-sm" 
+                                 />
+                                 <p className="text-[9px] text-gray-400 font-medium px-2">Usado se você desativar o carrinho e quiser venda direta.</p>
+                               </div>
+                             </div>
                           </div>
 
                          {/* Regional Copy */}

@@ -79,15 +79,11 @@ export function Header() {
 
   return (
     <div className="flex flex-col w-full relative z-[2500]">
-      {/* Red Announcement Bar (Marquee) */}
-      <div className="w-full bg-[#d82828] text-white py-2 overflow-hidden relative border-b border-white/10">
-        <div className="animate-marquee whitespace-nowrap flex items-center">
-          {[1,2,3,4,5,6,7,8,9,10].map((i) => (
-            <span key={i} className="mx-10 text-[10px] md:text-[13px] font-black uppercase tracking-[0.2em] flex-shrink-0">
-              {loading ? "..." : (settings.promoBar[language] || t("promoBar"))}
-            </span>
-          ))}
-        </div>
+      {/* Red Announcement Bar (Static & Centered) */}
+      <div className="w-full bg-[#d82828] text-white py-2.5 relative border-b border-white/10 flex justify-center items-center">
+        <span className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.2em] text-center px-4">
+          {loading ? "..." : (settings.promoBar[language] || t("promoBar"))}
+        </span>
       </div>
 
       <header className="bg-white/40 backdrop-blur-2xl w-full border-b border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
