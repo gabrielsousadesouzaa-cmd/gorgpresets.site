@@ -50,6 +50,7 @@ const mapProduct = (p: any): Product => {
     whatsIncluded: safeArray(p.whats_included),
     idealFor: safeArray(p.ideal_for),
     checkoutUrl: p.checkout_url || "#",
+    ggCheckoutId: p.gg_checkout_id || "",
     isNew: !!p.is_new,
     isBestseller: !!p.is_bestseller,
     salesCount: parseInt(String(p.sales_count)) || 0,

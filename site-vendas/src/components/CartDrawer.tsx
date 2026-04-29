@@ -33,16 +33,14 @@ export function CartDrawer() {
       baseUrl = "https://checkout.gorgpresets.com/checkout/v2/gRcT1osCycxdAJSbMWyN";
     }
 
-    // 2. Coletar IDs de todos os produtos no carrinho
+    // 2. Coletar IDs de todos os produtos no carrinho (Usando APENAS o campo ID NA GGCHECKOUT)
     const ggProductIds = items
       .map(item => {
+        // Puxamos estritamente o ID que você preencheu no novo campo do Admin
         if (item.product.ggCheckoutId && item.product.ggCheckoutId.trim() !== "") {
           return item.product.ggCheckoutId.trim();
         }
-        const url = item.product.checkoutUrl;
-        if (!url) return null;
-        const parts = url.split("?")[0].split("/").filter(Boolean);
-        return parts[parts.length - 1];
+        return null;
       })
       .filter(Boolean);
 
