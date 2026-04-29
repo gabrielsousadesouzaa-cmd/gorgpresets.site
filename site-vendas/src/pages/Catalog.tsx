@@ -371,6 +371,6 @@ export default function Catalog() {
         </div>
       </div>
     </div>
-    </>
+    </PageTransition>
   );
 }
