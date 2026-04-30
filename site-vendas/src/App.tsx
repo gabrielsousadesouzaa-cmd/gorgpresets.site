@@ -28,6 +28,8 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 
 const queryClient = new QueryClient();
 
+import { FlyToCartProvider } from "@/components/FlyToCart";
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -36,11 +38,12 @@ function App() {
         <CurrencyProvider>
           <TooltipProvider>
             <CartProvider>
-              <Toaster position="top-right" expand={true} richColors />
-              <BrowserRouter>
-                <MenuProvider>
-                  <ScrollToTop />
-                  <SiteTracker />
+              <FlyToCartProvider>
+                <Toaster position="top-right" expand={true} richColors />
+                <BrowserRouter>
+                  <MenuProvider>
+                    <ScrollToTop />
+                    <SiteTracker />
                   <Routes>
                     {/* Admin sem Layout */}
                     <Route 
@@ -92,6 +95,7 @@ function App() {
                   </Routes>
                 </MenuProvider>
               </BrowserRouter>
+              </FlyToCartProvider>
             </CartProvider>
           </TooltipProvider>
         </CurrencyProvider>

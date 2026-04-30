@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { Product } from "@/data/products";
 import { useCart } from "@/store/cartStore";
@@ -7,25 +8,31 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "@/store/languageStore";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Zap } from "lucide-react";
+import { useFlyToCart } from "@/components/FlyToCart";
 
 interface ProductCardProps {
   product: Product;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
   const { formatCurrency } = useCurrency();
   const { t } = useLanguage();
   const { settings } = useSiteSettings();
   const [isAdded, setIsAdded] = useState(false);
+  const { triggerAnimation } = useFlyToCart();
 
   const handleAddToCart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Dispara animação de voar para o carrinho
+    triggerAnimation(e, product.image);
+    
     addItem(product);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
-  }, [addItem, product]);
+  }, [addItem, product, triggerAnimation]);
 
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -138,4 +145,4 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
     </motion.div>
   );
-}
+});

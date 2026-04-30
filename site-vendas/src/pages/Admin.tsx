@@ -19,6 +19,10 @@ interface ProductFormData {
   detailedDescription: any;
   price: string | number;
   originalPrice: string | number;
+  priceUSD?: string | number;
+  priceEUR?: string | number;
+  originalPriceUSD?: string | number;
+  originalPriceEUR?: string | number;
   discount: number;
   image: string;
   images: string[];
@@ -27,6 +31,7 @@ interface ProductFormData {
   whatsIncluded: string[];
   idealFor: string[];
   checkoutUrl: string;
+  ggCheckoutId: string;
   isNew: boolean;
   isBestseller: boolean;
   salesCount: number;
@@ -38,6 +43,10 @@ const initialForm: ProductFormData = {
   detailedDescription: { PT: "", EN: "", ES: "" },
   price: "",
   originalPrice: "",
+  priceUSD: "",
+  priceEUR: "",
+  originalPriceUSD: "",
+  originalPriceEUR: "",
   discount: 0,
   image: "",
   images: [],
@@ -46,6 +55,7 @@ const initialForm: ProductFormData = {
   whatsIncluded: [""],
   idealFor: [""],
   checkoutUrl: "",
+  ggCheckoutId: "",
   isNew: false,
   isBestseller: false,
   salesCount: 0
@@ -94,22 +104,51 @@ export default function Admin() {
       return true;
     });
 
-    const sessions = filteredVisits.filter(v => v.event_type !== 'CHECKOUT_CLICK').length;
+    const sessions = filteredVisits.filter(v => v.event_type !== 'CHECKOUT_CLICK' && !v.path?.includes('CHECKOUT_CLICK')).length;
     let checkoutIntents = 0;
+    let soloCheckoutClicks = 0;
+    let cartCheckoutClicks = 0;
     
     const cityCounts: Record<string, number> = {};
     const productCounts: Record<string, number> = {};
     const sourceCounts: Record<string, number> = {};
     
+    const knownCities = [
+      // Brasil - Capitais e Grandes Cidades
+      "São Paulo", "Rio de Janeiro", "Belo Horizonte", "Brasília", "Curitiba", "Porto Alegre", "Salvador", "Fortaleza", "Recife", "Goiânia", "Manaus", "Belém", "Vitória", "Florianópolis", "Cuiabá", "Campo Grande", "Maceió", "Natal", "João Pessoa", "Teresina", "Aracaju", "Porto Velho", "Boa Vista", "Macapá", "Rio Branco", "Palmas", "Campinas", "Santos", "Ribeirão Preto", "Uberlândia", "Sorocaba", "Joinville", "Caxias do Sul", "Londrina", "Maringá", "Juiz de Fora", "Niterói", "Santarém", "Anápolis",
+      // Portugal
+      "Lisboa", "Porto", "Coimbra", "Braga", "Faro", "Setúbal",
+      // Internacional
+      "Miami", "Orlando", "Nova York", "New York", "Londres", "London", "Paris", "Madri", "Madrid", "Barcelona", "Buenos Aires", "Santiago", "Bogotá", "Cidade do México", "Tokyo", "Dubai", "Luanda"
+    ];
+
     filteredVisits.forEach(v => {
-      // Contador de Cidades
+      // Contador de Cidades - Tenta encontrar cidade conhecida na string de localização
       if (v.location && v.location !== 'Intent') {
-        cityCounts[v.location] = (cityCounts[v.location] || 0) + 1;
+        let detectedCity = v.location;
+        const lowerLoc = v.location.toLowerCase();
+        
+        for (const city of knownCities) {
+          if (lowerLoc.includes(city.toLowerCase())) {
+            detectedCity = city;
+            break;
+          }
+        }
+        
+        cityCounts[detectedCity] = (cityCounts[detectedCity] || 0) + 1;
       }
 
       // Contador de Cliques em Produtos
-      if (v.event_type === 'CHECKOUT_CLICK' || (v.path && v.path.startsWith('CHECKOUT_CLICK'))) {
+      const isCheckoutClick = v.event_type === 'CHECKOUT_CLICK' || (v.path && v.path.includes('CHECKOUT_CLICK'));
+      
+      if (isCheckoutClick) {
         checkoutIntents++;
+        
+        // Diferenciação de tipos (Solo vs Carrinho)
+        if (v.path?.startsWith('SOLO_CHECKOUT_CLICK')) soloCheckoutClicks++;
+        else if (v.path?.startsWith('CART_CHECKOUT_CLICK')) cartCheckoutClicks++;
+        else soloCheckoutClicks++; // Legado assume como solo por padrão
+        
         const rawName = v.path.split(':')[1];
         if (rawName && rawName !== 'Produto Desconhecido') {
           const individualProducts = rawName.split(' + ');
@@ -123,14 +162,17 @@ export default function Admin() {
       }
 
       // Contador de Origens de Tráfego
-      if (v.event_type !== 'CHECKOUT_CLICK') {
+      if (!isCheckoutClick) {
         const ref = v.referrer || 'Direto';
         let source = 'Direto';
         if (ref.includes('instagram.com') || ref.includes('t.co')) source = 'Instagram';
+        else if (ref.includes('tiktok.com')) source = 'TikTok';
+        else if (ref.includes('wa.me') || ref.includes('whatsapp.com')) source = 'WhatsApp';
         else if (ref.includes('google.com')) source = 'Google';
+        else if (ref.includes('youtube.com') || ref.includes('youtu.be')) source = 'YouTube';
         else if (ref.includes('facebook.com') || ref.includes('fb.com')) source = 'Facebook';
         else if (ref !== 'Direto') {
-           try { source = new URL(ref).hostname; } catch(e) { source = 'Outros'; }
+           try { source = new URL(ref).hostname.replace('www.', ''); } catch(e) { source = 'Outros'; }
         }
         sourceCounts[source] = (sourceCounts[source] || 0) + 1;
       }
@@ -154,6 +196,8 @@ export default function Admin() {
     return {
       sessions,
       intents: checkoutIntents,
+      soloIntents: soloCheckoutClicks,
+      cartIntents: cartCheckoutClicks,
       sortedCities,
       sortedProducts,
       sortedSources,
@@ -193,6 +237,10 @@ export default function Admin() {
       })(),
       price: product.price,
       originalPrice: product.originalPrice,
+      priceUSD: product.priceUSD || product.price_usd || "",
+      priceEUR: product.priceEUR || product.price_eur || "",
+      originalPriceUSD: product.originalPriceUSD || product.original_price_usd || "",
+      originalPriceEUR: product.originalPriceEUR || product.original_price_eur || "",
       discount: product.discount,
       image: product.image,
       images: product.images || [],
@@ -504,6 +552,10 @@ export default function Admin() {
         isBestseller: p.is_bestseller,
         salesCount: p.sales_count,
         originalPrice: p.original_price,
+        priceUSD: p.price_usd,
+        priceEUR: p.price_eur,
+        originalPriceUSD: p.original_price_usd,
+        originalPriceEUR: p.original_price_eur,
         whatsIncluded: Array.isArray(p.whats_included) ? p.whats_included : JSON.parse(p.whats_included || '[]'),
         idealFor: Array.isArray(p.ideal_for) ? p.ideal_for : JSON.parse(p.ideal_for || '[]'),
         checkoutUrl: p.checkout_url,
@@ -573,6 +625,10 @@ export default function Admin() {
         detailed_description: formData.detailedDescription,
         price: parsePrice(formData.price) || 0,
         original_price: parsePrice(formData.originalPrice),
+        price_usd: parsePrice(formData.priceUSD),
+        price_eur: parsePrice(formData.priceEUR),
+        original_price_usd: parsePrice(formData.originalPriceUSD),
+        original_price_eur: parsePrice(formData.originalPriceEUR),
         discount: parseInt(String(formData.discount)) || 0,
         image: formData.image || "https://images.unsplash.com/photo-1542038784456-1ea8e935640e",
         images: formData.images || [],
@@ -873,7 +929,7 @@ export default function Admin() {
                       { key: 'testimonials', label: 'Elite Feedbacks', icon: Users },
                       { key: 'shopTheLook', label: 'Mosaico', icon: ImageIcon },
                       { key: 'order', label: 'Curadoria', icon: LayoutList },
-                      { key: 'integration', label: 'GGCheckout', icon: Zap },
+                      { key: 'integration', label: 'Carrinho', icon: ShoppingBag },
                       { key: 'promoBar', label: 'Alertas', icon: Bell },
                       { key: 'analytics', label: 'Acessos', icon: Globe },
                     ].map(({ key, label, icon: Icon }) => (
@@ -903,7 +959,7 @@ export default function Admin() {
                 { key: 'testimonials', label: 'Elite Feedbacks', icon: Users },
                 { key: 'shopTheLook', label: 'Mosaico', icon: ImageIcon },
                 { key: 'order', label: 'Curadoria', icon: LayoutList },
-                { key: 'integration', label: 'GGCheckout', icon: Zap },
+                { key: 'integration', label: 'Carrinho', icon: ShoppingBag },
                 { key: 'promoBar', label: 'Alertas', icon: Bell },
                 { key: 'analytics', label: 'Acessos', icon: Globe },
               ].map(({ key, label, icon: Icon }) => (
@@ -1015,6 +1071,39 @@ export default function Admin() {
                </div>
             </div>
 
+            {/* 2.5. DETALHAMENTO DE CLIQUES */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               {/* Solo Checkout Clicks */}
+               <div className="bg-white rounded-[2.5rem] p-8 border border-black/5 shadow-xl relative overflow-hidden group hover:shadow-2xl transition-all border-l-4 border-l-amber-500">
+                  <div className="relative z-10">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Checkout Solo</p>
+                    <div className="flex items-baseline gap-2">
+                      <h3 className="text-4xl font-black text-gray-950 tracking-tighter">{stats.soloIntents}</h3>
+                      <Zap size={18} className="text-amber-500" />
+                    </div>
+                    <p className="text-[9px] font-bold text-amber-500 mt-4 uppercase tracking-widest">Botão "Comprar Agora"</p>
+                  </div>
+                  <div className="absolute -right-4 -bottom-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
+                    <Zap size={120} />
+                  </div>
+               </div>
+
+               {/* Cart Checkout Clicks */}
+               <div className="bg-white rounded-[2.5rem] p-8 border border-black/5 shadow-xl relative overflow-hidden group hover:shadow-2xl transition-all border-l-4 border-l-indigo-500">
+                  <div className="relative z-10">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Checkout Carrinho</p>
+                    <div className="flex items-baseline gap-2">
+                      <h3 className="text-4xl font-black text-gray-950 tracking-tighter">{stats.cartIntents}</h3>
+                      <ShoppingBag size={18} className="text-indigo-500" />
+                    </div>
+                    <p className="text-[9px] font-bold text-indigo-500 mt-4 uppercase tracking-widest">Botão "Finalizar Compra"</p>
+                  </div>
+                  <div className="absolute -right-4 -bottom-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
+                    <ShoppingBag size={120} />
+                  </div>
+               </div>
+            </div>
+
             {/* 3. GEOGRAPHICAL HUB (Globe + Top Cities) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                {/* The Globe - Takes 2 columns */}
@@ -1070,7 +1159,7 @@ export default function Admin() {
                          <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
                             <motion.div 
                               initial={{ width: 0 }}
-                              animate={{ width: `${(count / (stats.sortedCities[0][1] || 1)) * 100}%` }}
+                              animate={{ width: `${(count / (stats.sortedCities[0]?.[1] || 1)) * 100}%` }}
                               className="h-full bg-black rounded-full group-hover:bg-[#d82828] transition-colors" 
                             />
                          </div>
@@ -1697,19 +1786,40 @@ export default function Admin() {
              <div className="bg-white/70 backdrop-blur-3xl rounded-[3rem] md:rounded-[4rem] border border-white shadow-[0_30px_100px_rgba(0,0,0,0.05)] p-10 md:p-16 space-y-12">
 
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 pb-10 border-b border-black/[0.03]">
-                   <div className="flex items-center gap-6">
-                      <motion.div whileHover={{ scale: 1.1, rotate: 12 }} className="w-16 h-16 bg-black rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-black/10">
-                         <Zap className="text-amber-500 fill-amber-500" size={28} />
-                      </motion.div>
-                      <div>
-                         <h2 className="text-2xl md:text-4xl font-black uppercase tracking-[-0.04em] italic leading-none">Integração de <span className="text-[#d82828]">Checkout</span></h2>
-                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-3 italic">Compatível com qualquer plataforma</p>
-                      </div>
-                   </div>
+                    <div className="flex items-center gap-6">
+                       <motion.div whileHover={{ scale: 1.1, rotate: 12 }} className="w-16 h-16 bg-black rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-black/10">
+                          <ShoppingBag size={28} className="text-[#d82828]" />
+                       </motion.div>
+                       <div>
+                          <h2 className="text-2xl md:text-4xl font-black uppercase tracking-[-0.04em] italic leading-none">Gestão do <span className="text-[#d82828]">Carrinho</span></h2>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-3 italic">Configurações de Venda Dinâmica</p>
+                       </div>
+                    </div>
                    <div className="flex items-center gap-4 px-6 h-14 bg-gray-50/50 rounded-2xl border border-black/5">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                       <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Sistema Ativo</span>
+                   </div>
+                </div>
+
+                {/* Destaque GGCheckout */}
+                <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-amber-500/10 via-transparent to-transparent border border-amber-500/20 relative overflow-hidden group">
+                   <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-1000">
+                      <Zap size={100} fill="currentColor" className="text-amber-500" />
+                   </div>
+                   <div className="relative z-10 space-y-4">
+                      <div className="flex items-center gap-3">
+                         <div className="bg-black text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">Ativo</div>
+                         <h4 className="text-lg font-black uppercase tracking-tighter italic">Checkout Dinâmico (Cart Logic)</h4>
+                      </div>
+                      <p className="text-xs text-gray-600 font-medium leading-relaxed max-w-xl">
+                        A integração nativa com o **GGCheckout** permite que os produtos sejam adicionados dinamicamente ao carrinho usando apenas seus IDs. 
+                        Configure o link mestre abaixo e os IDs em cada produto individual.
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <span className="px-3 py-1 bg-white border border-black/5 rounded-full text-[8px] font-black uppercase tracking-widest text-gray-400">Multi-Produto</span>
+                        <span className="px-3 py-1 bg-white border border-black/5 rounded-full text-[8px] font-black uppercase tracking-widest text-gray-400">Cupom Automático</span>
+                        <span className="px-3 py-1 bg-white border border-black/5 rounded-full text-[8px] font-black uppercase tracking-widest text-gray-400">Conversão de Moeda</span>
+                      </div>
                    </div>
                 </div>
 
@@ -1738,11 +1848,11 @@ export default function Admin() {
                          await saveSetting('integration', { ...siteSettings.integration, isCartEnabled: n });
                          toast.success("Carrinho " + (n ? 'ativado' : 'desativado') + "!");
                        }}
-                       className={"w-20 h-10 md:w-24 md:h-12 rounded-full relative transition-all flex-shrink-0 shadow-inner " + (siteSettings.integration.isCartEnabled ? 'bg-emerald-500' : 'bg-gray-200')}
+                       className={"w-20 h-10 md:w-24 md:h-12 rounded-full flex items-center p-1 transition-all flex-shrink-0 shadow-inner " + (siteSettings.integration.isCartEnabled ? 'bg-emerald-500' : 'bg-gray-200')}
                      >
                        <motion.div
-                         animate={{ x: siteSettings.integration.isCartEnabled ? 'calc(100% - 32px - 8px)' : '8px' }}
-                         className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full absolute top-1 shadow-2xl flex items-center justify-center"
+                         layout
+                         className={`w-8 h-8 md:w-10 md:h-10 bg-white rounded-full shadow-2xl flex items-center justify-center ${siteSettings.integration.isCartEnabled ? 'ml-auto' : 'ml-0'}`}
                        >
                          <div className={"w-1.5 h-1.5 rounded-full " + (siteSettings.integration.isCartEnabled ? 'bg-emerald-500' : 'bg-gray-300')} />
                        </motion.div>
@@ -1750,50 +1860,61 @@ export default function Admin() {
                    </div>
                 </div>
 
-                {/* Plataformas Compatíveis */}
-                <div className="space-y-5">
-                   <div className="flex items-center gap-3 px-1">
-                      <div className="w-1 h-6 bg-[#d82828] rounded-full" />
-                      <p className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-700">Plataformas de checkout compatíveis</p>
-                   </div>
-                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                     {[
-                       { name: 'GGCheckout', emoji: '⚡' },
-                       { name: 'Hotmart', emoji: '🔥' },
-                       { name: 'Kiwify', emoji: '🥝' },
-                       { name: 'Lastlink', emoji: '🔗' },
-                       { name: 'Monetizze', emoji: '💳' },
-                       { name: 'Eduzz', emoji: '🚀' },
-                     ].map(p => (
-                       <div key={p.name} className="flex items-center gap-3 bg-gray-50/80 border border-black/[0.04] rounded-2xl px-4 py-3 hover:bg-white hover:shadow-md transition-all cursor-default">
-                         <span className="text-lg">{p.emoji}</span>
-                         <span className="text-[10px] font-black uppercase tracking-widest text-gray-700">{p.name}</span>
-                         <div className="ml-auto w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
-                       </div>
-                     ))}
-                   </div>
-                   <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest text-center">Cole a URL de checkout de qualquer plataforma no campo abaixo</p>
-                </div>
 
                 {/* URL Base do Checkout */}
                 <div className="space-y-4">
                    <div className="flex items-center justify-between px-1">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">URL do Carrinho (compra com múltiplos produtos)</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 italic">Link Mestre do Checkout (Carrinho)</p>
+                      {siteSettings.integration.checkoutBaseUrl && (
+                        <a 
+                          href={siteSettings.integration.checkoutBaseUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[8px] font-black uppercase tracking-widest text-[#d82828] hover:underline flex items-center gap-1"
+                        >
+                          Testar Link Atual <ChevronRight size={10} />
+                        </a>
+                      )}
                    </div>
                    <div className="group/inp relative">
-                      <div className="absolute inset-y-0 left-8 flex items-center text-gray-300 group-focus-within/inp:text-black transition-colors">
+                      <div className="absolute inset-y-0 left-8 flex items-center text-[#d82828] group-focus-within/inp:text-black transition-colors">
                          <Globe size={18} />
                       </div>
                       <input
                          value={siteSettings.integration.checkoutBaseUrl}
                          onChange={(e) => setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, checkoutBaseUrl: e.target.value } }))}
-                         className="w-full h-20 md:h-24 bg-gray-50/50 hover:bg-white focus:bg-white rounded-[1.5rem] md:rounded-[2.5rem] pl-16 pr-10 font-mono text-[10px] md:text-xs outline-none border border-black/[0.03] focus:border-black transition-all shadow-sm focus:shadow-2xl"
-                         placeholder="https://pay.hotmart.com/... | https://checkout.kiwify.com.br/..."
+                         className="w-full h-20 md:h-24 bg-white focus:bg-white rounded-[1.5rem] md:rounded-[2.5rem] pl-16 pr-10 font-mono text-[10px] md:text-xs outline-none border-2 border-black/[0.03] focus:border-[#d82828] transition-all shadow-sm focus:shadow-2xl"
+                         placeholder="Cole seu link do checkout aqui..."
                       />
                    </div>
-                   <p className="text-[10px] text-gray-400 font-medium px-2 leading-relaxed">
-                     Esta URL é usada quando o carrinho está <strong>ativo</strong> e o cliente finaliza com múltiplos produtos. Para compra direta de <strong>1 produto</strong>, configure a URL individualmente em cada produto do catálogo.
-                   </p>
+
+                   {/* Visual Preview of the Logic */}
+                   {siteSettings.integration.checkoutBaseUrl && (
+                     <div className="bg-black/[0.02] border border-dashed border-black/10 rounded-2xl p-6 space-y-3">
+                        <div className="flex items-center gap-2">
+                           <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                           <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Preview do Link Gerado no Carrinho</p>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl border border-black/5 overflow-hidden">
+                           <p className="text-[10px] font-mono text-gray-400 break-all leading-relaxed">
+                              {siteSettings.integration.checkoutBaseUrl}
+                              <span className="text-[#d82828] font-bold">
+                                 {siteSettings.integration.checkoutBaseUrl.includes('?') ? '&' : '?'}cart=ID_PRODUTO_1;ID_PRODUTO_2
+                              </span>
+                           </p>
+                        </div>
+                        <p className="text-[8px] text-gray-300 font-medium uppercase tracking-tight italic">
+                           * O sistema detecta automaticamente o separador (? ou &) e anexa os IDs do GGCheckout.
+                        </p>
+                     </div>
+                   )}
+
+                   <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-500/10">
+                      <p className="text-[9px] text-amber-700 font-bold leading-relaxed italic">
+                        **CONTROLE TOTAL:** O link acima será usado para todas as compras com múltiplos produtos. 
+                        O sistema não irá mais sobrescrever este valor automaticamente.
+                      </p>
+                   </div>
                 </div>
 
                 {/* Botão Salvar */}
@@ -1803,10 +1924,9 @@ export default function Admin() {
                    className="w-full h-20 md:h-24 bg-black hover:bg-[#d82828] text-white rounded-[2rem] md:rounded-[3rem] font-black uppercase tracking-[0.4em] shadow-[0_25px_60px_rgba(0,0,0,0.2)] hover:shadow-[0_25px_60px_rgba(216,40,40,0.3)] transition-all flex items-center justify-center gap-5 group active:scale-[0.98] text-sm"
                 >
                    {isSavingSettings ? <RefreshCw className="animate-spin" size={24} /> : <Save size={24} className="group-hover:scale-110 transition-transform" strokeWidth={2.5} />}
-                   <span>Salvar Configurações</span>
+                   <span>Salvar Integração de Checkout</span>
                 </Button>
              </div>
-          </div>
         )}
 
         {/* PROMO BAR TAB */}
@@ -1866,8 +1986,19 @@ export default function Admin() {
                             <td className="py-4 px-4 text-xs font-semibold text-gray-600">
                                {v.device}
                             </td>
-                            <td className="py-4 px-4 text-[10px] font-black uppercase text-gray-500 bg-gray-100/50 rounded-lg inline-block my-2 mx-4 px-2 py-1">
-                               {v.path}
+                            <td className="py-4 px-4">
+                               <div className="flex flex-col gap-1">
+                                  <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-md inline-block ${v.path?.includes('CHECKOUT_CLICK') ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                                    {v.path?.startsWith('SOLO_CHECKOUT_CLICK') ? 'Checkout Solo' : 
+                                     v.path?.startsWith('CART_CHECKOUT_CLICK') ? 'Checkout Carrinho' : 
+                                     v.path === '/' ? 'Home' : v.path}
+                                  </span>
+                                  {v.path?.includes(':') && (
+                                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter truncate max-w-[150px]">
+                                      {v.path.split(':')[1]}
+                                    </span>
+                                  )}
+                               </div>
                             </td>
                             <td className="py-4 px-4 text-[10px] font-mono font-bold text-gray-400">
                                {v.ip}

@@ -53,7 +53,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         toast.error(language === 'PT' ? "Este preset já está no seu carrinho!" : "This preset is already in your cart!");
         return prev;
       }
-      setIsOpen(true); // Abre o carrinho automaticamente
       return [...prev, product];
     });
   };

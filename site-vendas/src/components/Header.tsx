@@ -119,6 +119,7 @@ export function Header() {
                 </button>
                 {settings.integration.isCartEnabled && (
                   <button 
+                    id="main-cart-button"
                     onClick={openCart}
                     className="relative p-1 group"
                     aria-label="Cart"

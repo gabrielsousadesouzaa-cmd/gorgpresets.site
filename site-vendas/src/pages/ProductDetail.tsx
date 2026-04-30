@@ -24,6 +24,7 @@ import { ProductCarousel } from "@/components/ProductCarousel";
 import { InstallationGuide } from "@/components/InstallationGuide";
 import { useMenu } from "@/store/MenuContext";
 import { PageTransition } from "@/components/PageTransition";
+import { useFlyToCart } from "@/components/FlyToCart";
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -61,8 +62,11 @@ export default function ProductDetail() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleAddToCart = () => {
+  const { triggerAnimation } = useFlyToCart();
+
+  const handleAddToCart = (e: React.MouseEvent) => {
     if (product) {
+      triggerAnimation(e, product.image);
       addItem(product);
       toast.success("Adicionado ao carrinho!");
     }
@@ -72,7 +76,7 @@ export default function ProductDetail() {
     if (!product) return;
     
     if (product.checkoutUrl && product.checkoutUrl !== "#") {
-      await trackCheckoutClick(product.name);
+      await trackCheckoutClick(product.name, 'SOLO');
       window.location.href = product.checkoutUrl;
     } else {
       toast.info(language === 'PT' ? "Link de checkout não configurado." : "Checkout link not configured.");
@@ -248,7 +252,7 @@ export default function ProductDetail() {
                     {t("pdBuyNow")}
                   </button>
                   {settings.integration.isCartEnabled && (
-                    <button onClick={handleAddToCart} className="w-full h-14 bg-white text-gray-950 border-2 border-gray-950 rounded-2xl text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all">
+                    <button onClick={(e) => handleAddToCart(e)} className="w-full h-14 bg-white text-gray-950 border-2 border-gray-950 rounded-2xl text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all">
                       <ShoppingBag size={18} /> {t("addToCart")}
                     </button>
                   )}
@@ -415,7 +419,7 @@ export default function ProductDetail() {
                      {t("pdBuyNow")}
                   </button>
                   {settings.integration.isCartEnabled && (
-                    <button onClick={handleAddToCart} className="w-full h-16 bg-white text-gray-950 border-2 border-gray-950 rounded-2xl text-[0.95rem] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-95 transition-all">
+                    <button onClick={(e) => handleAddToCart(e)} className="w-full h-16 bg-white text-gray-950 border-2 border-gray-950 rounded-2xl text-[0.95rem] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-95 transition-all">
                       <ShoppingBag size={20} /> {t("addToCart")}
                     </button>
                   )}

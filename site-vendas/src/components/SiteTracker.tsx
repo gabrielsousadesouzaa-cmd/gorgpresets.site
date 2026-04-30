@@ -69,7 +69,7 @@ export function SiteTracker() {
   return null;
 }
 
-export const trackCheckoutClick = async (productName?: string) => {
+export const trackCheckoutClick = async (productName?: string, type: 'SOLO' | 'CART' = 'SOLO') => {
   try {
     let sessionId = sessionStorage.getItem('visit_session_id');
     if (!sessionId) {
@@ -88,7 +88,7 @@ export const trackCheckoutClick = async (productName?: string) => {
       ip: 'Checkout Click',
       location: 'Intent',
       device: device,
-      path: productName ? `CHECKOUT_CLICK:${productName}` : 'CHECKOUT_CLICK',
+      path: productName ? `${type}_CHECKOUT_CLICK:${productName}` : `${type}_CHECKOUT_CLICK`,
       user_agent: userAgent
     }]);
   } catch (err) {

@@ -8,12 +8,12 @@ interface PageTransitionProps {
 export function PageTransition({ children }: PageTransitionProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -15 }}
+      exit={{ opacity: 0, y: -8 }}
       transition={{ 
-        duration: 0.6, 
-        ease: [0.16, 1, 0.3, 1] // Custom ease-out cubic for a premium feel
+        duration: 0.28, 
+        ease: [0.16, 1, 0.3, 1]
       }}
     >
       {children}

@@ -40,11 +40,20 @@ const CITY_MAP_POSITIONS: Record<string, { x: number, y: number }> = {
   "Belém": { x: 28, y: 60 },
   "Vitória": { x: 34, y: 75 },
   "Florianópolis": { x: 31, y: 82 },
+  "Campinas": { x: 30.5, y: 77.5 },
+  "Santos": { x: 31.5, y: 78.5 },
+  "Uberlândia": { x: 30, y: 74 },
+  "Joinville": { x: 30.5, y: 80.5 },
+  "Londrina": { x: 29.5, y: 79.5 },
   "Lisboa": { x: 46, y: 38 },
   "Porto": { x: 46, y: 36 },
   "Luanda": { x: 53, y: 66 },
   "Miami": { x: 22, y: 46 },
-  "Orlando": { x: 22, y: 44 }
+  "Orlando": { x: 22, y: 44 },
+  "New York": { x: 24, y: 36 },
+  "London": { x: 48, y: 28 },
+  "Paris": { x: 49, y: 31 },
+  "Buenos Aires": { x: 28, y: 88 }
 };
 
 export function AdminMap({ cities }: { cities: Array<[string, number]> }) {
