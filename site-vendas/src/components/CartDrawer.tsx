@@ -132,6 +132,44 @@ export function CartDrawer() {
               </button>
             </div>
 
+            {/* Promo Progress Banner */}
+            {settings.integration.isBuy3Get1FreeEnabled && (
+              <div className={`mx-4 md:mx-8 mb-0 px-4 py-3 md:py-4 rounded-2xl md:rounded-3xl overflow-hidden relative transition-all duration-500 ${items.length >= 3 ? 'bg-[#d82828]' : 'bg-gray-50 border border-black/[0.04]'}`}>
+                {items.length >= 3 ? (
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl md:text-2xl">🎁</span>
+                    <div>
+                      <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/80">Promoção Ativa!</p>
+                      <p className="text-[11px] md:text-sm font-black text-white uppercase tracking-tight leading-none">O preset mais barato é <span className="underline underline-offset-2">GRÁTIS</span></p>
+                    </div>
+                    <div className="ml-auto flex gap-1">
+                      {[0,1,2].map(i => (
+                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" style={{ animationDelay: `${i * 150}ms` }} />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">🎁</span>
+                        <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-500">
+                          Faltam <span className="text-[#d82828]">{3 - items.length}</span> {3 - items.length === 1 ? 'preset' : 'presets'} para ganhar 1 grátis
+                        </p>
+                      </div>
+                      <span className="text-[8px] font-black text-gray-300 uppercase">{items.length}/3</span>
+                    </div>
+                    <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#d82828] rounded-full transition-all duration-700 ease-out"
+                        style={{ width: `${(items.length / 3) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Content Section: High Density */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-4 md:space-y-6 pb-28">
               

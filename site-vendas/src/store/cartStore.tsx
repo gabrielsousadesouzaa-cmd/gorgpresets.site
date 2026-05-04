@@ -64,6 +64,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const getSubtotal = () => rawItems.reduce((acc, curr) => acc + curr.price, 0);
 
   const getPromoDiscount = () => {
+    if (!settings?.integration?.isBuy3Get1FreeEnabled) return 0;
     const numFree = Math.floor(rawItems.length / 3);
     if (numFree === 0) return 0;
     
@@ -78,7 +79,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const getSavings = () => getOriginalTotal() - getTotal();
 
   const getItemsWithPromo = (): CartItem[] => {
-    if (rawItems.length < 3) {
+    const promoEnabled = settings?.integration?.isBuy3Get1FreeEnabled;
+    if (!promoEnabled || rawItems.length < 3) {
       return rawItems.map((p) => ({ product: p, isFree: false }));
     }
 

@@ -1858,7 +1858,71 @@ export default function Admin() {
                        </motion.div>
                      </button>
                    </div>
-                </div>
+                 </div>
+
+                 {/* Toggle Promoção Compre 3, Leve 1 de Graça */}
+                 <div className="group relative">
+                    <div className="absolute -inset-4 bg-gradient-to-r from-[#d82828]/0 via-[#d82828]/[0.02] to-[#d82828]/0 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl" />
+                    <div className="relative bg-white/40 backdrop-blur-sm p-8 md:p-12 rounded-[2.5rem] md:rounded-[3rem] border border-black/[0.03] hover:border-[#d82828]/10 transition-all shadow-sm">
+                      <div className="flex items-start justify-between gap-6">
+                        <div className="flex items-center gap-6 md:gap-8">
+                          <div className={`w-16 h-16 md:w-20 md:h-20 rounded-3xl md:rounded-[2rem] flex items-center justify-center transition-all duration-500 text-2xl ${siteSettings.integration.isBuy3Get1FreeEnabled ? 'bg-red-50 shadow-lg shadow-red-500/10 scale-110' : 'bg-gray-100'}`}>
+                            🎁
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3 mb-1">
+                              <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-gray-950">Compre 3, Leve 1 de Graça</h3>
+                              {siteSettings.integration.isBuy3Get1FreeEnabled && (
+                                <span className="px-2 py-0.5 bg-[#d82828] text-white text-[8px] font-black uppercase tracking-widest rounded-full animate-pulse">ATIVO</span>
+                              )}
+                            </div>
+                            <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider">
+                              {siteSettings.integration.isBuy3Get1FreeEnabled
+                                ? 'ATIVO — o preset mais barato aparece como GRÁTIS com 3 no carrinho'
+                                : 'INATIVO — promoção desativada, todos os presets cobrados normalmente'}
+                            </p>
+                            <p className="text-[9px] text-gray-300 mt-2 font-medium">Quando ativo, o item de menor valor recebe o badge "GRÁTIS" e é descontado no total</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            const n = !siteSettings.integration.isBuy3Get1FreeEnabled;
+                            setSiteSettings(prev => ({ ...prev, integration: { ...prev.integration, isBuy3Get1FreeEnabled: n } }));
+                            await saveSetting('integration', { ...siteSettings.integration, isBuy3Get1FreeEnabled: n });
+                            toast.success(`Promoção Compre 3, Leve 1 ${n ? 'ativada 🎁' : 'desativada'}!`);
+                          }}
+                          className={`w-20 h-10 md:w-24 md:h-12 rounded-full flex items-center p-1 transition-all flex-shrink-0 shadow-inner ${siteSettings.integration.isBuy3Get1FreeEnabled ? 'bg-[#d82828]' : 'bg-gray-200'}`}
+                        >
+                          <motion.div
+                            layout
+                            className={`w-8 h-8 md:w-10 md:h-10 bg-white rounded-full shadow-2xl flex items-center justify-center ${siteSettings.integration.isBuy3Get1FreeEnabled ? 'ml-auto' : 'ml-0'}`}
+                          >
+                            <div className={`w-1.5 h-1.5 rounded-full ${siteSettings.integration.isBuy3Get1FreeEnabled ? 'bg-[#d82828]' : 'bg-gray-300'}`} />
+                          </motion.div>
+                        </button>
+                      </div>
+
+                      {/* Demonstração visual da promoção */}
+                      {siteSettings.integration.isBuy3Get1FreeEnabled && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="mt-8 p-6 bg-gradient-to-r from-[#d82828]/5 to-transparent rounded-2xl border border-[#d82828]/10 space-y-3"
+                        >
+                          <p className="text-[9px] font-black uppercase tracking-widest text-[#d82828]">Como funciona no Carrinho</p>
+                          <div className="flex items-center gap-3">
+                            {['Preset A', 'Preset B', 'Preset C'].map((label, i) => (
+                              <div key={i} className={`flex-1 p-3 rounded-xl text-center text-[8px] font-black uppercase tracking-wider border ${i === 0 ? 'bg-[#d82828]/10 border-[#d82828]/20 text-[#d82828]' : 'bg-white border-black/5 text-gray-500'}`}>
+                                {label}
+                                {i === 0 && <div className="mt-1 px-2 py-0.5 bg-[#d82828] text-white rounded-full text-[7px]">GRÁTIS</div>}
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[8px] text-gray-400 font-medium">* O preset de menor preço recebe o badge GRÁTIS e é descontado no total</p>
+                        </motion.div>
+                      )}
+                    </div>
+                 </div>
 
 
                 {/* URL Base do Checkout */}
