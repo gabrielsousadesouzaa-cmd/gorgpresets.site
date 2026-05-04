@@ -280,6 +280,15 @@ export const translations = {
   cartContinue: { PT: "CONTINUAR NAVEGANDO", EN: "CONTINUE SHOPPING", ES: "CONTINUAR NAVEGANDO" },
   cartExplore: { PT: "Começar a Explorar", EN: "Start Exploring", ES: "Empezar a Explorar" },
   cartTotalOrder: { PT: "Total do Pedido", EN: "Order Total", ES: "Total del Pedido" },
+  promoActive: { PT: "Promoção Ativa!", EN: "Promotion Active!", ES: "¡Promoción Activa!" },
+  promoCheapestFree: { PT: "O preset mais barato é GRÁTIS", EN: "The cheapest preset is FREE", ES: "El preset más barato es GRATIS" },
+  promoMissingOne: { PT: "Falta apenas 1 preset para ganhar 1 grátis", EN: "Only 1 preset left to get 1 free", ES: "Falta solo 1 preset para ganar 1 gratis" },
+  promoMissingMulti: { PT: "Faltam {n} presets para ganhar 1 grátis", EN: "{n} presets left to get 1 free", ES: "Faltan {n} presets para ganar 1 gratis" },
+  promoTier0: { PT: "Adicione 3 presets e ganhe 1 de presente!", EN: "Add 3 presets and get 1 for free!", ES: "¡Añade 3 presets y llévate 1 de regalo!" },
+  promoTier1to2: { PT: "Falta pouco! Adicione mais {n} para levar 3 e pagar 2.", EN: "Almost there! Add {n} more to get 3 and pay for 2.", ES: "¡Falta poco! Añade {n} más para llevar 3 y pagar 2." },
+  promoTier3: { PT: "🎉 PARABÉNS! Você liberou o 3x2. Adicione mais 3 e PAGUE APENAS METADE (Leve 6, Pague 3)!", EN: "🎉 CONGRATS! You unlocked 3x2. Add 3 more and PAY HALF PRICE (Buy 6, Pay 3)!", ES: "🎉 ¡FELICIDADES! Has desbloqueado el 3x2. ¡Añade 3 más y PAGA SOLO LA MITAD (Lleva 6, Paga 3)!" },
+  promoTier4to5: { PT: "Faltam só {n} itens para você desbloquear o DESCONTO MÁXIMO (50%)!", EN: "Only {n} more items to unlock the MAXIMUM DISCOUNT (50%)!", ES: "¡Solo faltan {n} ítems para desbloquear el DESCUENTO MÁXIMO (50%)!" },
+  promoTier6Plus: { PT: "🔥 NÍVEL MÁXIMO! Você está levando 6 presets pelo preço de 3. Aproveite!", EN: "🔥 MAXIMUM LEVEL! You are getting 6 presets for the price of 3. Enjoy!", ES: "🔥 ¡NIVEL MÁXIMO! Te llevas 6 presets por el precio de 3. ¡Aprovecha!" },
   
   // Checkout
   chkSummary: { PT: "Resumo do pedido", EN: "Order Summary", ES: "Resumen del pedido" },

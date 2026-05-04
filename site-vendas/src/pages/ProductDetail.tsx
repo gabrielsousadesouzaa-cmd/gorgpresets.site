@@ -8,7 +8,7 @@ import {
   Sparkles, 
   CheckCircle2, 
   Lock,
-  ShoppingBag,
+  ShoppingCart,
   Zap,
   Minus,
   ArrowRight,
@@ -253,7 +253,7 @@ export default function ProductDetail() {
                   </button>
                   {settings.integration.isCartEnabled && (
                     <button onClick={(e) => handleAddToCart(e)} className="w-full h-14 bg-white text-gray-950 border-2 border-gray-950 rounded-2xl text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all">
-                      <ShoppingBag size={18} /> {t("addToCart")}
+                      <ShoppingCart size={18} /> {t("addToCart")}
                     </button>
                   )}
                 </div>
@@ -420,7 +420,7 @@ export default function ProductDetail() {
                   </button>
                   {settings.integration.isCartEnabled && (
                     <button onClick={(e) => handleAddToCart(e)} className="w-full h-16 bg-white text-gray-950 border-2 border-gray-950 rounded-2xl text-[0.95rem] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-50 active:scale-95 transition-all">
-                      <ShoppingBag size={20} /> {t("addToCart")}
+                      <ShoppingCart size={20} /> {t("addToCart")}
                     </button>
                   )}
                 </div>

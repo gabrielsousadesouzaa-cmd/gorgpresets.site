@@ -65,7 +65,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const getPromoDiscount = () => {
     if (!settings?.integration?.isBuy3Get1FreeEnabled) return 0;
-    const numFree = Math.floor(rawItems.length / 3);
+    
+    let numFree = 0;
+    if (rawItems.length >= 6) {
+      numFree = 3;
+    } else if (rawItems.length >= 3) {
+      numFree = 1;
+    }
+    
     if (numFree === 0) return 0;
     
     // Pegamos os X itens mais baratos
@@ -84,7 +91,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return rawItems.map((p) => ({ product: p, isFree: false }));
     }
 
-    const numFree = Math.floor(rawItems.length / 3);
+    let numFree = 0;
+    if (rawItems.length >= 6) {
+      numFree = 3;
+    } else if (rawItems.length >= 3) {
+      numFree = 1;
+    }
+
     const sorted = [...rawItems].sort((a, b) => a.price - b.price);
     const freeIds = sorted.slice(0, numFree).map(p => p.id);
 

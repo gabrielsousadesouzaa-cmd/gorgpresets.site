@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { 
-  Plus, Trash2, Edit3, X, Save, Lock, LayoutDashboard, ShoppingBag, LogOut, 
+  Plus, Trash2, Edit3, X, Save, Lock, LayoutDashboard, ShoppingCart, LogOut, 
   AlertCircle, Image as ImageIcon, Star, Users, GripVertical, LayoutList, 
   ChevronRight, ChevronDown, Menu, Check, Package, Bell, Zap,
   Upload, Sparkles, RefreshCw, Eye, EyeOff, Globe, TrendingUp, BarChart3, CreditCard
@@ -922,14 +922,14 @@ export default function Admin() {
                   <div className="flex flex-col py-2 px-4 max-h-[50vh] overflow-y-auto w-[92%] mx-auto bg-white mb-6 rounded-2xl shadow-inner border border-black/5 pb-2 mt-4">
                     {[
                       { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                      { key: 'products', label: 'Catálogo', icon: ShoppingBag },
+                      { key: 'products', label: 'Catálogo', icon: ShoppingCart },
                       { key: 'magic', label: 'A Mágica', icon: Sparkles },
                       { key: 'hero', label: 'Hero Home', icon: ImageIcon },
                       { key: 'banner', label: 'Ofertas', icon: ImageIcon },
                       { key: 'testimonials', label: 'Elite Feedbacks', icon: Users },
                       { key: 'shopTheLook', label: 'Mosaico', icon: ImageIcon },
                       { key: 'order', label: 'Curadoria', icon: LayoutList },
-                      { key: 'integration', label: 'Carrinho', icon: ShoppingBag },
+                      { key: 'integration', label: 'Carrinho', icon: ShoppingCart },
                       { key: 'promoBar', label: 'Alertas', icon: Bell },
                       { key: 'analytics', label: 'Acessos', icon: Globe },
                     ].map(({ key, label, icon: Icon }) => (
@@ -952,14 +952,14 @@ export default function Admin() {
             <div className="hidden md:flex gap-1 overflow-x-auto no-scrollbar scroll-smooth py-1">
               {[
                 { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                { key: 'products', label: 'Catálogo', icon: ShoppingBag },
+                { key: 'products', label: 'Catálogo', icon: ShoppingCart },
                 { key: 'magic', label: 'A Mágica', icon: Sparkles },
                 { key: 'hero', label: 'Hero Home', icon: ImageIcon },
                 { key: 'banner', label: 'Ofertas', icon: ImageIcon },
                 { key: 'testimonials', label: 'Elite Feedbacks', icon: Users },
                 { key: 'shopTheLook', label: 'Mosaico', icon: ImageIcon },
                 { key: 'order', label: 'Curadoria', icon: LayoutList },
-                { key: 'integration', label: 'Carrinho', icon: ShoppingBag },
+                { key: 'integration', label: 'Carrinho', icon: ShoppingCart },
                 { key: 'promoBar', label: 'Alertas', icon: Bell },
                 { key: 'analytics', label: 'Acessos', icon: Globe },
               ].map(({ key, label, icon: Icon }) => (
@@ -1046,12 +1046,12 @@ export default function Admin() {
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Intenção de Compra</p>
                     <div className="flex items-baseline gap-2">
                       <h3 className="text-5xl font-black text-gray-950 tracking-tighter">{stats.intents}</h3>
-                      <ShoppingBag size={20} className="text-[#d82828]" />
+                      <ShoppingCart size={20} className="text-[#d82828]" />
                     </div>
                     <p className="text-[9px] font-bold text-[#d82828] mt-4 uppercase tracking-widest">Cliques no Botão Checkout</p>
                   </div>
                   <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                    <ShoppingBag size={160} />
+                    <ShoppingCart size={160} />
                   </div>
                </div>
 
@@ -1094,12 +1094,12 @@ export default function Admin() {
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Checkout Carrinho</p>
                     <div className="flex items-baseline gap-2">
                       <h3 className="text-4xl font-black text-gray-950 tracking-tighter">{stats.cartIntents}</h3>
-                      <ShoppingBag size={18} className="text-indigo-500" />
+                      <ShoppingCart size={18} className="text-indigo-500" />
                     </div>
                     <p className="text-[9px] font-bold text-indigo-500 mt-4 uppercase tracking-widest">Botão "Finalizar Compra"</p>
                   </div>
                   <div className="absolute -right-4 -bottom-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
-                    <ShoppingBag size={120} />
+                    <ShoppingCart size={120} />
                   </div>
                </div>
             </div>
@@ -1349,7 +1349,7 @@ export default function Admin() {
                ) : (
                  <div className="py-24 md:py-32 text-center flex flex-col items-center justify-center">
                      <div className="w-24 h-24 md:w-32 md:h-32 bg-gray-50 rounded-[3rem] flex items-center justify-center text-gray-200 mb-8 shadow-inner">
-                       <ShoppingBag size={48} className="md:w-16 md:h-16" />
+                       <ShoppingCart size={48} className="md:w-16 md:h-16" />
                      </div>
                      <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">Nenhum pack no catálogo</p>
                      <Button onClick={openAddModal} variant="ghost" className="mt-6 text-[#d82828] font-black uppercase text-[10px] tracking-widest hover:bg-red-50 px-8 h-12 rounded-full border border-transparent hover:border-[#d82828]/10 transition-all">Começar Coleção</Button>
@@ -1788,7 +1788,7 @@ export default function Admin() {
                 {/* Header */}
                     <div className="flex items-center gap-6">
                        <motion.div whileHover={{ scale: 1.1, rotate: 12 }} className="w-16 h-16 bg-black rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-black/10">
-                          <ShoppingBag size={28} className="text-[#d82828]" />
+                          <ShoppingCart size={28} className="text-[#d82828]" />
                        </motion.div>
                        <div>
                           <h2 className="text-2xl md:text-4xl font-black uppercase tracking-[-0.04em] italic leading-none">Gestão do <span className="text-[#d82828]">Carrinho</span></h2>
@@ -1829,7 +1829,7 @@ export default function Admin() {
                    <div className="relative bg-white/40 backdrop-blur-sm p-8 md:p-12 rounded-[2.5rem] md:rounded-[3rem] border border-black/[0.03] flex items-center justify-between hover:border-emerald-500/10 transition-all shadow-sm">
                      <div className="flex items-center gap-6 md:gap-8">
                        <div className={"w-16 h-16 md:w-20 md:h-20 rounded-3xl md:rounded-[2rem] flex items-center justify-center transition-all duration-500 " + (siteSettings.integration.isCartEnabled ? 'bg-emerald-50 text-emerald-500 shadow-lg shadow-emerald-500/10 scale-110' : 'bg-gray-100 text-gray-300')}>
-                          <ShoppingBag size={32} strokeWidth={2.5} />
+                          <ShoppingCart size={32} strokeWidth={2.5} />
                        </div>
                        <div>
                          <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-gray-950">Carrinho da Loja</h3>
@@ -1995,14 +1995,97 @@ export default function Admin() {
 
         {/* PROMO BAR TAB */}
         {activeTab === 'promoBar' && (
-          <div className="max-w-3xl mx-auto bg-white rounded-[2.5rem] border border-black/5 shadow-xl p-10 space-y-10">
-            <div className="flex items-center gap-4 border-b pb-6"><Bell className="text-[#d82828]" /><h2 className="text-2xl font-black uppercase tracking-tighter">Aviso no Cabeçalho</h2></div>
-            <div className="grid gap-6">
-               <div className="space-y-2"><p className="text-[10px] font-black uppercase text-gray-400">Mensagem (Português)</p><input value={siteSettings.promoBar.PT} onChange={(e) => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, PT: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all" /></div>
-               <div className="space-y-2"><p className="text-[10px] font-black uppercase text-gray-400">Mensagem (Inglês)</p><input value={siteSettings.promoBar.EN} onChange={(e) => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, EN: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all" /></div>
-               <div className="space-y-2"><p className="text-[10px] font-black uppercase text-gray-400">Mensagem (Espanhol)</p><input value={siteSettings.promoBar.ES} onChange={(e) => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, ES: e.target.value } }))} className="w-full h-14 bg-gray-50 rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all" /></div>
+          <div className="max-w-4xl mx-auto space-y-12">
+            <div className="bg-white rounded-[3.5rem] border border-black/5 shadow-2xl p-12 space-y-10">
+              <div className="flex items-center justify-between border-b pb-8">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 bg-red-50 text-[#d82828] rounded-2xl flex items-center justify-center shadow-lg"><Bell size={32} /></div>
+                  <div>
+                    <h2 className="text-3xl font-black uppercase tracking-tighter italic">Alertas no Topo</h2>
+                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest leading-none">Gerencie os anúncios deslizantes do site</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, messages: [...(prev.promoBar.messages || []), { PT: '', EN: '', ES: '' }] } }))}
+                  className="h-14 px-8 bg-black text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-[#d82828] transition-all flex items-center gap-3 shadow-xl"
+                >
+                  <Plus size={18} /> ADICIONAR NOVO AVISO
+                </Button>
+              </div>
+
+              <div className="space-y-6">
+                {(siteSettings.promoBar.messages || []).map((msg, idx) => (
+                  <div key={idx} className="bg-gray-50/50 p-8 rounded-[2.5rem] border border-black/5 space-y-6 relative group">
+                    <button 
+                      onClick={() => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, messages: (prev.promoBar.messages || []).filter((_, i) => i !== idx) } }))}
+                      className="absolute top-8 right-8 p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                    
+                    <div className="flex items-center gap-3 mb-2">
+                       <span className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-black">{idx + 1}</span>
+                       <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 italic">Configuração do Aviso</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Mensagem (Português)</p>
+                        <input 
+                          value={msg.PT} 
+                          onChange={(e) => {
+                            const newMsgs = [...(siteSettings.promoBar.messages || [])];
+                            newMsgs[idx].PT = e.target.value;
+                            setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, messages: newMsgs } }));
+                          }} 
+                          className="w-full h-14 bg-white rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all shadow-sm" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Mensagem (Inglês)</p>
+                        <input 
+                          value={msg.EN} 
+                          onChange={(e) => {
+                            const newMsgs = [...(siteSettings.promoBar.messages || [])];
+                            newMsgs[idx].EN = e.target.value;
+                            setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, messages: newMsgs } }));
+                          }} 
+                          className="w-full h-14 bg-white rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all shadow-sm" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Mensagem (Espanhol)</p>
+                        <input 
+                          value={msg.ES} 
+                          onChange={(e) => {
+                            const newMsgs = [...(siteSettings.promoBar.messages || [])];
+                            newMsgs[idx].ES = e.target.value;
+                            setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, messages: newMsgs } }));
+                          }} 
+                          className="w-full h-14 bg-white rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all shadow-sm" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {(siteSettings.promoBar.messages || []).length === 0 && (
+                  <div className="py-20 text-center border-2 border-dashed border-gray-200 rounded-[3rem] bg-gray-50/30">
+                    <p className="text-gray-300 font-black uppercase text-xs tracking-widest italic">Nenhum aviso configurado</p>
+                    <p className="text-gray-200 text-[10px] font-bold mt-2 uppercase tracking-widest">Clique no botão acima para adicionar seu primeiro anúncio</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-8 border-t border-black/5">
+                <Button 
+                  onClick={() => handleSaveSettings('promoBar')} 
+                  className="w-full h-20 bg-black text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 hover:bg-[#d82828] flex items-center justify-center gap-4 text-sm"
+                >
+                  <Save size={24} /> SALVAR TODOS OS AVISOS
+                </Button>
+              </div>
             </div>
-            <Button onClick={() => handleSaveSettings('promoBar')} className="w-full h-16 bg-black text-white rounded-2xl font-black uppercase shadow-xl transition-all active:scale-95 hover:bg-[#d82828] flex items-center justify-center gap-3"><Save size={20} /> SALVAR AVISOS MULTI-IDIOMA</Button>
           </div>
         )}
         {/* ANALYTICS TAB */}

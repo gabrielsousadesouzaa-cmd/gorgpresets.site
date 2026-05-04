@@ -13,9 +13,11 @@ export interface BannerSettings {
 }
 
 export interface PromoBarSettings {
-  PT: string;
-  EN: string;
-  ES: string;
+  messages: Array<{
+    PT: string;
+    EN: string;
+    ES: string;
+  }>;
 }
 
 export interface MagicSettings {
@@ -100,9 +102,13 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     { id: "6", src: "https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=500&q=80", presetName: "MOODY", productId: "6" },
   ],
   promoBar: {
-    PT: "LEVE 3, PAGUE 2: ADICIONE 3 PRESETS E GANHE 1.",
-    EN: "BUY 2, GET 1 FREE: ADD 3 PRESETS AND GET 1.",
-    ES: "LLEVA 3, PAGA 2: AÑADE 3 PRESETS Y LLEVATE 1."
+    messages: [
+      {
+        PT: "LEVE 3, PAGUE 2: ADICIONE 3 PRESETS E GANHE 1.",
+        EN: "BUY 2, GET 1 FREE: ADD 3 PRESETS AND GET 1.",
+        ES: "LLEVA 3, PAGA 2: AÑADE 3 PRESETS Y LLEVATE 1."
+      }
+    ]
   },
   magic: {
     beforeUrl: "", 
@@ -143,7 +149,14 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
             }
             if (row.key === "integration" && row.value) merged.integration = { ...merged.integration, ...row.value };
             if (row.key === "shopTheLook" && row.value) merged.shopTheLook = row.value;
-            if (row.key === "promoBar" && row.value) merged.promoBar = { ...merged.promoBar, ...row.value };
+            if (row.key === "promoBar" && row.value) {
+              if (row.value.messages) {
+                merged.promoBar = row.value;
+              } else {
+                // Migration: wrap old single message in messages array
+                merged.promoBar = { messages: [row.value] };
+              }
+            }
           }
         }
 

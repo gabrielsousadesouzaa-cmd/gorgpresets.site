@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Instagram, ShoppingBag } from "lucide-react";
+import { Instagram, ShoppingCart } from "lucide-react";
 import { useLanguage } from "@/store/languageStore";
 
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -58,7 +58,7 @@ export function ShopTheLook() {
                 
                 {/* Ícone fixo no canto para Mobile (Bem simples) */}
                 <div className="absolute top-2 right-2 md:hidden bg-white/90 p-1.5 rounded-full shadow-sm text-black">
-                   <ShoppingBag size={12} strokeWidth={2.5} />
+                   <ShoppingCart size={12} strokeWidth={2.5} />
                 </div>
 
                 {/* Overlay de Vidro (Glass) que aparece SÓ no Hover do Computador */}
@@ -71,7 +71,7 @@ export function ShopTheLook() {
                   >
                     <Instagram className="text-white/80 mb-3" size={28} strokeWidth={1.5} />
                     <span className="bg-white text-black text-[11px] font-bold uppercase tracking-[0.2em] px-4 py-2.5 rounded-full shadow-2xl flex items-center justify-center gap-2 transform transition-transform active:scale-95">
-                       <ShoppingBag size={14} strokeWidth={2.5} /> 
+                       <ShoppingCart size={14} strokeWidth={2.5} /> 
                        Eu Quero
                     </span>
                   </motion.div>

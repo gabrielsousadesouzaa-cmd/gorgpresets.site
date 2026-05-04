@@ -6,8 +6,9 @@ import { useCurrency } from "@/store/currencyStore";
 import { useMenu } from "@/store/MenuContext";
 import { useProducts } from "@/hooks/useProducts";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { ShoppingBag, Search, Menu, X, Instagram, ChevronDown, ChevronRight, UserCheck, ArrowRight, Sparkles } from "lucide-react";
+import { ShoppingCart, Search, Menu, X, Instagram, ChevronDown, ChevronRight, UserCheck, ArrowRight, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AnnouncementBar } from "./AnnouncementBar";
 
 export function Header() {
   const navigate = useNavigate();
@@ -79,12 +80,7 @@ export function Header() {
 
   return (
     <div className="flex flex-col w-full relative z-[2500]">
-      {/* Red Announcement Bar (Static & Centered) */}
-      <div className="w-full bg-[#d82828] text-white py-2.5 relative border-b border-white/10 flex justify-center items-center">
-        <span className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.2em] text-center px-4">
-          {loading ? "..." : (settings.promoBar[language] || t("promoBar"))}
-        </span>
-      </div>
+      <AnnouncementBar />
 
       <header className="bg-white/40 backdrop-blur-2xl w-full border-b border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.03)]">
         <div className="container mx-auto px-4 md:px-8 py-3 md:py-4">
@@ -118,19 +114,31 @@ export function Header() {
                   <Search size={22} />
                 </button>
                 {settings.integration.isCartEnabled && (
-                  <button 
+                  <motion.button 
                     id="main-cart-button"
                     onClick={openCart}
+                    animate={items.length > 0 ? {
+                      scale: [1, 1.2, 1],
+                      rotate: [0, 10, -10, 0]
+                    } : {}}
+                    key={`cart-btn-${items.length}`} // Re-run animation when count changes
                     className="relative p-1 group"
                     aria-label="Cart"
                   >
-                    <ShoppingBag size={24} className="group-hover:text-[#d82828] transition-colors" />
-                    {items.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-[#d82828] text-white text-[9px] font-semibold w-4 h-4 rounded-full flex items-center justify-center">
-                        {items.length}
-                      </span>
-                    )}
-                  </button>
+                    <ShoppingCart size={22} className="group-hover:text-[#d82828] transition-colors" />
+                    <AnimatePresence>
+                      {items.length > 0 && (
+                        <motion.span 
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          className="absolute -top-1 -right-1 bg-[#d82828] text-white text-[9px] font-semibold w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-red-500/30"
+                        >
+                          {items.length}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
                 )}
             </div>
 

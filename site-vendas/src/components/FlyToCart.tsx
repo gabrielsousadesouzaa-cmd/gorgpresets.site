@@ -2,13 +2,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useCallback, createContext, useContext, useRef } from "react";
 import { Check } from "lucide-react";
 
-interface ParticleInstance {
-  id: number;
-  startX: number;
-  startY: number;
-  image: string;
-}
-
 interface ToastState {
   visible: boolean;
   image: string;
@@ -21,28 +14,21 @@ interface FlyToCartContextType {
 const FlyToCartContext = createContext<FlyToCartContextType | null>(null);
 
 export function FlyToCartProvider({ children }: { children: React.ReactNode }) {
-  const [particles, setParticles] = useState<ParticleInstance[]>([]);
   const [toast, setToast] = useState<ToastState>({ visible: false, image: "" });
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const triggerAnimation = useCallback(
-    (e: React.MouseEvent | { x: number; y: number }, image: string) => {
-      const startX = "clientX" in e ? e.clientX : e.x;
-      const startY = "clientY" in e ? e.clientY : e.y;
-
-      // ── Flying particle ──
-      const id = Date.now();
-      setParticles((prev) => [...prev, { id, startX, startY, image }]);
-      setTimeout(() => {
-        setParticles((prev) => prev.filter((p) => p.id !== id));
-      }, 1200);
-
-      // ── Toast (single global, reset timer on repeat clicks) ──
+    (_e: React.MouseEvent | { x: number; y: number }, image: string) => {
+      // ── Toast ──
       setToast({ visible: true, image });
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       toastTimerRef.current = setTimeout(() => {
         setToast((prev) => ({ ...prev, visible: false }));
-      }, 3000);
+      }, 3500);
+
+      // Trigger pulse on cart button immediately since there's no flight
+      const event = new CustomEvent('cart-pulse');
+      window.dispatchEvent(event);
     },
     []
   );
@@ -56,58 +42,52 @@ export function FlyToCartProvider({ children }: { children: React.ReactNode }) {
         {toast.visible && (
           <motion.div
             key="cart-toast"
-            initial={{ opacity: 0, x: 40, scale: 0.93 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 40, scale: 0.93 }}
-            transition={{ type: "spring", stiffness: 340, damping: 26 }}
+            initial={{ opacity: 0, y: -20, scale: 0.9, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -20, scale: 0.9, filter: "blur(10px)" }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className="
               fixed z-[9999] pointer-events-none
-              top-20 right-3
-              md:top-20 md:right-6
-              flex items-center gap-3 bg-white rounded-2xl
-              shadow-[0_8px_50px_rgba(0,0,0,0.16)] border border-black/[0.06]
-              px-4 py-3.5 w-[270px] md:w-[310px]
+              top-[6.5rem] right-4 md:top-32 md:right-8
+              flex items-center gap-4 bg-white/95 backdrop-blur-xl rounded-[2rem]
+              shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-black/[0.04]
+              px-5 py-4 w-auto max-w-[calc(100vw-2rem)] md:w-[340px]
             "
           >
-            {/* Thumbnail */}
-            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-black/5 shadow-sm">
-              <img src={toast.image} className="w-full h-full object-cover" alt="" />
-            </div>
+            {/* Shimmer Effect */}
+            <motion.div 
+              animate={{ x: ["-100%", "200%"] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent skew-x-12"
+            />
 
-            {/* Text */}
-            <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[#d82828] leading-none mb-1">
-                ✓ Adicionado
-              </span>
-              <span className="text-[12px] font-black text-gray-950 uppercase tracking-tight leading-tight">
-                Produto no carrinho!
-              </span>
-              <span className="text-[9px] font-semibold text-gray-400 mt-0.5 leading-none">
-                Toque no 🛒 para finalizar
-              </span>
-            </div>
+            <div className="relative z-10 flex items-center gap-4 w-full">
+               <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-black/5 shadow-md">
+                 <img src={toast.image} className="w-full h-full object-cover" alt="" />
+               </div>
 
-            {/* Check bubble */}
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.1 }}
-              className="w-9 h-9 rounded-full bg-black flex items-center justify-center shrink-0 shadow-lg"
-            >
-              <Check size={15} className="text-white" strokeWidth={3} />
-            </motion.div>
+               <div className="flex flex-col flex-1 min-w-0">
+                 <div className="flex items-center gap-1.5 mb-1">
+                   <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                   <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 italic">
+                     Sucesso
+                   </span>
+                 </div>
+                 <h3 className="text-sm font-black text-black uppercase tracking-tight leading-none italic">
+                   Preset Adicionado!
+                 </h3>
+                 <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">
+                   Confira seu carrinho
+                 </p>
+               </div>
+
+               <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shadow-lg">
+                 <Check size={18} strokeWidth={3} />
+               </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* ── FLYING PARTICLES ── */}
-      <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
-        <AnimatePresence>
-          {particles.map((p) => (
-            <FlyParticle key={p.id} particle={p} />
-          ))}
-        </AnimatePresence>
-      </div>
     </FlyToCartContext.Provider>
   );
 }
@@ -117,36 +97,3 @@ export const useFlyToCart = () => {
   if (!context) throw new Error("useFlyToCart must be used within FlyToCartProvider");
   return context;
 };
-
-function FlyParticle({ particle }: { particle: ParticleInstance }) {
-  const cartBtn = document.getElementById("main-cart-button");
-  const rect = cartBtn?.getBoundingClientRect();
-
-  const targetX = rect ? rect.left + rect.width / 2 - 20 : window.innerWidth - 70;
-  const targetY = rect ? rect.top + rect.height / 2 - 20 : 30;
-
-  const midX = (particle.startX + targetX) / 2 - 20;
-  const midY = Math.min(particle.startY, targetY) - 140;
-
-  return (
-    <motion.div
-      initial={{ x: particle.startX - 20, y: particle.startY - 20, scale: 1, opacity: 0.9 }}
-      animate={{
-        x: [particle.startX - 20, midX, targetX],
-        y: [particle.startY - 20, midY, targetY],
-        scale: [1, 1.05, 0.15],
-        opacity: [1, 1, 0],
-      }}
-      transition={{
-        duration: 0.85,
-        ease: [0.25, 0.46, 0.45, 0.94],
-        times: [0, 0.5, 1],
-      }}
-      className="fixed w-10 h-10 rounded-full overflow-hidden border-2 border-[#d82828]
-                 shadow-[0_0_16px_rgba(216,40,40,0.5)] bg-white z-[9998]"
-      style={{ position: "fixed" }}
-    >
-      <img src={particle.image} className="w-full h-full object-cover" alt="" />
-    </motion.div>
-  );
-}

@@ -5,7 +5,7 @@ import { useCurrency } from "@/store/currencyStore";
 import { useLanguage } from "@/store/languageStore";
 import { useProducts } from "@/hooks/useProducts";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { Trash2, X, ShoppingBag, Plus, ShieldCheck, Zap } from "lucide-react";
+import { Trash2, X, ShoppingCart, Plus, ShieldCheck, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trackCheckoutClick } from "@/components/SiteTracker";
 
@@ -36,7 +36,6 @@ export function CartDrawer() {
     // 2. Coletar IDs de todos os produtos no carrinho (Usando APENAS o campo ID NA GGCHECKOUT)
     const ggProductIds = items
       .map(item => {
-        // Puxamos estritamente o ID que você preencheu no novo campo do Admin
         if (item.product.ggCheckoutId && item.product.ggCheckoutId.trim() !== "") {
           return item.product.ggCheckoutId.trim();
         }
@@ -54,13 +53,49 @@ export function CartDrawer() {
     const cartParam = ggProductIds.join(';');
     let finalUrl = `${baseUrl}${separator}cart=${cartParam}`;
 
-    if (items.length >= 3) {
+    // Lógica de Cupom Progressivo
+    if (items.length >= 6) {
+      finalUrl += `&coupon=LEVE6PAGUE3`;
+    } else if (items.length >= 3) {
       finalUrl += `&coupon=LEVE3PAGUE2`;
     }
 
     // 4. Redirecionar
     window.location.href = finalUrl;
   };
+
+  // Lógica da Barra de Progresso Progressiva
+  const itemCount = items.length;
+  const getPromoInfo = () => {
+    if (itemCount === 0) return {
+      msg: t("promoTier0"),
+      progress: 0,
+      color: "bg-[#d82828]"
+    };
+    if (itemCount < 3) return {
+      msg: t("promoTier1to2").replace("{n}", String(3 - itemCount)),
+      progress: (itemCount / 6) * 100,
+      color: "bg-[#d82828]"
+    };
+    if (itemCount === 3) return {
+      msg: t("promoTier3"),
+      progress: (3 / 6) * 100,
+      color: "bg-[#d82828]"
+    };
+    if (itemCount < 6) return {
+      msg: t("promoTier4to5").replace("{n}", String(6 - itemCount)),
+      progress: (itemCount / 6) * 100,
+      color: "bg-gradient-to-r from-orange-500 to-yellow-500"
+    };
+    return {
+      msg: t("promoTier6Plus"),
+      progress: 100,
+      color: "bg-gradient-to-r from-orange-500 to-yellow-500",
+      isMax: true
+    };
+  };
+
+  const promo = getPromoInfo();
 
   const upsellProduct = products.find(p => !items.some(item => item.product.id === p.id));
 
@@ -116,7 +151,7 @@ export function CartDrawer() {
             <div className="px-4 py-4 md:px-8 md:py-8 flex items-center justify-between border-b border-black/[0.03] bg-white/50 backdrop-blur-md sticky top-0 z-20">
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5 md:gap-2 mb-0">
-                   <ShoppingBag size={14} className="text-[#d82828] md:w-4 md:h-4" strokeWidth={2.5} />
+                   <ShoppingCart size={14} className="text-[#d82828] md:w-4 md:h-4" strokeWidth={2.5} />
                    <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 italic">{t("cartTitle").includes(' ') ? t("cartTitle").split(' ')[1] : t("cartTitle")}</span>
                 </div>
                 <h2 className="text-lg md:text-2xl font-black text-black uppercase tracking-tighter leading-none italic">
@@ -134,39 +169,33 @@ export function CartDrawer() {
 
             {/* Promo Progress Banner */}
             {settings.integration.isBuy3Get1FreeEnabled && (
-              <div className={`mx-4 md:mx-8 mb-0 px-4 py-3 md:py-4 rounded-2xl md:rounded-3xl overflow-hidden relative transition-all duration-500 ${items.length >= 3 ? 'bg-[#d82828]' : 'bg-gray-50 border border-black/[0.04]'}`}>
-                {items.length >= 3 ? (
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xl md:text-2xl">🎁</span>
-                    <div>
-                      <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white/80">Promoção Ativa!</p>
-                      <p className="text-[11px] md:text-sm font-black text-white uppercase tracking-tight leading-none">O preset mais barato é <span className="underline underline-offset-2">GRÁTIS</span></p>
+              <div className={`mx-4 md:mx-8 mb-0 px-4 py-4 rounded-2xl md:rounded-3xl overflow-hidden relative transition-all duration-500 ${itemCount >= 6 ? 'bg-black text-white' : 'bg-gray-50 border border-black/[0.04]'}`}>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{itemCount >= 6 ? '🔥' : itemCount >= 3 ? '🎉' : '🎁'}</span>
+                      <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-tight leading-tight ${itemCount >= 6 ? 'text-white' : 'text-gray-600'}`}>
+                        {promo.msg}
+                      </p>
                     </div>
-                    <div className="ml-auto flex gap-1">
-                      {[0,1,2].map(i => (
-                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" style={{ animationDelay: `${i * 150}ms` }} />
-                      ))}
-                    </div>
+                    <span className={`text-[8px] font-black uppercase shrink-0 ${itemCount >= 6 ? 'text-white/40' : 'text-gray-300'}`}>{itemCount}/6</span>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">🎁</span>
-                        <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-500">
-                          Faltam <span className="text-[#d82828]">{3 - items.length}</span> {3 - items.length === 1 ? 'preset' : 'presets'} para ganhar 1 grátis
-                        </p>
-                      </div>
-                      <span className="text-[8px] font-black text-gray-300 uppercase">{items.length}/3</span>
-                    </div>
-                    <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#d82828] rounded-full transition-all duration-700 ease-out"
-                        style={{ width: `${(items.length / 3) * 100}%` }}
-                      />
-                    </div>
+                  
+                  <div className="w-full h-1.5 bg-black/5 rounded-full overflow-hidden relative">
+                    {/* Checkpoint 3 Itens (50%) */}
+                    <div className="absolute left-1/2 top-0 w-0.5 h-full bg-white/50 z-10 -ml-[0.25px]" />
+                    {/* Checkpoint 6 Itens (100%) */}
+                    <div className="absolute right-0 top-0 w-0.5 h-full bg-white/50 z-10" />
+                    
+                    <div
+                      className={`h-full transition-all duration-1000 ease-out ${promo.color} ${promo.isMax ? 'animate-pulse' : ''}`}
+                      style={{ 
+                        width: `${promo.progress}%`,
+                        boxShadow: promo.isMax ? '0 0 15px rgba(255, 165, 0, 0.6)' : 'none'
+                      }}
+                    />
                   </div>
-                )}
+                </div>
               </div>
             )}
 
@@ -177,7 +206,7 @@ export function CartDrawer() {
               {items.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center py-10 md:py-20 px-6 text-center space-y-4 md:space-y-6">
                   <div className="w-12 h-12 md:w-20 md:h-20 bg-gray-50 rounded-full flex items-center justify-center shadow-inner border border-black/5">
-                     <ShoppingBag size={20} className="text-gray-200 md:w-8 md:h-8" strokeWidth={1} />
+                     <ShoppingCart size={20} className="text-gray-200 md:w-8 md:h-8" strokeWidth={1} />
                   </div>
                   <div className="space-y-1.5">
                     <p className="text-gray-950 font-black uppercase tracking-[0.2em] text-[10px] md:text-xs italic">
