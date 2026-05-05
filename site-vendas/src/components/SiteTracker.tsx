@@ -2,40 +2,82 @@ import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useLocation } from 'react-router-dom';
 
+// ─── Sistema de geolocalização com 3 APIs em cascata ──────────────────────────
+async function getGeoData(): Promise<{ ip: string; city: string }> {
+  const fallback = { ip: 'Desconhecido', city: 'Desconhecida' };
+
+  // API 1: ip-api.com — sem chave, 45 req/min grátis, muito confiável
+  try {
+    const res = await fetch('http://ip-api.com/json/?fields=status,city,regionName,country,query', {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.status === 'success' && d.city) {
+        return {
+          ip: d.query || fallback.ip,
+          city: [d.city, d.regionName, d.country].filter(Boolean).join(', '),
+        };
+      }
+    }
+  } catch { /* silently try next */ }
+
+  // API 2: ipapi.co — 1000 req/dia grátis
+  try {
+    const res = await fetch('https://ipapi.co/json/', {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.city) {
+        return {
+          ip: d.ip || fallback.ip,
+          city: [d.city, d.region, d.country_name].filter(Boolean).join(', '),
+        };
+      }
+    }
+  } catch { /* silently try next */ }
+
+  // API 3: freeipapi.com — 60 req/min grátis
+  try {
+    const res = await fetch('https://freeipapi.com/api/json', {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.cityName) {
+        return {
+          ip: d.ipAddress || fallback.ip,
+          city: [d.cityName, d.regionName, d.countryName].filter(Boolean).join(', '),
+        };
+      }
+    }
+  } catch { /* all failed */ }
+
+  return fallback;
+}
+
+// ─── Componente de rastreamento ───────────────────────────────────────────────
 export function SiteTracker() {
   const location = useLocation();
 
   useEffect(() => {
     const trackVisit = async () => {
-      // Create a unique session ID
+      // Ignorar a página de admin
+      if (location.pathname.startsWith('/admin')) return;
+
+      // Evita log duplo de páginas (apenas primeira entrada por sessão)
+      if (sessionStorage.getItem('visit_tracked_main')) return;
+
+      // Garante session ID único por aba
       let sessionId = sessionStorage.getItem('visit_session_id');
       if (!sessionId) {
         sessionId = Math.random().toString(36).substring(2, 15);
         sessionStorage.setItem('visit_session_id', sessionId);
       }
 
-      // Evita log duplo de páginas (apenas primeira entrada)
-      if (sessionStorage.getItem('visit_tracked_main')) return;
-      
-      // Ignorar a página de admin
-      if (location.pathname.startsWith('/admin')) return;
-
       try {
-        let ip = 'Desconhecido';
-        let city = 'Desconhecida';
-        
-        try {
-          // Usando API gratuita para IP (limitada mas funciona pra testes)
-          // Se falhar o ip continua 'Desconhecido' mas logamos o resto do acesso
-          const res = await fetch('https://ipapi.co/json/');
-          if (res.ok) {
-             const data = await res.json();
-             ip = data.ip || ip;
-             city = `${data.city || ''} ${data.region || ''} ${data.country_name || ''}`.trim() || city;
-          }
-        } catch (e) {
-          console.warn("Failed to get IP data");
-        }
+        const { ip, city } = await getGeoData();
 
         const userAgent = navigator.userAgent;
         let device = 'Computador';
@@ -50,48 +92,23 @@ export function SiteTracker() {
           device: device,
           path: location.pathname,
           user_agent: userAgent,
-          referrer: document.referrer || 'Direto'
+          referrer: document.referrer || 'Direto',
         }]);
 
         if (!error) {
           sessionStorage.setItem('visit_tracked_main', 'true');
         }
       } catch (err) {
-        console.warn("Erro ao registrar visita");
+        console.warn('Erro ao registrar visita');
       }
     };
 
-    // Atrasar levemente o tracking para não atrasar o carregamento da tela
-    const timer = setTimeout(trackVisit, 2000);
+    // Atrasa levemente o tracking para não bloquear o LCP da página
+    const timer = setTimeout(trackVisit, 2500);
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
   return null;
 }
 
-export const trackCheckoutClick = async (productName?: string, type: 'SOLO' | 'CART' = 'SOLO') => {
-  try {
-    let sessionId = sessionStorage.getItem('visit_session_id');
-    if (!sessionId) {
-      sessionId = Math.random().toString(36).substring(2, 15);
-      sessionStorage.setItem('visit_session_id', sessionId);
-    }
-
-    const userAgent = navigator.userAgent;
-    let device = 'Computador';
-    if (/mobile/i.test(userAgent)) device = 'Celular';
-    if (/tablet|ipad/i.test(userAgent)) device = 'Tablet';
-    if (/android/i.test(userAgent) && !/mobile/i.test(userAgent)) device = 'Tablet';
-
-     await supabase.from('site_visits').insert([{
-      session_id: sessionId,
-      ip: 'Checkout Click',
-      location: 'Intent',
-      device: device,
-      path: productName ? `${type}_CHECKOUT_CLICK:${productName}` : `${type}_CHECKOUT_CLICK`,
-      user_agent: userAgent
-    }]);
-  } catch (err) {
-    console.warn("Erro ao registrar click checkout", err);
-  }
-};
+// trackCheckoutClick foi movido para: @/components/trackCheckout

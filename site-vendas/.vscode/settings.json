@@ -1,0 +1,12 @@
+{
+  "liveServer.settings.port": 5173,
+  "liveServer.settings.CustomBrowser": "chrome",
+  "liveServer.settings.NoBrowser": false,
+  "liveServer.settings.host": "localhost",
+  "liveServer.settings.useLocalIp": false,
+  "liveServer.settings.proxy": {
+    "enable": true,
+    "baseUri": "/",
+    "proxyUri": "http://localhost:5173"
+  }
+}

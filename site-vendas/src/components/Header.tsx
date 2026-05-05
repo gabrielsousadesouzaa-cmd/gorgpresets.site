@@ -8,6 +8,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { ShoppingCart, Search, Menu, X, Instagram, ChevronDown, ChevronRight, UserCheck, ArrowRight, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import { AnnouncementBar } from "./AnnouncementBar";
 
 export function Header() {
@@ -63,6 +64,57 @@ export function Header() {
     // Fechamos manualmente para garantir, caso o usuário já esteja na mesma URL
     setIsSearchOpen(false);
     setNavQuery("");
+  };
+
+  const handleLanguageChange = (newLang: 'PT' | 'EN' | 'ES') => {
+    setLanguage(newLang);
+    
+    const messages = {
+      PT: {
+        title: "🌍 Atualizar Moeda?",
+        desc: "Deseja mudar a moeda para Real (BRL) para combinar com o idioma selecionado?",
+        btnYes: "Sim, Atualizar",
+        btnNo: "Não"
+      },
+      EN: {
+        title: "🌍 Update Currency?",
+        desc: "Would you like to change the currency to US Dollar (USD) to match the selected language?",
+        btnYes: "Yes, Update",
+        btnNo: "No"
+      },
+      ES: {
+        title: "🌍 ¿Actualizar Moneda?",
+        desc: "¿Desea cambiar la moneda a Euro (EUR) para coincidir con el idioma seleccionado?",
+        btnYes: "Sí, Actualizar",
+        btnNo: "No"
+      }
+    };
+    
+    let suggestedCurrency: 'BRL' | 'USD' | 'EUR' | null = null;
+    
+    if (newLang === 'EN') {
+      suggestedCurrency = 'USD';
+    } else if (newLang === 'ES') {
+      suggestedCurrency = 'EUR';
+    } else if (newLang === 'PT') {
+      suggestedCurrency = 'BRL';
+    }
+
+    if (suggestedCurrency) {
+      const msg = messages[newLang];
+      toast(msg.title, {
+        description: msg.desc,
+        action: {
+          label: msg.btnYes,
+          onClick: () => setCurrency(suggestedCurrency as any)
+        },
+        cancel: {
+          label: msg.btnNo,
+          onClick: () => {}
+        },
+        duration: 8000,
+      });
+    }
   };
 
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -378,7 +430,7 @@ export function Header() {
                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("languageLabel")}</p>
                        <select 
                          value={language}
-                         onChange={(e) => setLanguage(e.target.value as any)}
+                         onChange={(e) => handleLanguageChange(e.target.value as any)}
                          className="w-full bg-gray-50 border-2 border-transparent rounded-xl px-4 py-3 font-bold text-sm outline-none focus:border-[#d82828] transition-all appearance-none cursor-pointer"
                        >
                          <option value="PT">🇧🇷 PT</option>

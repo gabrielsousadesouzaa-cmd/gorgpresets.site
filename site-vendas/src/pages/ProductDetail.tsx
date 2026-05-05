@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { trackCheckoutClick } from "@/components/SiteTracker";
+import { trackCheckoutClick } from "@/components/trackCheckout";
 import { useParams, Link } from "react-router-dom";
 import { useProduct, useProducts } from "@/hooks/useProducts";
 import { 

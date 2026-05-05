@@ -7,7 +7,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Trash2, X, ShoppingCart, Plus, ShieldCheck, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { trackCheckoutClick } from "@/components/SiteTracker";
+import { trackCheckoutClick } from "@/components/trackCheckout";
 
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, getTotal, addItem, getPromoDiscount, getSavings } = useCart();

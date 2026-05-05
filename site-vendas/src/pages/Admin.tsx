@@ -82,6 +82,7 @@ export default function Admin() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [langTab, setLangTab] = useState<'PT' | 'EN' | 'ES'>('PT');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [hpValue, setHpValue] = useState("");
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
 
@@ -109,33 +110,56 @@ export default function Admin() {
     let soloCheckoutClicks = 0;
     let cartCheckoutClicks = 0;
     
-    const cityCounts: Record<string, number> = {};
+    const cityCounts: Record<string, { count: number; country: string }> = {};
     const productCounts: Record<string, number> = {};
     const sourceCounts: Record<string, number> = {};
-    
-    const knownCities = [
-      // Brasil - Capitais e Grandes Cidades
-      "São Paulo", "Rio de Janeiro", "Belo Horizonte", "Brasília", "Curitiba", "Porto Alegre", "Salvador", "Fortaleza", "Recife", "Goiânia", "Manaus", "Belém", "Vitória", "Florianópolis", "Cuiabá", "Campo Grande", "Maceió", "Natal", "João Pessoa", "Teresina", "Aracaju", "Porto Velho", "Boa Vista", "Macapá", "Rio Branco", "Palmas", "Campinas", "Santos", "Ribeirão Preto", "Uberlândia", "Sorocaba", "Joinville", "Caxias do Sul", "Londrina", "Maringá", "Juiz de Fora", "Niterói", "Santarém", "Anápolis",
-      // Portugal
-      "Lisboa", "Porto", "Coimbra", "Braga", "Faro", "Setúbal",
-      // Internacional
-      "Miami", "Orlando", "Nova York", "New York", "Londres", "London", "Paris", "Madri", "Madrid", "Barcelona", "Buenos Aires", "Santiago", "Bogotá", "Cidade do México", "Tokyo", "Dubai", "Luanda"
-    ];
+
+    // Mapa de flags por país (nome em PT/EN)
+    const countryFlags: Record<string, string> = {
+      'brazil': '🇧🇷', 'brasil': '🇧🇷',
+      'portugal': '🇵🇹',
+      'united states': '🇺🇸', 'estados unidos': '🇺🇸',
+      'argentina': '🇦🇷',
+      'chile': '🇨🇱',
+      'colombia': '🇨🇴', 'colômbia': '🇨🇴',
+      'spain': '🇪🇸', 'espanha': '🇪🇸',
+      'mexico': '🇲🇽', 'méxico': '🇲🇽',
+      'france': '🇫🇷', 'frança': '🇫🇷',
+      'united kingdom': '🇬🇧', 'reino unido': '🇬🇧',
+      'angola': '🇦🇴',
+      'japan': '🇯🇵', 'japão': '🇯🇵',
+      'germany': '🇩🇪', 'alemanha': '🇩🇪',
+      'italy': '🇮🇹', 'itália': '🇮🇹',
+      'canada': '🇨🇦',
+      'australia': '🇦🇺', 'austrália': '🇦🇺',
+      'netherlands': '🇳🇱', 'holanda': '🇳🇱',
+      'switzerland': '🇨🇭', 'suíça': '🇨🇭',
+      'uae': '🇦🇪', 'emirados': '🇦🇪',
+    };
 
     filteredVisits.forEach(v => {
-      // Contador de Cidades - Tenta encontrar cidade conhecida na string de localização
+      // Contador de Cidades — novo formato: "Cidade, Estado, País"
       if (v.location && v.location !== 'Intent') {
-        let detectedCity = v.location;
-        const lowerLoc = v.location.toLowerCase();
-        
-        for (const city of knownCities) {
-          if (lowerLoc.includes(city.toLowerCase())) {
-            detectedCity = city;
-            break;
-          }
+        const rawLoc = v.location.trim();
+        // Ignora entradas sem dado real
+        if (
+          rawLoc === 'Desconhecida' ||
+          rawLoc === 'Desconhecido' ||
+          rawLoc === '' ||
+          rawLoc.toLowerCase().startsWith('desconhec')
+        ) {
+          // skip
+        } else {
+          // Extrai cidade (primeira parte) e país (última parte)
+          const parts = rawLoc.split(',').map(s => s.trim());
+          const cityName = parts[0] || rawLoc;
+          const countryRaw = (parts[parts.length - 1] || '').toLowerCase();
+          const flag = countryFlags[countryRaw] || '🌍';
+
+          const key = cityName;
+          if (!cityCounts[key]) cityCounts[key] = { count: 0, country: flag };
+          cityCounts[key].count++;
         }
-        
-        cityCounts[detectedCity] = (cityCounts[detectedCity] || 0) + 1;
       }
 
       // Contador de Cliques em Produtos
@@ -179,8 +203,9 @@ export default function Admin() {
     });
 
     const sortedCities = Object.entries(cityCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 8)
+      .map(([city, data]) => ({ city, count: data.count, flag: data.country }));
 
     const sortedProducts = Object.entries(productCounts)
       .sort((a, b) => b[1] - a[1])
@@ -203,7 +228,8 @@ export default function Admin() {
       sortedSources,
       liveVisitors,
       conversion: convRate,
-      totalDevices: sessions
+      totalDevices: sessions,
+      totalMapped: sortedCities.length,
     };
   }, [visits, timeRange]);
   const openAddModal = () => setIsModalOpen(true);
@@ -848,7 +874,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col text-black font-sans relative overflow-x-hidden" style={{ paddingTop: '128px' }}>
+    <div className="min-h-screen bg-[#fafafa] flex flex-col text-black font-sans relative overflow-x-hidden pt-[80px] md:pt-[96px]">
       {/* Premium Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-[#d82828]/[0.03] rounded-full blur-[120px]" />
@@ -856,10 +882,18 @@ export default function Admin() {
         <div className="absolute -bottom-[10%] left-[20%] w-[50%] h-[50%] bg-[#d82828]/[0.02] rounded-full blur-[150px]" />
       </div>
 
-      <header className="bg-white/70 backdrop-blur-3xl border-b border-black/[0.03] fixed top-0 inset-x-0 z-[100] shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
-        <div className="container mx-auto px-4 md:px-10">
-          <div className="flex items-center justify-between h-20 md:h-24">
+      <header className="bg-white/70 backdrop-blur-3xl border-b border-black/[0.03] fixed top-0 inset-x-0 z-[100] shadow-[0_4px_30px_rgba(0,0,0,0.02)] h-20 md:h-24">
+        <div className="container mx-auto px-4 md:px-10 h-full">
+          <div className="flex items-center justify-between h-full">
             <div className="flex items-center gap-4 md:gap-6">
+              {/* Menu Toggle Button for Desktop */}
+              <button 
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="hidden md:flex items-center justify-center w-10 h-10 hover:bg-black/5 rounded-xl transition-colors active:scale-95"
+              >
+                <Menu size={20} className="text-gray-950" />
+              </button>
+              
               <motion.div 
                 whileHover={{ rotate: 0, scale: 1.05 }}
                 className="w-12 h-12 md:w-14 md:h-14 bg-black rounded-2xl flex items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.15)] transform -rotate-12 transition-all cursor-pointer"
@@ -890,66 +924,68 @@ export default function Admin() {
                 <LogOut size={16} className="group-hover:translate-x-0.5 transition-transform" />
                 <span className="hidden md:inline">Sair</span>
               </button>
+              
+              {/* MOBILE MENU TOGGLE */}
+              <button 
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden flex items-center justify-center w-11 h-11 bg-white border border-black/5 rounded-full shadow-sm active:scale-95 transition-all"
+              >
+                <Menu size={16} className="text-[#d82828]" />
+              </button>
             </div>
           </div>
         </div>
-        
-        <div className="border-t border-black/[0.03] bg-white/40 backdrop-blur-md">
-          <div className="container mx-auto px-4 md:px-10">
-            {/* MOBILE MENU TOGGLE */}
-            <div className="md:hidden flex items-center justify-between py-4">
-               <button 
-                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                 className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-gray-950 bg-white border border-black/5 px-5 py-4 rounded-xl shadow-sm w-full justify-between active:scale-[0.98] transition-all"
-               >
-                 <div className="flex items-center gap-2">
-                   <Menu size={16} className="text-[#d82828]" />
-                   Selecione o Menu
-                 </div>
-                 <ChevronDown size={14} className={`transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-180' : ''}`} />
-               </button>
-            </div>
 
-            {/* MOBILE DROPDOWN TABS */}
-            <AnimatePresence>
-              {isMobileMenuOpen && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="md:hidden overflow-hidden bg-white/95 backdrop-blur-3xl absolute left-0 right-0 top-full z-[200] shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-b-3xl"
-                >
-                  <div className="flex flex-col py-2 px-4 max-h-[50vh] overflow-y-auto w-[92%] mx-auto bg-white mb-6 rounded-2xl shadow-inner border border-black/5 pb-2 mt-4">
-                    {[
-                      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-                      { key: 'products', label: 'Catálogo', icon: ShoppingCart },
-                      { key: 'magic', label: 'A Mágica', icon: Sparkles },
-                      { key: 'hero', label: 'Hero Home', icon: ImageIcon },
-                      { key: 'banner', label: 'Ofertas', icon: ImageIcon },
-                      { key: 'testimonials', label: 'Elite Feedbacks', icon: Users },
-                      { key: 'shopTheLook', label: 'Mosaico', icon: ImageIcon },
-                      { key: 'order', label: 'Curadoria', icon: LayoutList },
-                      { key: 'integration', label: 'Carrinho', icon: ShoppingCart },
-                      { key: 'promoBar', label: 'Alertas', icon: Bell },
-                      { key: 'analytics', label: 'Acessos', icon: Globe },
-                    ].map(({ key, label, icon: Icon }) => (
-                      <button 
-                        key={key} 
-                        onClick={() => { setActiveTab(key as any); setIsMobileMenuOpen(false); }} 
-                        className={`flex items-center gap-3 px-5 py-4 border-b border-black/[0.02] last:border-0 rounded-xl transition-all ${activeTab === key ? 'bg-black text-white shadow-md my-1' : 'hover:bg-gray-50 text-gray-950'}`}
-                      >
-                        <Icon size={16} className={`${activeTab === key ? 'text-white' : 'text-[#d82828]'}`} />
-                        <span className={`text-[10px] font-black uppercase tracking-[0.15em] ${activeTab === key ? 'text-white' : 'text-gray-600'}`}>{label}</span>
-                        {activeTab === key && <Check size={14} className="ml-auto opacity-50" />}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+        {/* MOBILE DROPDOWN TABS */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden overflow-hidden bg-white/95 backdrop-blur-3xl absolute left-0 right-0 top-full z-[200] shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-b-3xl border-t border-black/5"
+            >
+              <div className="flex flex-col py-2 px-4 max-h-[60vh] overflow-y-auto w-[92%] mx-auto bg-white mb-6 rounded-2xl shadow-inner border border-black/5 pb-2 mt-4 custom-scrollbar">
+                {[
+                  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                  { key: 'products', label: 'Catálogo', icon: ShoppingCart },
+                  { key: 'magic', label: 'A Mágica', icon: Sparkles },
+                  { key: 'hero', label: 'Hero Home', icon: ImageIcon },
+                  { key: 'banner', label: 'Ofertas', icon: ImageIcon },
+                  { key: 'testimonials', label: 'Elite Feedbacks', icon: Users },
+                  { key: 'shopTheLook', label: 'Mosaico', icon: ImageIcon },
+                  { key: 'order', label: 'Curadoria', icon: LayoutList },
+                  { key: 'integration', label: 'Carrinho', icon: ShoppingCart },
+                  { key: 'promoBar', label: 'Alertas', icon: Bell },
+                  { key: 'analytics', label: 'Acessos', icon: Globe },
+                ].map(({ key, label, icon: Icon }) => (
+                  <button 
+                    key={key} 
+                    onClick={() => { setActiveTab(key as any); setIsMobileMenuOpen(false); }} 
+                    className={`flex items-center gap-3 px-5 py-4 border-b border-black/[0.02] last:border-0 rounded-xl transition-all ${activeTab === key ? 'bg-black text-white shadow-md my-1' : 'hover:bg-gray-50 text-gray-950'}`}
+                  >
+                    <Icon size={16} className={`${activeTab === key ? 'text-white' : 'text-[#d82828]'}`} />
+                    <span className={`text-[10px] font-black uppercase tracking-[0.15em] ${activeTab === key ? 'text-white' : 'text-gray-600'}`}>{label}</span>
+                    {activeTab === key && <Check size={14} className="ml-auto opacity-50" />}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
 
-            {/* TABS (DESKTOP) */}
-            <div className="hidden md:flex gap-1 overflow-x-auto no-scrollbar scroll-smooth py-1">
+      {/* SIDEBAR (DESKTOP) */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.aside 
+            initial={{ width: 0, opacity: 0, x: -50 }}
+            animate={{ width: 280, opacity: 1, x: 0 }}
+            exit={{ width: 0, opacity: 0, x: -50 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="hidden md:flex flex-col bg-white/60 backdrop-blur-3xl border-r border-black/[0.03] fixed left-0 top-[96px] bottom-0 z-[90] overflow-y-auto overflow-x-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] custom-scrollbar"
+          >
+            <div className="p-6 space-y-2 w-[280px]">
               {[
                 { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
                 { key: 'products', label: 'Catálogo', icon: ShoppingCart },
@@ -966,26 +1002,32 @@ export default function Admin() {
                 <button 
                   key={key} 
                   onClick={() => setActiveTab(key as any)} 
-                  className={`group flex items-center gap-2.5 px-5 md:px-7 py-5 md:py-6 text-[10px] md:text-[11px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap relative`}
+                  className={`w-full group flex items-center gap-4 px-5 py-4 rounded-2xl transition-all relative overflow-hidden ${activeTab === key ? 'bg-black text-white shadow-lg shadow-black/10' : 'hover:bg-gray-50 hover:shadow-sm text-gray-600'}`}
                 >
-                  <Icon size={14} className={`${activeTab === key ? 'text-[#d82828]' : 'text-gray-300 group-hover:text-gray-500'} transition-colors duration-300`} />
-                  <span className={activeTab === key ? 'text-gray-950 translate-y-[-1px]' : 'text-gray-400 group-hover:text-gray-600'}>{label}</span>
+                  <Icon size={18} className={`${activeTab === key ? 'text-[#d82828]' : 'text-gray-400 group-hover:text-[#d82828]'} transition-colors duration-300 relative z-10`} />
+                  <span className={`text-[11px] font-black uppercase tracking-[0.15em] relative z-10 ${activeTab === key ? 'text-white' : 'text-gray-950'}`}>{label}</span>
                   {activeTab === key && (
-                    <motion.div 
-                      layoutId="activeTab"
-                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                      className="absolute bottom-0 inset-x-6 h-[3px] bg-[#d82828] rounded-t-full shadow-[0_-2px_10px_rgba(216,40,40,0.5)]"
-                    />
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#d82828] shadow-[2px_0_8px_rgba(216,40,40,0.5)]" />
                   )}
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-      </header>
+            
+            <div className="mt-auto p-6 w-[280px]">
+              <div className="bg-red-50/50 border border-red-100 rounded-2xl p-4">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#d82828] mb-1 flex items-center gap-2">
+                  <Zap size={12} /> Dica Pro
+                </p>
+                <p className="text-[10px] font-medium text-red-900 leading-relaxed">Você pode recolher este menu para ter mais foco nos dados clicando no ícone do topo.</p>
+              </div>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
-
-      <main className="container mx-auto px-4 md:px-10 py-8 md:py-16 relative z-10 flex-1">
+      {/* MAIN CONTENT WRAPPER */}
+      <div className={`flex-1 flex flex-col transition-all duration-500 ease-in-out ${isSidebarOpen ? 'md:ml-[280px]' : 'md:ml-0'}`}>
+        <main className="container mx-auto px-4 md:px-10 py-8 md:py-12 relative z-10 flex-1">
 {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8 md:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -1107,75 +1149,105 @@ export default function Admin() {
             {/* 3. GEOGRAPHICAL HUB (Globe + Top Cities) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                {/* The Globe - Takes 2 columns */}
-               <div className="lg:col-span-2 bg-black rounded-[3rem] overflow-hidden relative aspect-square md:aspect-auto md:min-h-[600px] shadow-2xl border border-white/10 flex items-center justify-center group">
-                  <div className="w-full h-full flex items-center justify-center p-4 md:p-10">
-                    <div className="w-full max-w-[600px] aspect-square relative flex items-center justify-center">
-                    <div className="w-full h-full relative flex items-center justify-center">
-                      <AdminMap cities={stats.sortedCities as any} />
-                    </div>
-                    </div>
+               <div className="lg:col-span-2 bg-black rounded-[3rem] overflow-hidden relative shadow-2xl border border-white/10 flex flex-col" style={{ height: 520 }}>
+                  
+                  {/* Mapa 2D Animado */}
+                  <div className="absolute inset-0">
+                    <AdminMap cities={stats.sortedCities} />
                   </div>
                   
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/10 pointer-events-none" />
+                  {/* Gradiente superior e inferior */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none z-20" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent pointer-events-none z-20" />
                   
-                  <div className="absolute top-8 left-8 md:top-12 md:left-12 z-10">
-                    <h3 className="text-white text-2xl md:text-3xl font-black uppercase tracking-tighter italic">Fluxo Geográfico</h3>
+                  {/* Título */}
+                  <div className="absolute top-8 left-8 md:top-10 md:left-10 z-30">
+                    <h3 className="text-white text-2xl md:text-3xl font-black uppercase tracking-tighter italic drop-shadow-lg">Fluxo Geográfico</h3>
                     <p className="text-gray-400 text-[9px] font-black uppercase tracking-[0.3em] mt-1">Origem dos seus visitantes</p>
                   </div>
 
-                  <div className="absolute bottom-8 right-8 md:bottom-12 md:right-12 z-10 bg-white/5 backdrop-blur-xl border border-white/10 p-5 md:p-7 rounded-[2rem] hidden sm:block">
-                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-2 h-2 bg-[#d82828] rounded-full animate-ping" />
-                        <span className="text-[9px] font-black text-white uppercase tracking-widest italic">Ao Vivo</span>
-                     </div>
+                  {/* Badge "Ao Vivo" */}
+                  <div className="absolute top-8 right-8 md:top-10 md:right-10 z-30 flex items-center gap-2 bg-white/5 backdrop-blur-xl border border-white/10 px-4 py-2.5 rounded-full">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    <span className="text-[9px] font-black text-white uppercase tracking-widest">Ao Vivo</span>
+                  </div>
+
+                  {/* Contador de visitantes ao vivo */}
+                  <div className="absolute bottom-8 right-8 md:bottom-10 md:right-10 z-30 bg-white/5 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-[2rem]">
+                     <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Online agora</p>
                      <div className="flex items-baseline gap-1">
                         <span className="text-4xl md:text-5xl font-black text-white tracking-tighter">{stats.liveVisitors}</span>
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest italic">Users</span>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest italic">users</span>
                      </div>
+                  </div>
+
+                  {/* Total de acessos registrados no mapa */}
+                  <div className="absolute bottom-8 left-8 md:bottom-10 md:left-10 z-30">
+                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Cidades ativas</p>
+                    <span className="text-2xl font-black text-white tracking-tighter">{stats.totalMapped}</span>
                   </div>
                </div>
 
                {/* Top Cities List - Takes 1 column */}
                <div className="bg-white rounded-[3rem] p-10 border border-black/5 shadow-xl flex flex-col relative overflow-hidden">
-                  <div className="flex items-center justify-between mb-10">
+                  <div className="flex items-center justify-between mb-8">
                     <div className="space-y-1">
                       <h4 className="text-lg font-black uppercase tracking-tighter text-gray-950 italic">Top Cidades</h4>
                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Volume por Localização</p>
                     </div>
-                    <Globe size={20} className="text-[#d82828]" />
+                    <div className="w-10 h-10 bg-red-50 rounded-2xl flex items-center justify-center">
+                      <Globe size={18} className="text-[#d82828]" />
+                    </div>
                   </div>
 
-                  <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                     {stats.sortedCities.map(([city, count], i) => (
-                       <div key={i} className="group">
-                         <div className="flex justify-between items-end mb-2">
-                           <span className="text-[11px] font-black uppercase tracking-widest text-gray-950 italic truncate max-w-[150px]">
-                             {i+1}. {city}
-                           </span>
-                           <span className="text-[11px] font-black text-[#d82828] italic">
-                             {count}
-                           </span>
+                  <div className="space-y-5 flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                     {stats.sortedCities.length > 0 ? stats.sortedCities.map((item, i) => {
+                       const pct = Math.round((item.count / (stats.sortedCities[0]?.count || 1)) * 100);
+                       const isTop = i === 0;
+                       return (
+                         <div key={i} className="group">
+                           <div className="flex justify-between items-center mb-2">
+                             <div className="flex items-center gap-2 min-w-0">
+                               <span className="text-lg leading-none flex-shrink-0">{item.flag}</span>
+                               <span className={`text-[11px] font-black uppercase tracking-widest truncate ${
+                                 isTop ? 'text-gray-950' : 'text-gray-700'
+                               }`}>
+                                 {i + 1}. {item.city}
+                               </span>
+                             </div>
+                             <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                               <span className="text-[9px] font-bold text-gray-400">{pct}%</span>
+                               <span className={`text-[11px] font-black italic ${
+                                 isTop ? 'text-[#d82828]' : 'text-gray-500'
+                               }`}>{item.count}</span>
+                             </div>
+                           </div>
+                           <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.8, delay: i * 0.07, ease: 'easeOut' }}
+                                className={`h-full rounded-full transition-colors duration-300 ${
+                                  isTop
+                                    ? 'bg-[#d82828] shadow-[0_0_8px_rgba(216,40,40,0.4)]'
+                                    : 'bg-gray-200 group-hover:bg-black'
+                                }`}
+                              />
+                           </div>
                          </div>
-                         <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              animate={{ width: `${(count / (stats.sortedCities[0]?.[1] || 1)) * 100}%` }}
-                              className="h-full bg-black rounded-full group-hover:bg-[#d82828] transition-colors" 
-                            />
-                         </div>
-                       </div>
-                     ))}
-                     {stats.sortedCities.length === 0 && (
+                       );
+                     }) : (
                        <div className="flex flex-col items-center justify-center py-20 opacity-20">
                          <Globe size={48} className="mb-4" />
                          <p className="text-[9px] font-black uppercase tracking-widest">Aguardando Dados...</p>
+                         <p className="text-[8px] text-gray-400 mt-2 text-center">Os dados aparecem conforme visitantes acessam o site</p>
                        </div>
                      )}
                   </div>
 
-                  <div className="mt-10 pt-6 border-t border-black/5 flex items-center justify-between">
+                  <div className="mt-8 pt-6 border-t border-black/5 flex items-center justify-between">
                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Cidades Mapeadas</p>
-                     <span className="text-xl font-black text-gray-950 italic">{stats.sortedCities.length}</span>
+                     <span className="text-xl font-black text-gray-950 italic">{stats.totalMapped}</span>
                   </div>
                </div>
             </div>
@@ -2168,6 +2240,7 @@ export default function Admin() {
           </div>
         )}
       </main>
+      </div>
 
       {/* MODAL: PRODUCT EDIT/ADD */}
       <AnimatePresence>
