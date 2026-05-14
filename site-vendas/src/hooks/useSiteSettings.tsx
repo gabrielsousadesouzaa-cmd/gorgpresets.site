@@ -6,6 +6,7 @@ export interface HeroSettings {
   backgroundImage: string;
   title: Record<string, string> | string;
   subtitle: Record<string, string> | string;
+  topNotice?: Record<string, string> | string;
 }
 
 export interface BannerSettings {
@@ -17,6 +18,7 @@ export interface PromoBarSettings {
     PT: string;
     EN: string;
     ES: string;
+    FR: string;
   }>;
 }
 
@@ -68,8 +70,9 @@ export interface SiteSettings {
 export const DEFAULT_SETTINGS: SiteSettings = {
   hero: {
     backgroundImage: "", 
-    title: { PT: "", EN: "", ES: "" },
-    subtitle: { PT: "", EN: "", ES: "" },
+    title: { PT: "", EN: "", ES: "", FR: "" },
+    subtitle: { PT: "", EN: "", ES: "", FR: "" },
+    topNotice: { PT: "", EN: "", ES: "", FR: "" },
   },
   banner: {
     image: "", 
@@ -106,7 +109,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
       {
         PT: "LEVE 3, PAGUE 2: ADICIONE 3 PRESETS E GANHE 1.",
         EN: "BUY 2, GET 1 FREE: ADD 3 PRESETS AND GET 1.",
-        ES: "LLEVA 3, PAGA 2: AÑADE 3 PRESETS Y LLEVATE 1."
+        ES: "LLEVA 3, PAGA 2: AÑADE 3 PRESETS Y LLEVATE 1.",
+        FR: "ACHETEZ 2, OBTENEZ 1 GRATUIT : AJOUTEZ 3 PRESETS ET OBTENEZ-EN 1."
       }
     ]
   },

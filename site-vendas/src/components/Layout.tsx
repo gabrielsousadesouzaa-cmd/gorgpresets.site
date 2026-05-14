@@ -3,6 +3,7 @@ import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { CartDrawer } from "./CartDrawer";
 import { SalesPopup } from "./SalesPopup";
+import { FloatingCartButton } from "./FloatingCartButton";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,7 @@ export function Layout({ children }: LayoutProps) {
       <Footer />
       <CartDrawer />
       <SalesPopup />
+      <FloatingCartButton />
     </div>
   );
 }

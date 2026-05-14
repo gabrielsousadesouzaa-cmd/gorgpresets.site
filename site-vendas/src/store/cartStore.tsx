@@ -47,6 +47,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const toggleCart = () => setIsOpen((prev) => !prev);
 
   const addItem = (product: Product) => {
+    // O produto "CARRINHO GORGPRESETS" é produto-base da GGCheckout — nunca entra no carrinho do site
+    if (product.name.toLowerCase().includes('carrinho')) {
+      console.warn(`[Cart] Produto "${product.name}" ignorado — é o produto-base da GGCheckout.`);
+      return;
+    }
     setRawItems((prev) => {
       // Impede duplicata
       if (prev.find((p) => p.id === product.id)) {

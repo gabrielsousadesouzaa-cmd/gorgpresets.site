@@ -8,26 +8,26 @@ export function BenefitCards() {
   const benefits = [
     {
        icon: <Zap className="text-[#d82828]" size={28} />,
-       title: "Entrega Imediata",
-       desc: "Receba seus links de download segundos após a compra.",
+       title: t("feat1Title" as any),
+       desc: t("feat1Desc" as any),
        delay: 0.1
     },
     {
        icon: <ShieldCheck className="text-[#d82828]" size={28} />,
-       title: "Pagamento Seguro",
-       desc: "PIX ou Cartão com criptografia de ponta a ponta.",
+       title: t("feat2Title" as any),
+       desc: t("feat2Desc" as any),
        delay: 0.2
     },
     {
        icon: <Heart className="text-[#d82828]" size={28} />,
-       title: "Satisfação Premium",
-       desc: "Suporte 24/7 para garantir o feed dos seus sonhos.",
+       title: t("feat3Title" as any),
+       desc: t("feat3Desc" as any),
        delay: 0.3
     },
     {
        icon: <Smartphone className="text-[#d82828]" size={28} />,
-       title: "Mobile & Desktop",
-       desc: "Filtros compatíveis com todas as versões do Lightroom.",
+       title: t("feat5Title" as any),
+       desc: t("feat5Desc" as any),
        delay: 0.4
     }
   ];

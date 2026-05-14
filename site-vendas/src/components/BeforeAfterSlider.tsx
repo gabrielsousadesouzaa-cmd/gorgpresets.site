@@ -55,8 +55,8 @@ export function BeforeAfterSlider({ beforeImage, afterImage }: BeforeAfterSlider
     };
   }, [isDragging, onMouseMove, onTouchMove, stopDragging]);
 
-  const labelBefore = language === "PT" ? "Sem Edição" : language === "EN" ? "Before" : "Antes";
-  const labelAfter = language === "PT" ? "Com Preset" : language === "EN" ? "After" : "Con Preset";
+  const labelBefore = language === "PT" ? "Sem Edição" : language === "EN" ? "Before" : language === "FR" ? "Avant" : "Antes";
+  const labelAfter = language === "PT" ? "Com Preset" : language === "EN" ? "After" : language === "FR" ? "Après" : "Con Preset";
 
   return (
     <div 

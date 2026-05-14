@@ -3,33 +3,26 @@ import { DownloadCloud, Sparkles, Smartphone } from "lucide-react";
 import { useLanguage } from "@/store/languageStore";
 
 export function InstallationGuide() {
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
-  const isPT = language === 'PT';
-  const isEN = language === 'EN';
-
-  const sectionTitle = isPT ? "Extremamente Fácil de Usar" : isEN ? "Extremely Easy to Use" : "Extremadamente Fácil de Usar";
-  const subtitle = isPT 
-    ? "Esqueça computadores ou horas editando. Tudo é feito pelo celular em segundos." 
-    : isEN 
-    ? "Forget computers or hours editing. Everything is done on mobile in seconds." 
-    : "Olvida los ordenadores o las horas de edición. Todo se hace en el móvil en segundos.";
+  const sectionTitle = t("guideTitle" as any);
+  const subtitle = t("guideSubtitle" as any);
 
   const steps = [
     {
       icon: <Smartphone size={28} strokeWidth={1.5} />,
-      title: isPT ? "1. App Gratuito" : isEN ? "1. Free App" : "1. App Gratis",
-      desc: isPT ? "Baixe o Adobe Lightroom Mobile. É 100% gratuito e seguro." : isEN ? "Download Adobe Lightroom Mobile. It's 100% free and safe." : "Descarga Adobe Lightroom Mobile. Es 100% gratis y seguro."
+      title: t("step1Title" as any),
+      desc: t("step1Desc" as any)
     },
     {
       icon: <DownloadCloud size={28} strokeWidth={1.5} />,
-      title: isPT ? "2. Importe o Preset" : isEN ? "2. Import Preset" : "2. Importa el Preset",
-      desc: isPT ? "Você recebe o link no email e instala o preset na sua galeria com apenas 1 clique." : isEN ? "You get the link by email and install the preset to your gallery with just 1 click." : "Recibes el enlace por email e instalas el preset en tu galería con solo 1 clic."
+      title: t("step2Title" as any),
+      desc: t("step2Desc" as any)
     },
     {
       icon: <Sparkles size={28} strokeWidth={1.5} />,
-      title: isPT ? "3. Copie e Arrase!" : isEN ? "3. Copy & Shine!" : "3. ¡Copia y Brilla!",
-      desc: isPT ? "Abra sua foto crua, cole as nossas configurações mágicas e poste!" : isEN ? "Open your raw photo, paste our magic settings and post!" : "Abre tu foto cruda, pega nuestra configuración mágica y ¡publica!"
+      title: t("step3Title" as any),
+      desc: t("step3Desc" as any)
     }
   ];
 

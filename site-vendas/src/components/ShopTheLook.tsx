@@ -10,7 +10,7 @@ export function ShopTheLook() {
   const { settings } = useSiteSettings();
   const feedImages = settings.shopTheLook || [];
   
-  const title = language === 'EN' ? "SHOP OUR INSTAGRAM" : language === 'ES' ? "COMPRA EN INSTAGRAM" : "Siga nosso Instagram";
+  const title = language === 'EN' ? "SHOP OUR INSTAGRAM" : language === 'ES' ? "COMPRA EN INSTAGRAM" : language === 'FR' ? "SUIVEZ NOTRE INSTAGRAM" : "Siga nosso Instagram";
   const handle = "@gorgpresets";
 
   return (
@@ -72,7 +72,7 @@ export function ShopTheLook() {
                     <Instagram className="text-white/80 mb-3" size={28} strokeWidth={1.5} />
                     <span className="bg-white text-black text-[11px] font-bold uppercase tracking-[0.2em] px-4 py-2.5 rounded-full shadow-2xl flex items-center justify-center gap-2 transform transition-transform active:scale-95">
                        <ShoppingCart size={14} strokeWidth={2.5} /> 
-                       Eu Quero
+                       {language === 'EN' ? 'Get It' : language === 'ES' ? 'Lo Quiero' : language === 'FR' ? 'Je le Veux' : 'Eu Quero'}
                     </span>
                   </motion.div>
                 </div>

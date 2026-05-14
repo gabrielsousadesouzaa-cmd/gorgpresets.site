@@ -119,7 +119,7 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             )}
           </div>
           <div className="text-[9px] md:text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
-            ou 12x de <span className="text-gray-900">{formatCurrency(product.price / 12)}</span>
+            {t("or")} 12x de <span className="text-gray-900">{formatCurrency(product.price / 12)}</span>
           </div>
         </div>
 
@@ -131,7 +131,7 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
               className={`w-full py-4 md:py-4 rounded-full font-bold text-[11px] md:text-[10px] uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 ${isAdded ? 'bg-green-500 text-white' : 'bg-[#d82828] text-white hover:bg-black hover:shadow-xl'
                 }`}
             >
-              {isAdded ? "ADICIONADO!" : "ADD AO CARRINHO"}
+              {isAdded ? t("addedToCart") : t("addToCart")}
             </button>
           ) : (
             <Link

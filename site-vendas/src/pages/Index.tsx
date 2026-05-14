@@ -90,10 +90,10 @@ export default function Index() {
             <div className="container mx-auto px-6 max-w-5xl">
               <div className="text-center mb-10">
                 <h2 className="text-2xl md:text-4xl font-bold text-gray-950 uppercase tracking-tighter mb-3">
-                  {language === 'EN' ? 'THE MAGIC HAPPENS' : language === 'ES' ? 'LA MAGIA SUCEDE' : 'A Mágica Acontece'}
+                  {language === 'EN' ? 'THE MAGIC HAPPENS' : language === 'ES' ? 'LA MAGIA SUCEDE' : language === 'FR' ? 'LA MAGIE OPÈRE' : 'A Mágica Acontece'}
                 </h2>
                 <p className="text-sm md:text-base text-gray-500 font-medium">
-                  {language === 'EN' ? 'Slide to see the incredible transformation in 1 click.' : language === 'ES' ? 'Desliza para ver la increíble transformación en 1 clic.' : 'Arraste para o lado e veja a transformação absurda em apenas 1 clique.'}
+                  {language === 'EN' ? 'Slide to see the incredible transformation in 1 click.' : language === 'ES' ? 'Desliza para ver la increíble transformación en 1 clic.' : language === 'FR' ? 'Faites glisser pour voir l\'incroyable transformation en 1 clic.' : 'Arraste para o lado e veja a transformação absurda em apenas 1 clique.'}
                 </p>
               </div>
               <BeforeAfterSlider beforeImage={settings.magic.beforeUrl} afterImage={settings.magic.afterUrl} />

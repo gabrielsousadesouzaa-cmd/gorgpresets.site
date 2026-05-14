@@ -66,7 +66,7 @@ export function Header() {
     setNavQuery("");
   };
 
-  const handleLanguageChange = (newLang: 'PT' | 'EN' | 'ES') => {
+  const handleLanguageChange = (newLang: 'PT' | 'EN' | 'ES' | 'FR') => {
     setLanguage(newLang);
     
     const messages = {
@@ -87,6 +87,12 @@ export function Header() {
         desc: "¿Desea cambiar la moneda a Euro (EUR) para coincidir con el idioma seleccionado?",
         btnYes: "Sí, Actualizar",
         btnNo: "No"
+      },
+      FR: {
+        title: "🌍 Mettre à jour la Devise?",
+        desc: "Souhaitez-vous changer la devise en Euro (EUR) pour correspondre à la langue sélectionnée?",
+        btnYes: "Oui, Mettre à jour",
+        btnNo: "Non"
       }
     };
     
@@ -94,7 +100,7 @@ export function Header() {
     
     if (newLang === 'EN') {
       suggestedCurrency = 'USD';
-    } else if (newLang === 'ES') {
+    } else if (newLang === 'ES' || newLang === 'FR') {
       suggestedCurrency = 'EUR';
     } else if (newLang === 'PT') {
       suggestedCurrency = 'BRL';
@@ -436,6 +442,7 @@ export function Header() {
                          <option value="PT">🇧🇷 PT</option>
                          <option value="EN">🇺🇸 EN</option>
                          <option value="ES">🇪🇸 ES</option>
+                         <option value="FR">🇫🇷 FR</option>
                        </select>
                     </div>
                     <div className="space-y-2">

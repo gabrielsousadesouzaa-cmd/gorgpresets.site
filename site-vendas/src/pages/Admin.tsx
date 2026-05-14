@@ -80,7 +80,7 @@ export default function Admin() {
   const [visits, setVisits] = useState<any[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [langTab, setLangTab] = useState<'PT' | 'EN' | 'ES'>('PT');
+  const [langTab, setLangTab] = useState<'PT' | 'EN' | 'ES' | 'FR'>('PT');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [hpValue, setHpValue] = useState("");
@@ -1464,7 +1464,7 @@ export default function Admin() {
                  <div className="flex items-center justify-between">
                    <p className="text-[10px] font-bold uppercase text-[#d82828] ml-1">Título</p>
                    <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-                     {['PT', 'EN', 'ES'].map(l => (
+                     {['PT', 'EN', 'ES', 'FR'].map(l => (
                        <button key={l} onClick={() => setLangTab(l as any)} className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${langTab === l ? 'bg-white text-[#d82828] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{l}</button>
                      ))}
                    </div>
@@ -1472,7 +1472,7 @@ export default function Admin() {
                  <input 
                    value={typeof siteSettings.hero.title === 'object' ? (siteSettings.hero.title[langTab] || "") : (langTab === 'PT' ? siteSettings.hero.title : "")} 
                    onChange={(e) => {
-                     const currentTitle = typeof siteSettings.hero.title === 'object' ? siteSettings.hero.title : { PT: siteSettings.hero.title, EN: "", ES: "" };
+                     const currentTitle = typeof siteSettings.hero.title === 'object' ? siteSettings.hero.title : { PT: siteSettings.hero.title, EN: "", ES: "", FR: "" };
                      setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, title: { ...currentTitle, [langTab]: e.target.value } } }));
                    }} 
                    className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border border-black/5 focus:border-[#d82828] transition-all" 
@@ -1487,13 +1487,29 @@ export default function Admin() {
                  <input 
                    value={typeof siteSettings.hero.subtitle === 'object' ? (siteSettings.hero.subtitle[langTab] || "") : (langTab === 'PT' ? siteSettings.hero.subtitle : "")} 
                    onChange={(e) => {
-                     const currentSub = typeof siteSettings.hero.subtitle === 'object' ? siteSettings.hero.subtitle : { PT: siteSettings.hero.subtitle, EN: "", ES: "" };
+                     const currentSub = typeof siteSettings.hero.subtitle === 'object' ? siteSettings.hero.subtitle : { PT: siteSettings.hero.subtitle, EN: "", ES: "", FR: "" };
                      setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, subtitle: { ...currentSub, [langTab]: e.target.value } } }));
                    }} 
                    className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border border-black/5 focus:border-[#d82828] transition-all" 
                    placeholder={`Subtítulo em ${langTab}...`}
                  />
                </div>
+
+               <div className="space-y-4">
+                 <div className="flex items-center justify-between">
+                   <p className="text-[10px] font-bold uppercase text-[#d82828] ml-1">Aviso Superior (Acima do Hero)</p>
+                 </div>
+                 <input 
+                   value={typeof siteSettings.hero.topNotice === 'object' ? (siteSettings.hero.topNotice?.[langTab] || "") : (langTab === 'PT' ? (siteSettings.hero.topNotice || "") : "")} 
+                   onChange={(e) => {
+                     const currentNotice = typeof siteSettings.hero.topNotice === 'object' ? siteSettings.hero.topNotice : { PT: (typeof siteSettings.hero.topNotice === 'string' ? siteSettings.hero.topNotice : ""), EN: "", ES: "", FR: "" };
+                     setSiteSettings(prev => ({ ...prev, hero: { ...prev.hero, topNotice: { ...currentNotice, [langTab]: e.target.value } } }));
+                   }} 
+                   className="w-full h-14 bg-gray-50 rounded-2xl px-6 outline-none border border-black/5 focus:border-[#d82828] transition-all" 
+                   placeholder={`Aviso em ${langTab}... ex: LEVE 3 PAGUE 2`}
+                 />
+               </div>
+
                <div className="space-y-4">
                  <p className="text-[10px] font-bold uppercase text-gray-400 ml-1">Imagem de Fundo</p>
                  <div className="relative group aspect-video rounded-3xl overflow-hidden bg-gray-50 border border-black/5 mb-4 shadow-inner">
@@ -1589,7 +1605,7 @@ export default function Admin() {
                      <div className="flex items-center justify-between">
                        <label className="text-[10px] font-bold uppercase text-[#d82828] ml-1">Mensagem</label>
                        <div className="flex gap-1 bg-white p-1 rounded-xl shadow-inner border border-black/5">
-                         {['PT', 'EN', 'ES'].map(l => (
+                         {['PT', 'EN', 'ES', 'FR'].map(l => (
                            <button key={l} onClick={() => setLangTab(l as any)} className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${langTab === l ? 'bg-[#d82828] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{l}</button>
                          ))}
                        </div>
@@ -2078,7 +2094,7 @@ export default function Admin() {
                   </div>
                 </div>
                 <Button 
-                  onClick={() => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, messages: [...(prev.promoBar.messages || []), { PT: '', EN: '', ES: '' }] } }))}
+                  onClick={() => setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, messages: [...(prev.promoBar.messages || []), { PT: '', EN: '', ES: '', FR: '' }] } }))}
                   className="h-14 px-8 bg-black text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-[#d82828] transition-all flex items-center gap-3 shadow-xl"
                 >
                   <Plus size={18} /> ADICIONAR NOVO AVISO
@@ -2094,15 +2110,14 @@ export default function Admin() {
                     >
                       <Trash2 size={18} />
                     </button>
-                    
                     <div className="flex items-center gap-3 mb-2">
                        <span className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-black">{idx + 1}</span>
                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 italic">Configuração do Aviso</h3>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                       <div className="space-y-2">
-                        <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Mensagem (Português)</p>
+                        <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Mensagem (PT)</p>
                         <input 
                           value={msg.PT} 
                           onChange={(e) => {
@@ -2114,7 +2129,7 @@ export default function Admin() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Mensagem (Inglês)</p>
+                        <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Mensagem (EN)</p>
                         <input 
                           value={msg.EN} 
                           onChange={(e) => {
@@ -2126,12 +2141,24 @@ export default function Admin() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Mensagem (Espanhol)</p>
+                        <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Mensagem (ES)</p>
                         <input 
                           value={msg.ES} 
                           onChange={(e) => {
                             const newMsgs = [...(siteSettings.promoBar.messages || [])];
                             newMsgs[idx].ES = e.target.value;
+                            setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, messages: newMsgs } }));
+                          }} 
+                          className="w-full h-14 bg-white rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all shadow-sm" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black uppercase text-gray-400 ml-1">Mensagem (FR)</p>
+                        <input 
+                          value={msg.FR} 
+                          onChange={(e) => {
+                            const newMsgs = [...(siteSettings.promoBar.messages || [])];
+                            newMsgs[idx].FR = e.target.value;
                             setSiteSettings(prev => ({ ...prev, promoBar: { ...prev.promoBar, messages: newMsgs } }));
                           }} 
                           className="w-full h-14 bg-white rounded-2xl px-6 font-bold outline-none focus:border-[#d82828] border-2 border-transparent transition-all shadow-sm" 
@@ -2395,7 +2422,7 @@ export default function Admin() {
                             <div className="flex items-center justify-between">
                               <h4 className="text-xl font-black uppercase italic italic">Regional Copy</h4>
                               <div className="flex gap-2">
-                                {['PT', 'EN', 'ES'].map(l => (
+                                {['PT', 'EN', 'ES', 'FR'].map(l => (
                                   <button key={l} type="button" onClick={() => setLangTab(l as any)} className={`px-4 py-2 text-[9px] font-bold rounded-xl ${langTab === l ? 'bg-[#d82828] text-white shadow-lg shadow-red-500/10' : 'text-gray-400 hover:text-gray-600'}`}>{l}</button>
                                 ))}
                               </div>

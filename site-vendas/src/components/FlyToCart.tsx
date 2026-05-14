@@ -49,9 +49,9 @@ export function FlyToCartProvider({ children }: { children: React.ReactNode }) {
             className="
               fixed z-[9999] pointer-events-none
               top-[6.5rem] right-4 md:top-32 md:right-8
-              flex items-center gap-4 bg-white/95 backdrop-blur-xl rounded-[2rem]
+              flex items-center gap-3 bg-white/95 backdrop-blur-xl rounded-[1.25rem] md:rounded-[1.5rem]
               shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-black/[0.04]
-              px-5 py-4 w-auto max-w-[calc(100vw-2rem)] md:w-[340px]
+              px-3 py-2.5 md:px-4 md:py-3 w-auto max-w-[calc(100vw-2rem)] md:w-[280px]
             "
           >
             {/* Shimmer Effect */}
@@ -61,28 +61,28 @@ export function FlyToCartProvider({ children }: { children: React.ReactNode }) {
               className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent skew-x-12"
             />
 
-            <div className="relative z-10 flex items-center gap-4 w-full">
-               <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-black/5 shadow-md">
+            <div className="relative z-10 flex items-center gap-3 w-full">
+               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden shrink-0 border border-black/5 shadow-md">
                  <img src={toast.image} className="w-full h-full object-cover" alt="" />
                </div>
 
                <div className="flex flex-col flex-1 min-w-0">
-                 <div className="flex items-center gap-1.5 mb-1">
+                 <div className="flex items-center gap-1.5 mb-0.5">
                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                   <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 italic">
+                   <span className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">
                      Sucesso
                    </span>
                  </div>
-                 <h3 className="text-sm font-black text-black uppercase tracking-tight leading-none italic">
-                   Preset Adicionado!
+                 <h3 className="text-xs md:text-sm font-black text-black uppercase tracking-tight leading-none">
+                   Adicionado!
                  </h3>
-                 <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">
-                   Confira seu carrinho
+                 <p className="text-[8px] md:text-[9px] font-bold text-gray-400 mt-0.5 uppercase tracking-wider truncate">
+                   Veja no carrinho
                  </p>
                </div>
 
-               <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shadow-lg">
-                 <Check size={18} strokeWidth={3} />
+               <div className="w-8 h-8 md:w-9 md:h-9 shrink-0 rounded-full bg-black text-white flex items-center justify-center shadow-lg">
+                 <Check size={14} strokeWidth={3} />
                </div>
             </div>
           </motion.div>

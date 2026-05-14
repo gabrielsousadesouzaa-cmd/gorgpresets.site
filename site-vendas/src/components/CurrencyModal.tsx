@@ -69,6 +69,7 @@ export function CurrencyModal() {
               <option value="PT">🇧🇷 Português</option>
               <option value="EN">🇺🇸 English</option>
               <option value="ES">🇪🇸 Español</option>
+              <option value="FR">🇫🇷 Français</option>
             </select>
           </div>
 
