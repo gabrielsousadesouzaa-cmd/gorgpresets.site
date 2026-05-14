@@ -112,6 +112,8 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             <span className="text-xl md:text-2xl font-bold text-[#d82828]">
               {formatCurrency(product.price)}
             </span>
+
+
             {product.originalPrice && (
               <span className="text-[10px] md:text-xs font-semibold text-gray-300 line-through">
                 {formatCurrency(product.originalPrice)}

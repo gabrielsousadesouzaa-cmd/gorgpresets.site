@@ -51,7 +51,7 @@ export function HeroSection() {
           className="relative h-full flex flex-col items-center justify-center text-center px-4 md:px-6"
         >
           <div className="max-w-4xl text-white mt-32 md:mt-32">
-            {settings.hero.topNotice && (
+            {getLocalized(settings.hero.topNotice) && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -63,6 +63,7 @@ export function HeroSection() {
                 </span>
               </motion.div>
             )}
+
 
             <motion.h1 
               initial={{ opacity: 0, y: 40 }}
