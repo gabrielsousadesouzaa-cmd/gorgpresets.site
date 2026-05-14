@@ -17,7 +17,7 @@ export function FloatingCartButton() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={openCart}
-        className="fixed bottom-10 right-6 md:bottom-12 md:right-8 z-[2000] w-12 h-12 md:w-14 md:h-14 bg-white text-[#d82828] rounded-full shadow-[0_15px_40px_rgba(0,0,0,0.15)] flex items-center justify-center hover:bg-gray-50 transition-colors duration-300 border border-black/5"
+        className="fixed bottom-10 right-6 md:bottom-12 md:right-8 z-[2000] w-12 h-12 md:w-14 md:h-14 bg-white text-[#d82828] rounded-[1.2rem] shadow-[0_15px_40px_rgba(0,0,0,0.15)] flex items-center justify-center hover:bg-gray-50 transition-colors duration-300 border border-black/5"
       >
         <ShoppingCart size={18} className="md:w-5 md:h-5" strokeWidth={2.5} />
         

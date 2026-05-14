@@ -2,60 +2,41 @@ import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useLocation } from 'react-router-dom';
 
-// ─── Sistema de geolocalização com 3 APIs em cascata ──────────────────────────
+// ─── Sistema de geolocalização com cache em sessão ──────────────────────────
 async function getGeoData(): Promise<{ ip: string; city: string }> {
   const fallback = { ip: 'Desconhecido', city: 'Desconhecida' };
+  
+  // Tenta recuperar do cache da sessão para evitar chamadas repetitivas
+  const cached = sessionStorage.getItem('visit_geo_cache');
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch { /* ignora erro de parse */ }
+  }
 
-  // API 1: ip-api.com — sem chave, 45 req/min grátis, muito confiável
-  try {
-    const res = await fetch('http://ip-api.com/json/?fields=status,city,regionName,country,query', {
-      signal: AbortSignal.timeout(4000),
-    });
-    if (res.ok) {
-      const d = await res.json();
-      if (d.status === 'success' && d.city) {
-        return {
-          ip: d.query || fallback.ip,
-          city: [d.city, d.regionName, d.country].filter(Boolean).join(', '),
-        };
-      }
-    }
-  } catch { /* silently try next */ }
+  const apis = [
+    { url: 'http://ip-api.com/json/?fields=status,city,regionName,country,query', map: (d: any) => ({ ip: d.query, city: [d.city, d.regionName, d.country].filter(Boolean).join(', ') }) },
+    { url: 'https://ipapi.co/json/', map: (d: any) => ({ ip: d.ip, city: [d.city, d.region, d.country_name].filter(Boolean).join(', ') }) },
+    { url: 'https://freeipapi.com/api/json', map: (d: any) => ({ ip: d.ipAddress, city: [d.cityName, d.regionName, d.countryName].filter(Boolean).join(', ') }) }
+  ];
 
-  // API 2: ipapi.co — 1000 req/dia grátis
-  try {
-    const res = await fetch('https://ipapi.co/json/', {
-      signal: AbortSignal.timeout(4000),
-    });
-    if (res.ok) {
-      const d = await res.json();
-      if (d.city) {
-        return {
-          ip: d.ip || fallback.ip,
-          city: [d.city, d.region, d.country_name].filter(Boolean).join(', '),
-        };
+  for (const api of apis) {
+    try {
+      const res = await fetch(api.url, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const d = await res.json();
+        const result = api.map(d);
+        if (result.city) {
+          sessionStorage.setItem('visit_geo_cache', JSON.stringify(result));
+          return result;
+        }
       }
-    }
-  } catch { /* silently try next */ }
-
-  // API 3: freeipapi.com — 60 req/min grátis
-  try {
-    const res = await fetch('https://freeipapi.com/api/json', {
-      signal: AbortSignal.timeout(4000),
-    });
-    if (res.ok) {
-      const d = await res.json();
-      if (d.cityName) {
-        return {
-          ip: d.ipAddress || fallback.ip,
-          city: [d.cityName, d.regionName, d.countryName].filter(Boolean).join(', '),
-        };
-      }
-    }
-  } catch { /* all failed */ }
+    } catch { continue; }
+  }
 
   return fallback;
 }
+
 
 // ─── Componente de rastreamento ───────────────────────────────────────────────
 export function SiteTracker() {

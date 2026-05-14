@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { saveSetting, DEFAULT_SETTINGS, SiteSettings } from "@/hooks/useSiteSettings";
 import { AdminMap } from "@/components/AdminMap";
+import { LiveViewDashboard, GlobalRadar } from "@/components/LiveViewDashboard";
+
+
 
 interface ProductFormData {
   id?: string;
@@ -76,7 +79,8 @@ export default function Admin() {
   const [formData, setFormData] = useState<ProductFormData>(initialForm);
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'hero' | 'banner' | 'testimonials' | 'order' | 'integration' | 'shopTheLook' | 'promoBar' | 'magic' | 'analytics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'live' | 'products' | 'hero' | 'banner' | 'testimonials' | 'order' | 'integration' | 'shopTheLook' | 'promoBar' | 'magic' | 'analytics'>('dashboard');
+
   const [visits, setVisits] = useState<any[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -612,7 +616,24 @@ export default function Admin() {
     }
   }
 
-  // Monitoramento 24h: Atualiza visitas a cada 30 segundos
+  // Monitoramento Realtime: Atualiza estatísticas e Top Cidades instantaneamente
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const channel = supabase
+      .channel('admin_stats_sync')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'site_visits' }, (payload) => {
+        // Adiciona a nova visita ao topo da lista para atualizar o gráfico e Top Cidades
+        setVisits(prev => [payload.new, ...prev]);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthenticated]);
+
+  // Monitoramento de Background: Fallback a cada 30 segundos
   useEffect(() => {
     if (!isAuthenticated) return;
     
@@ -627,6 +648,7 @@ export default function Admin() {
     
     return () => clearInterval(interval);
   }, [isAuthenticated, activeTab]);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -948,6 +970,7 @@ export default function Admin() {
               <div className="flex flex-col py-2 px-4 max-h-[60vh] overflow-y-auto w-[92%] mx-auto bg-white mb-6 rounded-2xl shadow-inner border border-black/5 pb-2 mt-4 custom-scrollbar">
                 {[
                   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                  { key: 'live', label: 'Live View', icon: Zap },
                   { key: 'products', label: 'Catálogo', icon: ShoppingCart },
                   { key: 'magic', label: 'A Mágica', icon: Sparkles },
                   { key: 'hero', label: 'Hero Home', icon: ImageIcon },
@@ -988,6 +1011,7 @@ export default function Admin() {
             <div className="p-6 space-y-2 w-[280px]">
               {[
                 { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+                { key: 'live', label: 'Live View', icon: Zap },
                 { key: 'products', label: 'Catálogo', icon: ShoppingCart },
                 { key: 'magic', label: 'A Mágica', icon: Sparkles },
                 { key: 'hero', label: 'Hero Home', icon: ImageIcon },
@@ -1146,46 +1170,11 @@ export default function Admin() {
                </div>
             </div>
 
-            {/* 3. GEOGRAPHICAL HUB (Globe + Top Cities) */}
+            {/* 3. GEOGRAPHICAL HUB (Radar + Top Cities) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-               {/* The Globe - Takes 2 columns */}
-               <div className="lg:col-span-2 bg-black rounded-[3rem] overflow-hidden relative shadow-2xl border border-white/10 flex flex-col" style={{ height: 520 }}>
-                  
-                  {/* Mapa 2D Animado */}
-                  <div className="absolute inset-0">
-                    <AdminMap cities={stats.sortedCities} />
-                  </div>
-                  
-                  {/* Gradiente superior e inferior */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none z-20" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent pointer-events-none z-20" />
-                  
-                  {/* Título */}
-                  <div className="absolute top-8 left-8 md:top-10 md:left-10 z-30">
-                    <h3 className="text-white text-2xl md:text-3xl font-black uppercase tracking-tighter italic drop-shadow-lg">Fluxo Geográfico</h3>
-                    <p className="text-gray-400 text-[9px] font-black uppercase tracking-[0.3em] mt-1">Origem dos seus visitantes</p>
-                  </div>
-
-                  {/* Badge "Ao Vivo" */}
-                  <div className="absolute top-8 right-8 md:top-10 md:right-10 z-30 flex items-center gap-2 bg-white/5 backdrop-blur-xl border border-white/10 px-4 py-2.5 rounded-full">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                    <span className="text-[9px] font-black text-white uppercase tracking-widest">Ao Vivo</span>
-                  </div>
-
-                  {/* Contador de visitantes ao vivo */}
-                  <div className="absolute bottom-8 right-8 md:bottom-10 md:right-10 z-30 bg-white/5 backdrop-blur-xl border border-white/10 p-5 md:p-6 rounded-[2rem]">
-                     <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Online agora</p>
-                     <div className="flex items-baseline gap-1">
-                        <span className="text-4xl md:text-5xl font-black text-white tracking-tighter">{stats.liveVisitors}</span>
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest italic">users</span>
-                     </div>
-                  </div>
-
-                  {/* Total de acessos registrados no mapa */}
-                  <div className="absolute bottom-8 left-8 md:bottom-10 md:left-10 z-30">
-                    <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Cidades ativas</p>
-                    <span className="text-2xl font-black text-white tracking-tighter">{stats.totalMapped}</span>
-                  </div>
+               {/* The Radar - Takes 2 columns */}
+               <div className="lg:col-span-2 relative">
+                  <GlobalRadar />
                </div>
 
                {/* Top Cities List - Takes 1 column */}
@@ -1425,11 +1414,38 @@ export default function Admin() {
                      </div>
                      <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-[10px] md:text-xs">Nenhum pack no catálogo</p>
                      <Button onClick={openAddModal} variant="ghost" className="mt-6 text-[#d82828] font-black uppercase text-[10px] tracking-widest hover:bg-red-50 px-8 h-12 rounded-full border border-transparent hover:border-[#d82828]/10 transition-all">Começar Coleção</Button>
-                 </div>
-               )}
-            </div>
+                  </div>
+                )}
+             </div>
           </div>
         )}
+
+        {/* LIVE VIEW TAB */}
+         {activeTab === 'live' && (
+           <div className="w-full space-y-10 animate-in fade-in zoom-in duration-700 px-4 md:px-10">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="space-y-2">
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-black flex items-center justify-center shadow-2xl">
+                         <Zap className="text-[#d82828] w-6 h-6 fill-[#d82828]" />
+                      </div>
+                      <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter italic text-gray-950">Live Surveillance</h2>
+                   </div>
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] ml-14">Monitoramento Global em Tempo Real (Estilo Corvex)</p>
+                </div>
+              </div>
+
+              <div className="w-full">
+                 <LiveViewDashboard />
+              </div>
+
+              <div className="p-12 bg-black rounded-[4rem] text-white/30 text-center border border-white/5 shadow-2xl">
+                 <p className="text-[11px] font-black uppercase tracking-[0.6em] italic">End of Live Surveillance Stream • Network Status: Optimal</p>
+              </div>
+           </div>
+          )}
+
+
         {/* MAGIC TAB */}
         {activeTab === 'magic' && (
           <div className="max-w-4xl mx-auto space-y-10 bg-white rounded-[3.5rem] border border-black/5 shadow-2xl p-12">

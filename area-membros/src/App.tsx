@@ -49,7 +49,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'admin' | 'support'>('home');
   const [viewingProduct, setViewingProduct] = useState<any>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isEditingPreset, setIsEditingPreset] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [isReady, setIsReady] = useState(false);
   const [portalSettings, setPortalSettings] = useState<any>({});
@@ -269,7 +268,6 @@ export default function App() {
                                         isLocked={isLocked} 
                                         isAdmin={isAdmin}
                                         onClick={() => setViewingProduct(p)}
-                                        onEdit={() => setIsEditingPreset({ modIdx, p })}
                                       />
                                     </div>
                                   );

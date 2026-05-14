@@ -145,7 +145,7 @@ export function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: "spring", damping: 35, stiffness: 300 }}
-            className="relative w-full md:w-[420px] h-full bg-white shadow-2xl flex flex-col overflow-hidden border-l border-black/[0.05] rounded-none"
+            className="relative w-full md:w-[420px] h-[100dvh] bg-white shadow-2xl flex flex-col overflow-hidden border-l border-black/[0.05] rounded-none"
           >
             {/* Header: Compact Luxury */}
             <div className="px-4 py-4 md:px-8 md:py-8 flex items-center justify-between border-b border-black/[0.03] bg-white/50 backdrop-blur-md sticky top-0 z-20">
@@ -316,9 +316,9 @@ export function CartDrawer() {
               )}
             </div>
 
-            {/* Footer */}
+            {/* Footer: Fixed at bottom */}
             {items.length > 0 && (
-              <div className="p-4 md:p-6 bg-white border-t border-black/[0.03] flex flex-col gap-3 md:gap-4 shadow-[0_-15px_30px_rgba(0,0,0,0.03)] md:shadow-[0_-20px_40px_rgba(0,0,0,0.05)] sticky bottom-0 z-20 pb-4 md:pb-6">
+              <div className="p-4 md:p-6 bg-white border-t border-black/[0.03] flex flex-col gap-3 md:gap-4 shadow-[0_-20px_40px_rgba(0,0,0,0.03)] shrink-0 pb-6 md:pb-8">
                 <div className="space-y-1 md:space-y-1.5">
                   <div className="flex justify-between items-center text-gray-400">
                      <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest ">{t("subtotal")}</span>
