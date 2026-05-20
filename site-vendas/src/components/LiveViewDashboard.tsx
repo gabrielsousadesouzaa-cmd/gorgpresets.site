@@ -33,6 +33,8 @@ export function GlobalRadar() {
   const [pings, setPings] = useState<LivePing[]>([]);
 
   useEffect(() => {
+    if (!supabase) return;
+
     // 1. Escutar por NOVAS visitas em TEMPO REAL (Iniciando do Zero)
     const channel = supabase
       .channel('realtime_visits_zero')
@@ -52,7 +54,9 @@ export function GlobalRadar() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (supabase && channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, []);
 

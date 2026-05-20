@@ -18,6 +18,8 @@ export const trackCheckoutClick = async (productName?: string, type: 'SOLO' | 'C
     if (/tablet|ipad/i.test(userAgent)) device = 'Tablet';
     if (/android/i.test(userAgent) && !/mobile/i.test(userAgent)) device = 'Tablet';
 
+    if (!supabase) return;
+
     await supabase.from('site_visits').insert([{
       session_id: sessionId,
       ip: 'Checkout Click',
