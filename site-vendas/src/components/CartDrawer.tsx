@@ -5,7 +5,7 @@ import { useCurrency } from "@/store/currencyStore";
 import { useLanguage } from "@/store/languageStore";
 import { useProducts } from "@/hooks/useProducts";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { Trash2, X, ShoppingCart, Plus, ShieldCheck, Zap } from "lucide-react";
+import { Trash2, X, ShoppingCart, Plus, ShieldCheck, Zap, Shirt, Gift, Check, Tag, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trackCheckoutClick } from "@/components/trackCheckout";
 
@@ -167,37 +167,76 @@ export function CartDrawer() {
               </button>
             </div>
 
-            {/* Promo Progress Banner: Simplified & Clean */}
+            {/* Promo Progress Level Bar: Ultra-Premium & Professional */}
             {settings.integration.isBuy3Get1FreeEnabled && (
-              <div className="px-6 md:px-8 mt-2 md:mt-3 mb-1">
-                <div className={`relative overflow-hidden rounded-xl p-3 md:p-4 transition-all duration-500 border ${itemCount >= 3 ? 'bg-black border-black text-white' : 'bg-gray-50 border-black/5 text-black'}`}>
-                  <div className="relative z-10 flex flex-col gap-3">
-                    {/* Header Compacto */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${itemCount >= 3 ? 'bg-white/10' : 'bg-white shadow-sm border border-black/5'}`}>
-                          {itemCount >= 6 ? '🔥' : itemCount >= 3 ? '🎉' : '🎁'}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className={`text-[7px] font-bold uppercase tracking-[0.2em] opacity-60`}>
-                            {itemCount >= 6 ? 'Status' : 'Progresso'}
-                          </span>
-                          <p className={`text-[10px] md:text-[11px] font-bold uppercase tracking-tight leading-tight`}>
-                            {promo.msg}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={`text-[9px] font-bold opacity-60`}>
-                        {itemCount}/6
-                      </span>
+              <div className="px-6 md:px-8 mt-1.5 mb-1.5">
+                <div className="bg-neutral-50/95 border border-neutral-100 rounded-xl p-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] relative overflow-hidden backdrop-blur-md">
+                  {/* Subtle Top Glow line */}
+                  <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#d82828]/25 to-transparent" />
+
+                  {/* Compact Header: Combined Descriptive Message & Status Badges */}
+                  <div className="flex items-center justify-between gap-3 mb-2 px-0.5">
+                    <p className="text-xs md:text-[11.5px] font-bold text-neutral-800 tracking-tight leading-tight flex-grow text-left">
+                      {promo.msg}
+                    </p>
+                    <div className="shrink-0">
+                      {itemCount >= 6 ? (
+                        <span className="px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-[#d82828] text-white text-[8px] md:text-[8px] font-black uppercase tracking-wider rounded flex items-center gap-0.5 shadow-sm">
+                          <Zap size={6} className="fill-current animate-bounce" /> {t("cartBadgeMax")}
+                        </span>
+                      ) : itemCount >= 3 ? (
+                        <span className="px-1.5 py-0.5 bg-emerald-600 text-white text-[8px] md:text-[8px] font-black uppercase tracking-wider rounded flex items-center gap-0.5 shadow-sm">
+                          <Check size={6} strokeWidth={4} /> {t("cartBadgeLeve3")}
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 bg-neutral-200/80 text-neutral-500 text-[8px] md:text-[8px] font-black uppercase tracking-wider rounded">
+                          {t("cartBadgeNoPromo")}
+                        </span>
+                      )}
                     </div>
+                  </div>
+
+                  {/* Progressive Level Bar (Mathematically Centered & 100% Safe from Clipping) */}
+                  <div className="relative h-8 my-1">
+                    {/* Track Line (Sleek, thin and centered with 24px safe margins) */}
+                    <div className="absolute left-6 right-6 h-[4px] bg-neutral-200/50 rounded-full top-1/2 -translate-y-1/2 z-0" />
                     
-                    {/* Barra de Progresso Minimalista */}
-                    <div className={`w-full h-1 rounded-full overflow-hidden ${itemCount >= 3 ? 'bg-white/20' : 'bg-gray-200'}`}>
-                      <div
-                        className={`h-full transition-all duration-1000 ease-out ${itemCount >= 6 ? 'bg-yellow-400' : itemCount >= 3 ? 'bg-white' : 'bg-[#d82828]'}`}
-                        style={{ width: `${promo.progress}%` }}
-                      />
+                    {/* Active Progress Line (Stretches exactly between track bounds with glow) */}
+                    <div 
+                      className="absolute left-6 h-[4px] bg-gradient-to-r from-[#d82828] to-[#ff4b4b] rounded-full top-1/2 -translate-y-1/2 z-0 shadow-[0_0_8px_rgba(216,40,40,0.25)] transition-all duration-1000 ease-out" 
+                      style={{ width: `calc((100% - 48px) * ${Math.min(6, itemCount) / 6})` }}
+                    />
+
+                    {/* Milestone 1: LEVE 3 (at exactly 50% of parent width, perfectly centered) */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                      <div className="flex flex-col items-center gap-0.5 relative">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-500 shadow-sm ${itemCount >= 3 ? 'bg-emerald-600 border-white text-white scale-110 shadow-sm' : 'bg-white border-neutral-300 text-neutral-400'}`}>
+                          {itemCount >= 3 ? (
+                            <Check size={9} strokeWidth={4} />
+                          ) : (
+                            <span className="text-[8px] font-black">3</span>
+                          )}
+                        </div>
+                        <span className={`text-[7px] md:text-[7px] font-black tracking-widest whitespace-nowrap uppercase ${itemCount >= 3 ? 'text-emerald-600 font-extrabold' : 'text-neutral-400'}`}>
+                          {t("cartMilestoneLeve3")}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Milestone 2: LEVE 6 (positioned at right-6, translated X by 50% to align center with track end. Safe from right-edge clipping!) */}
+                    <div className="absolute right-6 top-1/2 translate-x-1/2 -translate-y-1/2 z-10">
+                      <div className="flex flex-col items-center gap-0.5 relative">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-500 shadow-sm ${itemCount >= 6 ? 'bg-gradient-to-r from-amber-500 to-[#d82828] border-white text-white scale-110 shadow-sm' : 'bg-white border-neutral-300 text-neutral-400'}`}>
+                          {itemCount >= 6 ? (
+                            <Gift size={9} className="animate-bounce" />
+                          ) : (
+                            <span className="text-[8px] font-black">6</span>
+                          )}
+                        </div>
+                        <span className={`text-[7px] md:text-[7px] font-black tracking-widest whitespace-nowrap uppercase ${itemCount >= 6 ? 'text-[#d82828] font-extrabold' : 'text-neutral-400'}`}>
+                          {t("cartMilestoneLeve6")}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -229,22 +268,24 @@ export function CartDrawer() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Upsell Sugestão: Top Position for better conversion */}
+                  {/* Upsell Sugestão: Top Position for better conversion (Premium Elegant Highlight) */}
                   {upsellProduct && (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-3 md:p-4 rounded-xl md:rounded-2xl border border-black/[0.06] bg-gradient-to-br from-gray-50/80 to-white flex items-center justify-between gap-3 md:gap-4 relative overflow-hidden group shadow-sm"
+                      className="p-3 pl-4 md:p-4 md:pl-5 rounded-xl md:rounded-2xl border border-[#d82828]/[0.08] bg-gradient-to-br from-neutral-50/90 via-white to-red-50/[0.08] flex items-center justify-between gap-3 md:gap-4 relative overflow-hidden group shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-[#d82828]/20 transition-all duration-300"
                     >
+                      {/* Left Accent indicator line for elegant premium recommendation branding */}
+                      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#d82828] to-[#ff4b4b]" />
 
                       <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden shrink-0 border border-black/[0.03] shadow-sm">
+                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden shrink-0 border border-black/[0.03] shadow-sm">
                           <img src={upsellProduct.image} className="w-full h-full object-cover" alt="" />
                         </div>
 
                         <div className="min-w-0">
-                          <span className="px-1.5 py-0.5 md:px-2 md:py-0.5 bg-black text-white text-[6px] md:text-[7px] font-black uppercase tracking-widest rounded-md mb-1 inline-block">
-                            {t("cartUpsell")}
+                          <span className="px-1.5 py-0.5 md:px-2 md:py-0.5 bg-[#d82828]/10 text-[#d82828] text-[7px] font-black uppercase tracking-wider rounded flex items-center gap-1 mb-1.5 w-max">
+                            <Sparkles size={8} className="fill-current" /> {t("cartUpsell")}
                           </span>
                           <p className="font-bold text-sm md:text-sm text-black uppercase tracking-tight truncate leading-none mb-1 ">
                             {upsellProduct.name}
@@ -284,13 +325,27 @@ export function CartDrawer() {
                             <h3 className="text-sm md:text-sm font-bold text-black uppercase tracking-tight truncate leading-tight ">
                               {item.product.name}
                             </h3>
+                            
+                            {/* Preço e Indicação de Grátis com original riscado */}
                             {item.isFree ? (
-                               <span className="inline-block px-1.5 py-0.5 bg-[#d82828] text-white text-[7px] md:text-[8px] font-black uppercase rounded-full tracking-widest">{t("free")}</span>
+                               <div className="flex items-center gap-2">
+                                  <span className="text-base md:text-base font-black text-[#d82828] uppercase">{t("free")}</span>
+                                  <span className="text-[10px] md:text-[11px] text-gray-300 line-through font-bold">{formatCurrency(item.product.price)}</span>
+                               </div>
                             ) : (
                                <div className="flex items-center gap-2">
                                   <span className="text-base md:text-base font-black text-gray-950">{formatCurrency(item.product.price)}</span>
                                   {item.product.originalPrice > 0 && <span className="text-[8px] md:text-[8px] text-gray-300 line-through font-bold">{formatCurrency(item.product.originalPrice)}</span>}
                                </div>
+                            )}
+
+                            {/* Cupom Aplicado dinamicamente dependendo da quantidade */}
+                            {itemCount >= 3 && (
+                              <div className="flex items-center gap-1 text-[8px] md:text-[9px] font-black uppercase text-black tracking-wider mt-1.5">
+                                <Tag size={10} className="text-black shrink-0" strokeWidth={2.5} />
+                                <span>{itemCount >= 6 ? t("cartCoupon6x3") : t("cartCoupon3x2")}</span>
+                                <span className="text-[9px]">🎁</span>
+                              </div>
                             )}
                           </div>
 
@@ -310,32 +365,40 @@ export function CartDrawer() {
 
             {/* Footer: Compact & Professional */}
             {items.length > 0 && (
-              <div className="p-4 md:p-5 bg-white border-t border-black/[0.03] flex flex-col gap-4 shadow-[0_-15px_40px_rgba(0,0,0,0.04)] shrink-0 pb-6 md:pb-6">
-                <div className="space-y-1.5">
+              <div className="p-3 md:p-4 bg-white border-t border-black/[0.03] flex flex-col gap-2.5 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] shrink-0 pb-4 md:pb-4">
+                <div className="space-y-1">
                   <div className="flex justify-between items-center text-gray-400">
                      <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-[0.2em] ">{t("subtotal")}</span>
-                     <span className="text-sm md:text-base font-black text-gray-400">{formatCurrency(getSubtotal())}</span>
+                     <span className="text-xs md:text-sm font-black text-gray-400">{formatCurrency(getSubtotal())}</span>
                   </div>
 
                   {getPromoDiscount() > 0 && (
                     <div className="flex justify-between items-center text-[#d82828]">
                        <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-[0.2em] ">{t("discountCoupon")}</span>
-                       <span className="text-sm md:text-base font-black">- {formatCurrency(getPromoDiscount())}</span>
+                       <span className="text-xs md:text-sm font-black">- {formatCurrency(getPromoDiscount())}</span>
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-black/[0.05]">
-                    <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-[#d82828] ">{t("cartTotalOrder")}</span>
-                    <span className="text-xl md:text-2xl font-black text-black tracking-tighter leading-none ">{formatCurrency(getTotal())}</span>
+                  <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-black/[0.05]">
+                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[#d82828] ">{t("cartTotalOrder")}</span>
+                    <span className="text-lg md:text-xl font-black text-black tracking-tighter leading-none ">{formatCurrency(getTotal())}</span>
                   </div>
                 </div>
 
                 <button
                   onClick={handleCheckout}
-                  className="shimmer-effect w-full h-12 md:h-14 bg-black text-white rounded-xl md:rounded-2xl font-black text-[10px] md:text-[11px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 hover:bg-[#d82828] transition-all duration-500 shadow-lg overflow-hidden relative active:scale-[0.98]"
+                  className="shimmer-effect w-full h-10 md:h-12 bg-black text-white rounded-lg md:rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 hover:bg-[#d82828] transition-all duration-500 shadow-md overflow-hidden relative active:scale-[0.98]"
                 >
                   <span className="relative z-10">{t("checkout")}</span>
-                  <Zap size={14} fill="currentColor" className="relative z-10 md:w-4 md:h-4" />
+                  <Zap size={12} fill="currentColor" className="relative z-10 md:w-3.5 md:h-3.5" />
+                </button>
+
+                {/* Link para Continuar Comprando */}
+                <button
+                  onClick={closeCart}
+                  className="w-full text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-[#d82828] transition-colors underline mt-0.5"
+                >
+                  {t("continueShopping")}
                 </button>
               </div>
             )}

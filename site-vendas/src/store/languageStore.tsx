@@ -327,7 +327,14 @@ export const translations = {
   promoTier3: { PT: "🎉 PARABÉNS! Você liberou o 3x2. Adicione mais 3 e PAGUE APENAS METADE (Leve 6, Pague 3)!", EN: "🎉 CONGRATS! You unlocked 3x2. Add 3 more and PAY HALF PRICE (Buy 6, Pay 3)!", ES: "🎉 ¡FELICIDADES! Has desbloqueado el 3x2. ¡Añade 3 más y PAGA SOLO LA MITAD (Lleva 6, Paga 3)!", FR: "🎉 BRAVO! Vous avez débloqué 3x2. Ajoutez 3 de plus et PAYEZ LA MOITIÉ (Prenez 6, Payez 3)!" },
   promoTier4to5: { PT: "Faltam só {n} itens para você desbloquear o DESCONTO MÁXIMO (50%)!", EN: "Only {n} more items to unlock the MAXIMUM DISCOUNT (50%)!", ES: "¡Solo faltan {n} ítems para desbloquear el DESCUENTO MÁXIMO (50%)!", FR: "Plus que {n} articles pour débloquer le RABAIS MAX (50%)!" },
   promoTier6Plus: { PT: "🔥 NÍVEL MÁXIMO! Você está levando 6 presets pelo preço de 3. Aproveite!", EN: "🔥 MAXIMUM LEVEL! You are getting 6 presets for the price of 3. Enjoy!", ES: "🔥 ¡NIVEL MÁXIMO! Te llevas 6 presets por el precio de 3. ¡Aprovecha!", FR: "🔥 NIVEAU MAX! 6 presets pour le prix de 3. Profitez-en!" },
-  
+  cartBadgeMax: { PT: "MÁXIMO", EN: "MAXIMUM", ES: "MÁXIMO", FR: "MAXIMUM" },
+  cartBadgeLeve3: { PT: "LEVE 3", EN: "BUY 3", ES: "LLEVA 3", FR: "ACHETEZ 3" },
+  cartBadgeNoPromo: { PT: "SEM PROMO", EN: "NO PROMO", ES: "SIN PROMO", FR: "SANS PROMO" },
+  cartMilestoneLeve3: { PT: "LEVE 3", EN: "BUY 3", ES: "LLEVA 3", FR: "ACHETEZ 3" },
+  cartMilestoneLeve6: { PT: "LEVE 6", EN: "BUY 6", ES: "LLEVA 6", FR: "ACHETEZ 6" },
+  cartCoupon3x2: { PT: "LEVE 3 PAGUE 2", EN: "BUY 3 PAY 2", ES: "LLEVA 3 PAGA 2", FR: "3 ACHETÉS 2 PAYÉS" },
+  cartCoupon6x3: { PT: "LEVE 6 PAGUE 3", EN: "BUY 6 PAY 3", ES: "LLEVA 6 PAGA 3", FR: "6 ACHETÉS 3 PAYÉS" },
+
   // Checkout
   chkSummary: { PT: "Resumo do pedido", EN: "Order Summary", ES: "Resumen del pedido", FR: "Résumé de la commande" },
   chkPixDisc: { PT: "Desconto PIX", EN: "PIX Discount", ES: "Descuento PIX", FR: "Réduction PIX" },
