@@ -167,113 +167,81 @@ export function CartDrawer() {
               </button>
             </div>
 
-            {/* Promo Progress Level Bar: Sleek, Compact & Brand-Harmonized Redesign */}
-            {settings.integration.isBuy3Get1FreeEnabled && (() => {
-              // Custom styles dynamically calculated per render
-              const getVisuals = () => {
-                if (itemCount >= 6) {
-                  return {
-                    cardBg: "bg-gradient-to-br from-red-50/30 to-rose-50/20 border border-red-200/40",
-                    progressBar: "bg-gradient-to-r from-[#d82828] to-[#ff4b4b] shadow-[0_0_8px_rgba(216,40,40,0.25)] animate-pulse",
-                    milestone3Class: "bg-emerald-600 text-white",
-                    milestone6Class: "bg-[#d82828] text-white animate-red-pulse",
-                    textClass: "text-red-950"
-                  };
-                }
-                if (itemCount >= 3) {
-                  return {
-                    cardBg: "bg-gradient-to-br from-emerald-50/20 to-teal-50/15 border border-emerald-100/50",
-                    progressBar: "bg-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.2)]",
-                    milestone3Class: "bg-emerald-600 text-white animate-emerald-pulse",
-                    milestone6Class: "bg-neutral-100 text-neutral-400 border-neutral-200",
-                    textClass: "text-emerald-950"
-                  };
-                }
-                return {
-                  cardBg: "bg-neutral-50/70 border border-neutral-100/80",
-                  progressBar: "bg-neutral-300",
-                  milestone3Class: "bg-neutral-100 text-neutral-400 border-neutral-200",
-                  milestone6Class: "bg-neutral-100 text-neutral-400 border-neutral-200",
-                  textClass: "text-neutral-800"
-                };
-              };
+            {/* Promo Progress Level Bar: Ultra-Premium & Professional */}
+            {settings.integration.isBuy3Get1FreeEnabled && (
+              <div className="px-6 md:px-8 mt-1.5 mb-1.5">
+                <div className="bg-neutral-50/95 border border-neutral-100 rounded-xl p-3 shadow-[0_4px_20px_rgba(0,0,0,0.01)] relative overflow-hidden backdrop-blur-md">
+                  {/* Subtle Top Glow line */}
+                  <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#d82828]/25 to-transparent" />
 
-              const vis = getVisuals();
-
-              return (
-                <div className="px-6 md:px-8 mt-1 mb-1">
-                  {/* Custom CSS Keyframes Injection */}
-                  <style dangerouslySetInnerHTML={{__html: `
-                    @keyframes red-pulse {
-                      0% { box-shadow: 0 0 0 0 rgba(216, 40, 40, 0.4); }
-                      70% { box-shadow: 0 0 0 6px rgba(216, 40, 40, 0); }
-                      100% { box-shadow: 0 0 0 0 rgba(216, 40, 40, 0); }
-                    }
-                    @keyframes emerald-pulse {
-                      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-                      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-                      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-                    }
-                    .animate-red-pulse {
-                      animation: red-pulse 2s infinite;
-                    }
-                    .animate-emerald-pulse {
-                      animation: emerald-pulse 2s infinite;
-                    }
-                  `}} />
-
-                  <div className={`rounded-xl p-3.5 transition-all duration-300 ${vis.cardBg}`}>
-                    {/* Compact Title / Incentive Message (Increased Font Size and Line Height) */}
-                    <div className="flex items-start gap-1.5 mb-3">
-                      <Sparkles size={13} className={`mt-0.5 shrink-0 ${itemCount >= 6 ? "text-[#d82828] animate-spin" : itemCount >= 3 ? "text-emerald-600" : "text-neutral-400"}`} style={itemCount >= 6 ? { animationDuration: '3s' } : undefined} />
-                      <p className={`text-[12.5px] md:text-[13px] font-black tracking-tight leading-normal ${vis.textClass}`}>
-                        {promo.msg.split(/(\d+)/g).map((part, idx) => 
-                          /^\d+$/.test(part) ? (
-                            <span key={idx} className="font-black text-xs md:text-sm text-[#d82828] mx-0.5 px-0.5 rounded bg-black/5 inline-block">{part}</span>
-                          ) : part
-                        )}
-                      </p>
+                  {/* Compact Header: Combined Descriptive Message & Status Badges */}
+                  <div className="flex items-center justify-between gap-3 mb-2 px-0.5">
+                    <p className="text-xs md:text-[11.5px] font-bold text-neutral-800 tracking-tight leading-tight flex-grow text-left">
+                      {promo.msg}
+                    </p>
+                    <div className="shrink-0">
+                      {itemCount >= 6 ? (
+                        <span className="px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-[#d82828] text-white text-[8px] md:text-[8px] font-black uppercase tracking-wider rounded flex items-center gap-0.5 shadow-sm">
+                          <Zap size={6} className="fill-current animate-bounce" /> {t("cartBadgeMax")}
+                        </span>
+                      ) : itemCount >= 3 ? (
+                        <span className="px-1.5 py-0.5 bg-emerald-600 text-white text-[8px] md:text-[8px] font-black uppercase tracking-wider rounded flex items-center gap-0.5 shadow-sm">
+                          <Check size={6} strokeWidth={4} /> {t("cartBadgeLeve3")}
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 bg-neutral-200/80 text-neutral-500 text-[8px] md:text-[8px] font-black uppercase tracking-wider rounded">
+                          {t("cartBadgeNoPromo")}
+                        </span>
+                      )}
                     </div>
+                  </div>
 
-                    {/* Minimalist Progress Track with integrated floating pill milestones */}
-                    <div className="relative h-6 flex items-center">
-                      {/* Track Line */}
-                      <div className="absolute left-3 right-3 h-[4px] bg-neutral-200/40 rounded-full z-0" />
-                      
-                      {/* Active Progress Line */}
-                      <div 
-                        className={`absolute left-3 h-[4px] rounded-full z-0 transition-all duration-1000 ease-out ${vis.progressBar}`} 
-                        style={{ width: `calc((100% - 24px) * ${Math.min(6, itemCount) / 6})` }}
-                      />
+                  {/* Progressive Level Bar (Mathematically Centered & 100% Safe from Clipping) */}
+                  <div className="relative h-8 my-1">
+                    {/* Track Line (Sleek, thin and centered with 24px safe margins) */}
+                    <div className="absolute left-6 right-6 h-[4px] bg-neutral-200/50 rounded-full top-1/2 -translate-y-1/2 z-0" />
+                    
+                    {/* Active Progress Line (Stretches exactly between track bounds with glow) */}
+                    <div 
+                      className="absolute left-6 h-[4px] bg-gradient-to-r from-[#d82828] to-[#ff4b4b] rounded-full top-1/2 -translate-y-1/2 z-0 shadow-[0_0_8px_rgba(216,40,40,0.25)] transition-all duration-1000 ease-out" 
+                      style={{ width: `calc((100% - 48px) * ${Math.min(6, itemCount) / 6})` }}
+                    />
 
-                      {/* Milestone 1: LEVE 3 (at exactly 50%) */}
-                      <div 
-                        className="absolute -translate-x-1/2 left-1/2 z-10 flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-full border border-neutral-150 shadow-sm"
-                      >
-                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-black transition-all duration-300 ${vis.milestone3Class}`}>
-                          {itemCount >= 3 ? <Check size={7} strokeWidth={5} /> : "3"}
+                    {/* Milestone 1: LEVE 3 (at exactly 50% of parent width, perfectly centered) */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                      <div className="flex flex-col items-center gap-0.5 relative">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-500 shadow-sm ${itemCount >= 3 ? 'bg-emerald-600 border-white text-white scale-110 shadow-sm' : 'bg-white border-neutral-300 text-neutral-400'}`}>
+                          {itemCount >= 3 ? (
+                            <Check size={9} strokeWidth={4} />
+                          ) : (
+                            <span className="text-[8px] font-black">3</span>
+                          )}
                         </div>
-                        <span className={`text-[8.5px] font-black uppercase tracking-wider ${itemCount >= 3 ? 'text-emerald-700 font-extrabold' : 'text-neutral-500'}`}>
+                        <span className={`text-[7px] md:text-[7px] font-black tracking-widest whitespace-nowrap uppercase ${itemCount >= 3 ? 'text-emerald-600 font-extrabold' : 'text-neutral-400'}`}>
                           {t("cartMilestoneLeve3")}
                         </span>
                       </div>
+                    </div>
 
-                      {/* Milestone 2: LEVE 6 (at 100%, right edge) */}
-                      <div 
-                        className="absolute right-3 translate-x-1/4 z-10 flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-full border border-neutral-150 shadow-sm"
-                      >
-                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-black transition-all duration-300 ${vis.milestone6Class}`}>
-                          {itemCount >= 6 ? <Gift size={7} /> : "6"}
+                    {/* Milestone 2: LEVE 6 (positioned at right-6, translated X by 50% to align center with track end. Safe from right-edge clipping!) */}
+                    <div className="absolute right-6 top-1/2 translate-x-1/2 -translate-y-1/2 z-10">
+                      <div className="flex flex-col items-center gap-0.5 relative">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-500 shadow-sm ${itemCount >= 6 ? 'bg-gradient-to-r from-amber-500 to-[#d82828] border-white text-white scale-110 shadow-sm' : 'bg-white border-neutral-300 text-neutral-400'}`}>
+                          {itemCount >= 6 ? (
+                            <Gift size={9} className="animate-bounce" />
+                          ) : (
+                            <span className="text-[8px] font-black">6</span>
+                          )}
                         </div>
-                        <span className={`text-[8.5px] font-black uppercase tracking-wider ${itemCount >= 6 ? 'text-[#d82828] font-extrabold' : 'text-neutral-500'}`}>
+                        <span className={`text-[7px] md:text-[7px] font-black tracking-widest whitespace-nowrap uppercase ${itemCount >= 6 ? 'text-[#d82828] font-extrabold' : 'text-neutral-400'}`}>
                           {t("cartMilestoneLeve6")}
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
-              );
-            })()}
+              </div>
+            )}
 
 
             {/* Content Section: High Density */}
@@ -335,84 +303,60 @@ export function CartDrawer() {
                     </motion.div>
                   )}
 
-                  {/* Items List (Sorted with Free Items at the Top and Custom Highlights) */}
+                  {/* Items List */}
                   <div className="space-y-2">
                     <AnimatePresence mode="popLayout">
-                      {(() => {
-                        // Sort items so free ones are always at the top of the list
-                        const sortedItems = [...items].sort((a, b) => {
-                          if (a.isFree && !b.isFree) return -1;
-                          if (!a.isFree && b.isFree) return 1;
-                          return 0;
-                        });
+                      {items.map((item, idx) => (
+                        <motion.div
+                          layout
+                          key={item.product.id}
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, scale: 0.98, filter: "blur(5px)" }}
+                          transition={{ duration: 0.3, delay: idx * 0.03 }}
+                          className={`flex gap-3 md:gap-4 items-center p-2.5 md:p-3 rounded-xl md:rounded-2xl border border-black/[0.03] group hover:bg-gray-50/50 transition-all duration-300 shadow-sm ${item.isFree ? 'bg-red-50/20' : 'bg-white'}`}
+                        >
+                          <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden shrink-0 border border-black/[0.03] shadow-sm">
+                            <img src={item.product.image} className="w-full h-full object-cover" alt="" />
+                          </div>
 
-                        return sortedItems.map((item, idx) => (
-                          <motion.div
-                            layout
-                            key={item.product.id}
-                            initial={{ opacity: 0, x: 10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, scale: 0.98, filter: "blur(5px)" }}
-                            transition={{ duration: 0.3, delay: idx * 0.03 }}
-                            className={`flex gap-3 md:gap-4 items-center p-2.5 md:p-3 rounded-xl md:rounded-2xl border transition-all duration-300 shadow-sm relative overflow-hidden ${
-                              item.isFree 
-                                ? 'bg-gradient-to-br from-emerald-50/20 to-teal-50/15 border-emerald-500/20 shadow-emerald-50/50' 
-                                : 'bg-white border-black/[0.03] group hover:bg-gray-50/50'
-                            }`}
-                          >
-                            {/* Premium floating ribbon/badge for free gifts */}
-                            {item.isFree && (
-                              <div className="absolute top-0 right-0 px-2 py-0.5 bg-emerald-600 text-white text-[7.5px] font-black uppercase tracking-wider rounded-bl flex items-center gap-0.5 z-10 shadow-sm">
-                                🎁 {t("free")}
-                              </div>
+                          <div className="flex-grow min-w-0 space-y-1">
+                            <span className="text-[6px] md:text-[7px] font-bold uppercase tracking-[0.1em] text-[#d82828] ">{item.product.category}</span>
+                            <h3 className="text-sm md:text-sm font-bold text-black uppercase tracking-tight truncate leading-tight ">
+                              {item.product.name}
+                            </h3>
+                            
+                            {/* Preço e Indicação de Grátis com original riscado */}
+                            {item.isFree ? (
+                               <div className="flex items-center gap-2">
+                                  <span className="text-base md:text-base font-black text-[#d82828] uppercase">{t("free")}</span>
+                                  <span className="text-[10px] md:text-[11px] text-gray-300 line-through font-bold">{formatCurrency(item.product.price)}</span>
+                               </div>
+                            ) : (
+                               <div className="flex items-center gap-2">
+                                  <span className="text-base md:text-base font-black text-gray-950">{formatCurrency(item.product.price)}</span>
+                                  {item.product.originalPrice > 0 && <span className="text-[8px] md:text-[8px] text-gray-300 line-through font-bold">{formatCurrency(item.product.originalPrice)}</span>}
+                                </div>
                             )}
 
-                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden shrink-0 border border-black/[0.03] shadow-sm">
-                              <img src={item.product.image} className="w-full h-full object-cover" alt="" />
-                            </div>
+                            {/* Cupom Aplicado dinamicamente dependendo da quantidade */}
+                            {itemCount >= 3 && (
+                              <div className="flex items-center gap-1 text-[8px] md:text-[9px] font-black uppercase text-black tracking-wider mt-1.5">
+                                <Tag size={10} className="text-black shrink-0" strokeWidth={2.5} />
+                                <span>{itemCount >= 6 ? t("cartCoupon6x3") : t("cartCoupon3x2")}</span>
+                                <span className="text-[9px]">🎁</span>
+                              </div>
+                            )}
+                          </div>
 
-                            <div className="flex-grow min-w-0 space-y-1">
-                              <span className="text-[6px] md:text-[7px] font-bold uppercase tracking-[0.1em] text-[#d82828] pr-10 block">{item.product.category}</span>
-                              <h3 className="text-sm md:text-sm font-bold text-black uppercase tracking-tight truncate pr-12 leading-tight">
-                                {item.product.name}
-                              </h3>
-                              
-                              {/* Price and free indication */}
-                              {item.isFree ? (
-                                 <div className="flex items-center gap-2">
-                                    <span className="text-base md:text-base font-black text-emerald-600 uppercase">{t("free")}</span>
-                                    <span className="text-[10px] md:text-[11px] text-gray-300 line-through font-bold">{formatCurrency(item.product.price)}</span>
-                                 </div>
-                              ) : (
-                                 <div className="flex items-center gap-2">
-                                    <span className="text-base md:text-base font-black text-gray-950">{formatCurrency(item.product.price)}</span>
-                                    {item.product.originalPrice > 0 && <span className="text-[8px] md:text-[8px] text-gray-300 line-through font-bold">{formatCurrency(item.product.originalPrice)}</span>}
-                                 </div>
-                              )}
-
-                              {/* Cupom Aplicado dinamicamente dependendo da quantidade */}
-                              {itemCount >= 3 && (
-                                <div className="flex items-center gap-1 text-[8px] md:text-[9px] font-black uppercase text-black tracking-wider mt-1.5">
-                                  <Tag size={10} className="text-black shrink-0" strokeWidth={2.5} />
-                                  <span>{itemCount >= 6 ? t("cartCoupon6x3") : t("cartCoupon3x2")}</span>
-                                  <span className="text-[9px]">🎁</span>
-                                </div>
-                              )}
-                            </div>
-
-                            <button
-                              onClick={() => removeItem(item.product.id)}
-                              className={`p-1.5 md:p-2 rounded-lg transition-all active:scale-90 ${
-                                item.isFree 
-                                  ? 'text-neutral-400 hover:text-[#d82828] hover:bg-red-50' 
-                                  : 'text-gray-300 hover:text-[#d82828] hover:bg-red-50'
-                              }`}
-                            >
-                              <Trash2 size={14} className="md:w-4 md:h-4" strokeWidth={2.5} />
-                            </button>
-                          </motion.div>
-                        ));
-                      })()}
+                          <button
+                            onClick={() => removeItem(item.product.id)}
+                            className="text-gray-300 hover:text-[#d82828] p-1.5 md:p-2 rounded-lg hover:bg-red-50 transition-all active:scale-90"
+                          >
+                            <Trash2 size={14} className="md:w-4 md:h-4" strokeWidth={2.5} />
+                          </button>
+                        </motion.div>
+                      ))}
                     </AnimatePresence>
                   </div>
                 </div>
