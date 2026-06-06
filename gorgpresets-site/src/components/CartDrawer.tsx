@@ -18,6 +18,16 @@ export function CartDrawer() {
   const { products } = useProducts();
   const { settings } = useSiteSettings();
 
+  // Sum manual prices if currency is USD or EUR
+  const getSubtotalUSD = () => items.reduce((acc, curr) => acc + (curr.product.priceUSD || curr.product.price * 0.20), 0);
+  const getSubtotalEUR = () => items.reduce((acc, curr) => acc + (curr.product.priceEUR || curr.product.price * 0.18), 0);
+
+  const getDiscountUSD = () => items.reduce((acc, curr) => curr.isFree ? acc + (curr.product.priceUSD || curr.product.price * 0.20) : acc, 0);
+  const getDiscountEUR = () => items.reduce((acc, curr) => curr.isFree ? acc + (curr.product.priceEUR || curr.product.price * 0.18) : acc, 0);
+
+  const getTotalUSD = () => getSubtotalUSD() - getDiscountUSD();
+  const getTotalEUR = () => getSubtotalEUR() - getDiscountEUR();
+
   const handleCheckout = async () => {
     if (items.length === 0) return;
     
@@ -322,7 +332,7 @@ export function CartDrawer() {
                           <p className="font-bold text-sm md:text-sm text-black uppercase tracking-tight truncate leading-none mb-1 ">
                             {upsellProduct.name}
                           </p>
-                          <p className="text-sm md:text-xs font-bold text-[#d82828]">{formatCurrency(upsellProduct.price)}</p>
+                          <p className="text-sm md:text-xs font-bold text-[#d82828]">{formatCurrency(upsellProduct.price, { priceUSD: upsellProduct.priceUSD, priceEUR: upsellProduct.priceEUR })}</p>
                         </div>
                       </div>
                       <button
@@ -381,12 +391,12 @@ export function CartDrawer() {
                               {item.isFree ? (
                                  <div className="flex items-center gap-2">
                                     <span className="text-base md:text-base font-black text-emerald-600 uppercase">{t("free")}</span>
-                                    <span className="text-[10px] md:text-[11px] text-gray-300 line-through font-bold">{formatCurrency(item.product.price)}</span>
+                                    <span className="text-[10px] md:text-[11px] text-gray-300 line-through font-bold">{formatCurrency(item.product.price, { priceUSD: item.product.priceUSD, priceEUR: item.product.priceEUR })}</span>
                                  </div>
                               ) : (
                                  <div className="flex items-center gap-2">
-                                    <span className="text-base md:text-base font-black text-gray-950">{formatCurrency(item.product.price)}</span>
-                                    {item.product.originalPrice > 0 && <span className="text-[8px] md:text-[8px] text-gray-300 line-through font-bold">{formatCurrency(item.product.originalPrice)}</span>}
+                                    <span className="text-base md:text-base font-black text-gray-950">{formatCurrency(item.product.price, { priceUSD: item.product.priceUSD, priceEUR: item.product.priceEUR })}</span>
+                                    {item.product.originalPrice > 0 && <span className="text-[8px] md:text-[8px] text-gray-300 line-through font-bold">{formatCurrency(item.product.originalPrice, { priceUSD: item.product.originalPriceUSD, priceEUR: item.product.originalPriceEUR })}</span>}
                                  </div>
                               )}
 
@@ -425,19 +435,19 @@ export function CartDrawer() {
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-gray-400">
                      <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-[0.2em] ">{t("subtotal")}</span>
-                     <span className="text-xs md:text-sm font-black text-gray-400">{formatCurrency(getSubtotal())}</span>
+                     <span className="text-xs md:text-sm font-black text-gray-400">{formatCurrency(getSubtotal(), { priceUSD: getSubtotalUSD(), priceEUR: getSubtotalEUR() })}</span>
                   </div>
 
                   {getPromoDiscount() > 0 && (
                     <div className="flex justify-between items-center text-[#d82828]">
                        <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-[0.2em] ">{t("discountCoupon")}</span>
-                       <span className="text-xs md:text-sm font-black">- {formatCurrency(getPromoDiscount())}</span>
+                       <span className="text-xs md:text-sm font-black">- {formatCurrency(getPromoDiscount(), { priceUSD: getDiscountUSD(), priceEUR: getDiscountEUR() })}</span>
                     </div>
                   )}
 
                   <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-black/[0.05]">
                     <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-[#d82828] ">{t("cartTotalOrder")}</span>
-                    <span className="text-lg md:text-xl font-black text-black tracking-tighter leading-none ">{formatCurrency(getTotal())}</span>
+                    <span className="text-lg md:text-xl font-black text-black tracking-tighter leading-none ">{formatCurrency(getTotal(), { priceUSD: getTotalUSD(), priceEUR: getTotalEUR() })}</span>
                   </div>
                 </div>
 

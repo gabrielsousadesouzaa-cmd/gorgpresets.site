@@ -110,18 +110,18 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
         <div className="flex flex-col gap-0.5 mb-4 md:mb-6">
           <div className="flex items-baseline gap-1.5 md:gap-2">
             <span className="text-xl md:text-2xl font-bold text-[#d82828]">
-              {formatCurrency(product.price)}
+              {formatCurrency(product.price, { priceUSD: product.priceUSD, priceEUR: product.priceEUR })}
             </span>
 
 
             {product.originalPrice && (
               <span className="text-[10px] md:text-xs font-semibold text-gray-300 line-through">
-                {formatCurrency(product.originalPrice)}
+                {formatCurrency(product.originalPrice, { priceUSD: product.originalPriceUSD, priceEUR: product.originalPriceEUR })}
               </span>
             )}
           </div>
           <div className="text-[9px] md:text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
-            {t("or")} 12x de <span className="text-gray-900">{formatCurrency(product.price / 12)}</span>
+            {t("or")} 12x de <span className="text-gray-900">{formatCurrency(product.price / 12, { priceUSD: product.priceUSD ? product.priceUSD / 12 : null, priceEUR: product.priceEUR ? product.priceEUR / 12 : null })}</span>
           </div>
         </div>
 

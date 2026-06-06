@@ -28,6 +28,22 @@ export default function Checkout() {
   const { settings } = useSiteSettings();
   const navigate = useNavigate();
 
+  // Sum manual prices if currency is USD or EUR
+  const getSubtotalUSD = () => items.reduce((acc, curr) => acc + (curr.product.priceUSD || curr.product.price * 0.20), 0);
+  const getSubtotalEUR = () => items.reduce((acc, curr) => acc + (curr.product.priceEUR || curr.product.price * 0.18), 0);
+
+  const getDiscountUSD = () => items.reduce((acc, curr) => curr.isFree ? acc + (curr.product.priceUSD || curr.product.price * 0.20) : acc, 0);
+  const getDiscountEUR = () => items.reduce((acc, curr) => curr.isFree ? acc + (curr.product.priceEUR || curr.product.price * 0.18) : acc, 0);
+
+  const getTotalUSD = () => getSubtotalUSD() - getDiscountUSD();
+  const getTotalEUR = () => getSubtotalEUR() - getDiscountEUR();
+
+  const getCheckoutTotal = () => {
+    if (currency === "USD") return getTotalUSD();
+    if (currency === "EUR") return getTotalEUR();
+    return getTotal();
+  };
+
   // UI state
   const [step, setStep] = useState<CheckoutStep>("form");
   const [isOrderOpen, setIsOrderOpen] = useState(true);
@@ -81,8 +97,9 @@ export default function Checkout() {
     .filter(p => !items.some(i => i.product.id === p.id))
     .slice(0, 2);
 
-  const pixDiscount = paymentMethod === "pix" ? getTotal() * 0.05 : 0;
-  const finalTotal = parseFloat((getTotal() - pixDiscount).toFixed(2));
+  const checkoutTotal = getCheckoutTotal();
+  const pixDiscount = (paymentMethod === "pix" && currency === "BRL") ? checkoutTotal * 0.05 : 0;
+  const finalTotal = parseFloat((checkoutTotal - pixDiscount).toFixed(2));
   const amountCents = Math.round(finalTotal * 100);
 
   // ── Validation ────────────────────────────────────────────────
@@ -251,7 +268,7 @@ export default function Checkout() {
             {/* Total */}
             <div className="text-center bg-gray-50 rounded-xl py-3 px-4 mb-6">
               <span className="text-[12px] text-gray-500 font-medium">Valor a pagar</span>
-              <p className="font-black text-[28px] text-[#db2727] tracking-tight">{formatCurrency(finalTotal)}</p>
+              <p className="font-black text-[28px] text-[#db2727] tracking-tight">{formatCurrency(finalTotal, { priceUSD: getTotalUSD() - pixDiscount, priceEUR: getTotalEUR() - pixDiscount })}</p>
             </div>
 
             {/* QR Code */}
@@ -360,11 +377,11 @@ export default function Checkout() {
                         <div className="flex items-center gap-2 mt-1">
                           {item.product.originalPrice && (
                             <span className="text-[11px] text-gray-400 line-through">
-                              {formatCurrency(item.product.originalPrice)}
+                              {formatCurrency(item.product.originalPrice, { priceUSD: item.product.originalPriceUSD, priceEUR: item.product.originalPriceEUR })}
                             </span>
                           )}
                           <span className="font-bold text-[14px] text-[#db2727]">
-                            {item.isFree ? t("free") : formatCurrency(item.product.price)}
+                            {item.isFree ? t("free") : formatCurrency(item.product.price, { priceUSD: item.product.priceUSD, priceEUR: item.product.priceEUR })}
                           </span>
                         </div>
                       </div>
@@ -375,14 +392,14 @@ export default function Checkout() {
                   {paymentMethod === "pix" && pixDiscount > 0 && (
                     <div className="flex justify-between items-center text-[13px] font-medium text-green-600 px-1 pt-2 border-t border-gray-100">
                       <span>{t("chkPixDisc")}</span>
-                      <span>- {formatCurrency(pixDiscount)}</span>
+                      <span>- {formatCurrency(pixDiscount, { priceUSD: 0, priceEUR: 0 })}</span>
                     </div>
                   )}
 
                   {/* Total */}
                   <div className="flex justify-between items-center px-1 pt-2 border-t border-gray-100">
                     <span className="font-bold text-[13px] text-gray-700">{t("total")}</span>
-                    <span className="font-black text-[18px] text-black">{formatCurrency(finalTotal)}</span>
+                    <span className="font-black text-[18px] text-black">{formatCurrency(finalTotal, { priceUSD: getTotalUSD() - pixDiscount, priceEUR: getTotalEUR() - pixDiscount })}</span>
                   </div>
 
                   {/* Cupom */}
@@ -546,9 +563,9 @@ export default function Checkout() {
                       <p className="text-[10px] text-gray-500 truncate mt-0.5">{t("chkOfferDesc")}</p>
                       <div className="flex items-center gap-2 mt-1">
                         {bump.originalPrice && (
-                          <span className="text-[10px] text-gray-400 line-through">{formatCurrency(bump.originalPrice)}</span>
+                          <span className="text-[10px] text-gray-400 line-through">{formatCurrency(bump.originalPrice, { priceUSD: bump.originalPriceUSD, priceEUR: bump.originalPriceEUR })}</span>
                         )}
-                        <span className="font-bold text-[12px] text-red-600">{formatCurrency(bump.price)}</span>
+                        <span className="font-bold text-[12px] text-red-600">{formatCurrency(bump.price, { priceUSD: bump.priceUSD, priceEUR: bump.priceEUR })}</span>
                       </div>
                     </div>
                   </label>
@@ -598,7 +615,7 @@ export default function Checkout() {
                   <p>{t("chkPixExpiration")}</p>
                   <div className="pt-2 border-t border-gray-200 mt-3 flex justify-between items-center">
                     <span className="font-medium">{t("chkPixOnlySight")}</span>
-                    <span className="font-black text-[#db2727] text-[16px]">{formatCurrency(finalTotal)}</span>
+                    <span className="font-black text-[#db2727] text-[16px]">{formatCurrency(finalTotal, { priceUSD: getTotalUSD() - pixDiscount, priceEUR: getTotalEUR() - pixDiscount })}</span>
                   </div>
                 </>
               ) : (
@@ -607,7 +624,7 @@ export default function Checkout() {
                   <p>{t("chkCardDetail")}</p>
                   <div className="pt-2 border-t border-gray-200 mt-3 flex justify-between items-center">
                     <span className="font-medium">{t("chkTermTotal")}</span>
-                    <span className="font-black text-black text-[16px]">{formatCurrency(getTotal())}</span>
+                    <span className="font-black text-black text-[16px]">{formatCurrency(getTotal(), { priceUSD: getTotalUSD(), priceEUR: getTotalEUR() })}</span>
                   </div>
                 </>
               )}

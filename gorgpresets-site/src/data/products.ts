@@ -18,6 +18,10 @@ export interface Product {
     tags: string[];
     checkoutUrl: string;
     ggCheckoutId?: string;
+    priceUSD?: number | null;
+    priceEUR?: number | null;
+    originalPriceUSD?: number | null;
+    originalPriceEUR?: number | null;
 
     isNew: boolean;
     isBestseller: boolean;

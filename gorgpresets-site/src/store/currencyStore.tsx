@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 type Currency = "BRL" | "USD" | "EUR";
 
@@ -18,6 +19,9 @@ const exchangeRates = {
 };
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
+  const { settings, loading } = useSiteSettings();
+  const defaultCurrency = settings?.integration?.defaultCurrency || "BRL";
+
   const [currency, setCurrencyState] = useState<Currency>(() => {
     const saved = localStorage.getItem("gorg-currency");
     return (saved as Currency) || "BRL";
@@ -28,11 +32,24 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("gorg-currency", c);
   };
 
+  // Sync with defaultCurrency from settings
+  useEffect(() => {
+    const saved = localStorage.getItem("gorg-currency");
+    if (!saved && !loading && defaultCurrency) {
+      setCurrencyState(defaultCurrency);
+    }
+  }, [loading, defaultCurrency]);
+
   // Auto-detecção por IP
   useEffect(() => {
     const detectLocale = async () => {
       // Se o usuário já tiver uma preferência salva, não sobrescrevemos
       if (localStorage.getItem("gorg-currency")) return;
+
+      // Se a moeda padrão das configurações já foi carregada e for diferente de BRL, não rodamos IP detection para respeitar a moeda oficial definida pelo Admin
+      if (!loading && defaultCurrency && defaultCurrency !== "BRL") {
+        return;
+      }
 
       try {
         const response = await fetch('https://ipapi.co/json/');
@@ -52,7 +69,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     };
 
     detectLocale();
-  }, []);
+  }, [loading, defaultCurrency]);
 
   const formatCurrency = (valueInBrl: number, manualPrices?: { priceUSD?: number | null; priceEUR?: number | null }) => {
     let converted = valueInBrl * (exchangeRates[currency] || 1);

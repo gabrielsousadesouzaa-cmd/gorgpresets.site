@@ -54,6 +54,7 @@ export interface IntegrationSettings {
   isCartEnabled: boolean;
   gateway: 'buckpay' | 'ggcheckout';
   isBuy3Get1FreeEnabled: boolean;
+  defaultCurrency?: 'BRL' | 'USD' | 'EUR';
 }
 
 export interface SiteSettings {
@@ -95,6 +96,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     isCartEnabled: true,
     gateway: 'buckpay',
     isBuy3Get1FreeEnabled: true,
+    defaultCurrency: 'BRL',
   },
   shopTheLook: [
     { id: "1", src: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&q=80", presetName: "VERÃO", productId: "1" },

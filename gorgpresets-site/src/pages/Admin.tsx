@@ -1927,6 +1927,39 @@ export default function Admin() {
                    </div>
                 </div>
 
+                {/* Moeda Oficial do Site */}
+                <div className="group relative">
+                   <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/0 via-blue-500/[0.02] to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl" />
+                   <div className="relative bg-white/40 backdrop-blur-sm p-8 md:p-12 rounded-[2.5rem] md:rounded-[3rem] border border-black/[0.03] hover:border-blue-500/10 transition-all shadow-sm space-y-6">
+                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                       <div className="flex items-center gap-6 md:gap-8">
+                         <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl md:rounded-[2rem] bg-blue-50 text-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/10 scale-110 shrink-0">
+                            <Globe size={32} strokeWidth={2.5} />
+                         </div>
+                         <div>
+                           <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-gray-950">Moeda Oficial do Site</h3>
+                           <p className="text-[10px] md:text-xs font-bold text-gray-400 mt-1 uppercase tracking-wider">Defina a moeda padrão exibida para novos visitantes</p>
+                         </div>
+                       </div>
+                       <select
+                         value={siteSettings.integration.defaultCurrency || "BRL"}
+                         onChange={(e) => {
+                           const val = e.target.value;
+                           setSiteSettings(prev => ({
+                             ...prev,
+                             integration: { ...prev.integration, defaultCurrency: val as any }
+                           }));
+                         }}
+                         className="h-12 px-6 bg-white border-2 border-black/5 rounded-2xl font-black text-xs uppercase outline-none focus:border-blue-500 transition-all shadow-sm cursor-pointer"
+                       >
+                         <option value="BRL">REAL (R$)</option>
+                         <option value="USD">DÓLAR ($)</option>
+                         <option value="EUR">EURO (€)</option>
+                       </select>
+                     </div>
+                   </div>
+                </div>
+
                 {/* Toggle do Carrinho */}
                 <div className="group relative">
                    <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/0 via-emerald-500/[0.02] to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl" />
@@ -2334,7 +2367,7 @@ export default function Admin() {
                               <input name="name" value={formData.name} onChange={handleInputChange} className="w-full h-16 md:h-20 bg-gray-50/50 focus:bg-white border border-black/[0.03] focus:border-black rounded-3xl md:rounded-[2rem] px-8 md:px-10 outline-none transition-all font-black text-lg md:text-2xl shadow-sm focus:shadow-2xl" required />
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 gap-6">
                               <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Category</label>
                                 <select name="category" value={formData.category} onChange={handleInputChange as any} className="w-full h-14 md:h-16 bg-gray-50/50 border border-black/[0.03] focus:border-black rounded-2xl md:rounded-[1.5rem] px-6 outline-none font-black text-[10px] md:text-xs tracking-widest uppercase">
@@ -2344,55 +2377,72 @@ export default function Admin() {
                                   <option value="Portrait">Pure Portrait</option>
                                 </select>
                               </div>
-                              <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Price (R$)</label>
-                                <input name="price" value={formData.price} onChange={handleInputChange} className="w-full h-14 md:h-16 bg-gray-50/50 border border-black/[0.03] focus:border-black rounded-2xl md:rounded-[1.5rem] px-6 outline-none font-black text-lg tracking-widest" required />
-                              </div>
                             </div>
                          </div>
 
-                          {/* Preços Internacionais */}
-                          <div className="bg-gradient-to-br from-blue-50/30 to-white rounded-[2rem] border border-black/[0.04] p-6 space-y-4">
+                          {/* Configuração de Preços */}
+                          <div className="bg-gradient-to-br from-neutral-50/50 to-white rounded-[2rem] border border-black/[0.04] p-6 md:p-8 space-y-6">
                             <div className="flex items-center gap-3">
-                              <div className="w-7 h-7 bg-black rounded-lg flex items-center justify-center shrink-0">
-                                <Globe size={14} className="text-white" />
+                              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center shrink-0">
+                                <CreditCard size={16} className="text-white" />
                               </div>
                               <div>
-                                <h5 className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-950">Preços Internacionais</h5>
-                                <p className="text-[9px] text-gray-300 font-medium mt-0.5">Opcional — sobrepõe a conversão automática por taxa de câmbio</p>
+                                <h5 className="text-[11px] font-black uppercase tracking-[0.25em] text-gray-950">Configuração de Preços</h5>
+                                <p className="text-[9px] text-gray-400 font-medium mt-0.5">Defina os preços manuais para cada moeda (BRL, USD, EUR)</p>
                               </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">🇺🇸 Preço USD ($)</label>
-                                <div className="relative">
-                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-300">$</span>
-                                  <input name="priceUSD" value={formData.priceUSD} onChange={handleInputChange} placeholder="9.99" className="w-full h-12 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl pl-8 pr-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              {/* BRL */}
+                              <div className="bg-gray-50/50 p-4 rounded-xl border border-black/[0.02] space-y-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm">🇧🇷</span>
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-gray-700">Real (BRL)</span>
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">Preço Venda (R$)</label>
+                                  <input name="price" value={formData.price} onChange={handleInputChange} placeholder="24.90" className="w-full h-11 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-lg px-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" required />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">Preço Original (R$)</label>
+                                  <input name="originalPrice" value={formData.originalPrice} onChange={handleInputChange} placeholder="49.80" className="w-full h-11 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-lg px-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
                                 </div>
                               </div>
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">🇪🇺 Preço EUR (€)</label>
-                                <div className="relative">
-                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-300">€</span>
-                                  <input name="priceEUR" value={formData.priceEUR} onChange={handleInputChange} placeholder="8.99" className="w-full h-12 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl pl-8 pr-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
+
+                              {/* USD */}
+                              <div className="bg-gray-50/50 p-4 rounded-xl border border-black/[0.02] space-y-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm">🇺🇸</span>
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-gray-700">Dólar (USD)</span>
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">Preço Venda ($)</label>
+                                  <input name="priceUSD" value={formData.priceUSD} onChange={handleInputChange} placeholder="4.99" className="w-full h-11 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-lg px-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">Preço Original ($)</label>
+                                  <input name="originalPriceUSD" value={formData.originalPriceUSD} onChange={handleInputChange} placeholder="9.99" className="w-full h-11 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-lg px-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
                                 </div>
                               </div>
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">🇺🇸 Original USD</label>
-                                <div className="relative">
-                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-300">$</span>
-                                  <input name="originalPriceUSD" value={formData.originalPriceUSD} onChange={handleInputChange} placeholder="14.99" className="w-full h-12 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl pl-8 pr-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
+
+                              {/* EUR */}
+                              <div className="bg-gray-50/50 p-4 rounded-xl border border-black/[0.02] space-y-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm">🇪🇺</span>
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-gray-700">Euro (EUR)</span>
                                 </div>
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">🇪🇺 Original EUR</label>
-                                <div className="relative">
-                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-300">€</span>
-                                  <input name="originalPriceEUR" value={formData.originalPriceEUR} onChange={handleInputChange} placeholder="13.99" className="w-full h-12 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-xl pl-8 pr-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
+                                <div className="space-y-2">
+                                  <label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">Preço Venda (€)</label>
+                                  <input name="priceEUR" value={formData.priceEUR} onChange={handleInputChange} placeholder="4.50" className="w-full h-11 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-lg px-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">Preço Original (€)</label>
+                                  <input name="originalPriceEUR" value={formData.originalPriceEUR} onChange={handleInputChange} placeholder="8.99" className="w-full h-11 bg-white border border-black/[0.04] focus:border-[#d82828] rounded-lg px-4 outline-none font-black text-sm tracking-widest shadow-sm transition-all" />
                                 </div>
                               </div>
                             </div>
                           </div>
+
 
                           {/* Integração & Checkout */}
                           <div className="bg-gray-50/50 p-6 md:p-8 rounded-[2rem] border border-black/[0.03] space-y-6">
