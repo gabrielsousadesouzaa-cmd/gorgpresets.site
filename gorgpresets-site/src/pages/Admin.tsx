@@ -728,6 +728,26 @@ export default function Admin() {
     }
   };
 
+  const handleCurrencyChange = async (currency: 'BRL' | 'USD' | 'EUR') => {
+    setIsSavingSettings(true);
+    try {
+      const updatedIntegration = {
+        ...siteSettings.integration,
+        defaultCurrency: currency
+      };
+      setSiteSettings(prev => ({
+        ...prev,
+        integration: updatedIntegration
+      }));
+      await saveSetting('integration', updatedIntegration);
+      toast.success(`Moeda oficial alterada para ${currency}!`);
+    } catch (error: any) {
+      toast.error(`Erro ao salvar moeda: ${error.message}`);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
   const handleSaveSettings = async (key: keyof SiteSettings) => {
     setIsSavingSettings(true);
     try {
@@ -1332,7 +1352,30 @@ export default function Admin() {
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] ml-11">Controle total sobre o inventário digital</p>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Seletor Rápido de Moeda Oficial */}
+                <div className="flex items-center gap-1 bg-white border border-black/[0.04] rounded-full p-1 shadow-sm shrink-0">
+                  <span className="text-[8px] font-black uppercase tracking-wider text-gray-400 px-3 py-1 hidden sm:inline">Moeda Oficial:</span>
+                  {(['BRL', 'USD', 'EUR'] as const).map((curr) => {
+                    const isSelected = (siteSettings.integration.defaultCurrency || 'BRL') === curr;
+                    const flags = { BRL: '🇧🇷 BRL', USD: '🇺🇸 USD', EUR: '🇪🇺 EUR' };
+                    return (
+                      <button
+                        key={curr}
+                        onClick={() => handleCurrencyChange(curr)}
+                        disabled={isSavingSettings}
+                        className={`h-9 px-3.5 rounded-full text-[9px] font-black tracking-widest transition-all ${
+                          isSelected 
+                            ? 'bg-black text-white shadow-md' 
+                            : 'text-gray-400 hover:text-gray-950 hover:bg-gray-50'
+                        }`}
+                      >
+                        {flags[curr]}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <Button onClick={handleSyncSales} disabled={isSavingSettings} className="h-12 md:h-14 px-6 md:px-8 rounded-full bg-white border border-black/[0.06] text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 flex items-center gap-3 shadow-sm hover:shadow-xl transition-all">
                   <RefreshCw className={`w-4 h-4 text-gray-400 ${isSavingSettings ? 'animate-spin' : ''}`} />
                   <span className="hidden sm:inline">Refresh Data</span>
