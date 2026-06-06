@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd gorgpresets-site && npm install && npm run build",
+  "outputDirectory": "gorgpresets-site/dist"
+}
