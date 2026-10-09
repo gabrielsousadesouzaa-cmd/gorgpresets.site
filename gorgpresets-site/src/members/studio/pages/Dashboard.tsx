@@ -30,7 +30,7 @@ export default function Dashboard() {
     { done: !!settings && (settings.logoUrl !== "/members/logo-white.png" || settings.heroSlides.length > 0), label: "Personalize marca e banner", to: "/membros/studio/aparencia" },
     { done: catalog.products.length > 0, label: "Crie sua primeira coleção", to: "/membros/studio/colecoes" },
     { done: catalog.lessons.length > 0, label: "Adicione módulos e aulas", to: "/membros/studio/colecoes" },
-    { done: catalog.rows.length > 0, label: "Monte as vitrines da home", to: "/membros/studio/vitrines" },
+    { done: catalog.rows.length > 0, label: "Monte as seções da home", to: "/membros/studio/vitrines" },
     { done: catalog.products.some((p) => p.externalIds.length > 0), label: "Conecte o checkout (webhook)", to: "/membros/studio/integracoes" },
     { done: (members?.length || 0) > 0, label: "Libere o acesso do primeiro membro", to: "/membros/studio/membros" },
   ];

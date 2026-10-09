@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Info, Play, ShoppingBag, Volume2, VolumeX } from "lucide-react";
@@ -11,21 +11,37 @@ interface HeroCarouselProps {
   products: Product[];
   owned: Set<string>;
   interval: number;
+  /** Troca automática dos banners (desligada no modo de edição). */
+  autoPlay?: boolean;
+  /** Índice controlado por fora (modo de edição). */
+  index?: number;
+  onIndexChange?: (index: number) => void;
+  /** Controles extras sobre o banner (modo de edição). */
+  overlay?: ReactNode;
 }
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-export function HeroCarousel({ slides, products, owned, interval }: HeroCarouselProps) {
-  const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+export function HeroCarousel({ slides, products, owned, interval, autoPlay = true, index: controlledIndex, onIndexChange, overlay }: HeroCarouselProps) {
+  const [innerIndex, setInnerIndex] = useState(0);
+  const [hovered, setHovered] = useState(false);
   const [muted, setMuted] = useState(true);
   const touchX = useRef<number | null>(null);
   const navigate = useNavigate();
   const count = slides.length;
-  const slide = slides[Math.min(index, count - 1)];
+  const index = Math.max(0, Math.min(controlledIndex ?? innerIndex, count - 1));
+  const slide = slides[index];
   const seconds = Math.max(4, interval || 8);
+  const paused = hovered || !autoPlay;
 
-  const go = useCallback((next: number) => setIndex(((next % count) + count) % count), [count]);
+  const go = useCallback(
+    (next: number) => {
+      const target = ((next % count) + count) % count;
+      if (onIndexChange) onIndexChange(target);
+      else setInnerIndex(target);
+    },
+    [count, onIndexChange],
+  );
 
   useEffect(() => {
     if (count < 2 || paused) return;
@@ -50,8 +66,8 @@ export function HeroCarousel({ slides, products, owned, interval }: HeroCarousel
   return (
     <section
       className="relative h-[78svh] min-h-[540px] w-full overflow-hidden md:h-[88vh] md:max-h-[920px] md:min-h-[600px]"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
       onTouchEnd={(e) => {
         if (touchX.current === null) return;
@@ -193,13 +209,16 @@ export function HeroCarousel({ slides, products, owned, interval }: HeroCarousel
                   light ? "bg-black/20" : "bg-white/30",
                 )}
               >
-                {i === index && (
-                  <span
-                    key={`${s.id}-${paused}`}
-                    className={cn("ma-fill absolute inset-0 rounded-full", light ? "bg-black" : "bg-white")}
-                    style={{ animationDuration: `${seconds}s`, animationPlayState: paused ? "paused" : "running" }}
-                  />
-                )}
+                {i === index &&
+                  (autoPlay ? (
+                    <span
+                      key={`${s.id}-${paused}`}
+                      className={cn("ma-fill absolute inset-0 rounded-full", light ? "bg-black" : "bg-white")}
+                      style={{ animationDuration: `${seconds}s`, animationPlayState: paused ? "paused" : "running" }}
+                    />
+                  ) : (
+                    <span className={cn("absolute inset-0 rounded-full", light ? "bg-black" : "bg-white")} />
+                  ))}
               </button>
             ))}
         </div>
@@ -213,6 +232,8 @@ export function HeroCarousel({ slides, products, owned, interval }: HeroCarousel
           </button>
         )}
       </div>
+
+      {overlay}
     </section>
   );
 }

@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Film, GalleryHorizontalEnd, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { Film, GalleryHorizontalEnd, MousePointerClick, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCatalog, useRepo, useSettings } from "../../context/MembersContext";
-import { DEFAULT_SETTINGS } from "../../lib/defaults";
+import { blankSlide, DEFAULT_SETTINGS } from "../../lib/defaults";
 import { sortByOrder, uid } from "../../lib/format";
 import type { FaqItem, HeroSlide, PortalSettings } from "../../lib/types";
 import { SafeImg } from "../../components/ui";
-import { Badge, Button, Card, ColorField, EmptyState, Field, IconButton, ImageField, Input, Modal, PageHeader, Segmented, Select, Textarea, Toggle, UploadProgress, useConfirm, useUploader } from "../ui";
+import { Badge, Button, ButtonLink, Card, ColorField, EmptyState, Field, IconButton, ImageField, Input, Modal, PageHeader, Segmented, Select, Textarea, Toggle, UploadProgress, useConfirm, useUploader } from "../ui";
 import { SortableList } from "../Sortable";
 import { useStudioAction } from "../hooks";
 
@@ -75,18 +75,14 @@ export default function AppearancePage() {
           title="Banner principal"
           description="Os destaques que rodam no topo da home. Sem banners, a home destaca automaticamente as coleções do membro."
           actions={
-            <Button
-              size="sm"
-              icon={<Plus size={14} />}
-              onClick={() =>
-                setEditingSlide({
-                  slide: { id: uid(), eyebrow: "", title: "", subtitle: "", imageUrl: "", mobileImageUrl: "", videoUrl: "", logoUrl: "", theme: "dark", ctaLabel: "", productId: "", ctaUrl: "" },
-                  isNew: true,
-                })
-              }
-            >
-              Novo banner
-            </Button>
+            <>
+              <ButtonLink to="/membros?editar=1" size="sm" variant="secondary" icon={<MousePointerClick size={14} />} className="hidden sm:inline-flex">
+                Editar na página
+              </ButtonLink>
+              <Button size="sm" icon={<Plus size={14} />} onClick={() => setEditingSlide({ slide: blankSlide(), isNew: true })}>
+                Novo banner
+              </Button>
+            </>
           }
         >
           {draft.heroSlides.length === 0 ? (
@@ -235,11 +231,12 @@ export default function AppearancePage() {
   );
 }
 
-function SlideModal({ state, onClose, onSave }: { state: { slide: HeroSlide; isNew: boolean } | null; onClose: () => void; onSave: (s: HeroSlide) => void }) {
+export function SlideModal({ state, onClose, onSave, saveLabel }: { state: { slide: HeroSlide; isNew: boolean } | null; onClose: () => void; onSave: (s: HeroSlide) => void | Promise<void>; saveLabel?: string }) {
   const { catalog } = useCatalog();
   const [draft, setDraft] = useState<HeroSlide | null>(null);
   const { upload, progress, uploading } = useUploader();
   const videoInput = useRef<HTMLInputElement>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (state) setDraft(state.slide);
@@ -257,7 +254,21 @@ function SlideModal({ state, onClose, onSave }: { state: { slide: HeroSlide; isN
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button onClick={() => draft && onSave(draft)} disabled={uploading}>{state?.isNew ? "Adicionar banner" : "Aplicar"}</Button>
+          <Button
+            loading={saving}
+            disabled={uploading}
+            onClick={async () => {
+              if (!draft) return;
+              setSaving(true);
+              try {
+                await onSave(draft);
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            {saveLabel || (state?.isNew ? "Adicionar banner" : "Aplicar")}
+          </Button>
         </>
       }
     >

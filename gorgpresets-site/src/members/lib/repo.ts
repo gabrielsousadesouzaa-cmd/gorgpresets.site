@@ -3,6 +3,8 @@ import type {
   AddMemberResult,
   AuthSnapshot,
   Catalog,
+  EmailSettings,
+  EmailStatus,
   Lesson,
   Material,
   MemberSummary,
@@ -75,6 +77,12 @@ export interface MembersRepo {
   getWebhookUrl(): Promise<string>;
   /** Gera um novo token; o link antigo para de funcionar. */
   rotateWebhookToken(): Promise<string>;
+  /** Conexão com o Resend (provedor do e-mail de boas-vindas). */
+  getEmailStatus(): Promise<EmailStatus>;
+  /** Salva a chave do Resend (vazio remove). A chave nunca volta para o navegador. */
+  saveEmailKey(key: string): Promise<EmailStatus>;
+  /** Envia o e-mail de boas-vindas de teste com o modelo informado. */
+  sendTestEmail(to: string, settings: EmailSettings, existingAccount?: boolean): Promise<void>;
 
   upload(file: File, options: UploadOptions): Promise<string>;
 }

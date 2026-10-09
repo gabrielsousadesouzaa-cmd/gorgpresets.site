@@ -8,11 +8,13 @@ interface RailProps {
   subtitle?: string;
   accent?: boolean;
   action?: ReactNode;
+  /** Substitui o título/subtítulo (usado no modo de edição da home). */
+  heading?: ReactNode;
   children: ReactNode;
 }
 
 /** Vitrine horizontal no estilo Netflix: rolagem com snap, setas no hover e bordas em degradê. */
-export function Rail({ title, subtitle, accent, action, children }: RailProps) {
+export function Rail({ title, subtitle, accent, action, heading, children }: RailProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ left: false, right: false });
 
@@ -49,10 +51,12 @@ export function Rail({ title, subtitle, accent, action, children }: RailProps) {
       className="relative"
     >
       <div className="ma-gutter flex items-end justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className={cn("text-lg font-bold tracking-tight md:text-[22px]", accent ? "text-ma" : "text-white")}>{title}</h2>
-          {subtitle && <p className="mt-1 text-[13px] text-white/55 md:text-sm">{subtitle}</p>}
-        </div>
+        {heading ?? (
+          <div className="min-w-0">
+            <h2 className={cn("text-lg font-bold tracking-tight md:text-[22px]", accent ? "text-ma" : "text-white")}>{title}</h2>
+            {subtitle && <p className="mt-1 text-[13px] text-white/55 md:text-sm">{subtitle}</p>}
+          </div>
+        )}
         {action}
       </div>
 

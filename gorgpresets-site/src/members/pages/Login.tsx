@@ -24,7 +24,7 @@ export default function Login() {
   const next = nextParam.startsWith("/membros") && !nextParam.startsWith("//") ? nextParam : "/membros";
 
   const [view, setView] = useState<View>("login");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => (params.get("email") || "").trim().slice(0, 200));
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -145,7 +145,7 @@ export default function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={view === "first" ? "E-mail usado na compra" : "E-mail"}
                     className={darkInput}
-                    autoFocus
+                    autoFocus={!email}
                   />
                   {view !== "forgot" && (
                     <div className="relative">
@@ -156,6 +156,7 @@ export default function Login() {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder={view === "first" ? "Crie uma senha (mín. 6 caracteres)" : "Senha"}
                         className={cn(darkInput, "pr-12")}
+                        autoFocus={!!email && view === "login"}
                       />
                       <button
                         type="button"

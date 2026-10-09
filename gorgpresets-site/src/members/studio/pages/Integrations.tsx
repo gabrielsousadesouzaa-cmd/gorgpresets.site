@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertCircle, ChevronDown, ExternalLink, KeyRound, Loader2, Mail, PlugZap, RefreshCw, Webhook } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCatalog, useRepo } from "../../context/MembersContext";
+import { useCatalog, useRepo, useSettings } from "../../context/MembersContext";
 import { relativeDate, sortByOrder } from "../../lib/format";
-import { Badge, Button, Card, CopyButton, PageHeader, useConfirm } from "../ui";
+import { Badge, Button, ButtonLink, Card, CopyButton, PageHeader, useConfirm } from "../ui";
 import { useStudioAction, useStudioQuery, useWebhookLogs } from "../hooks";
 
 const PLATFORMS = ["GGCheckout", "Kiwify", "Hotmart", "Cakto", "Perfect Pay", "Eduzz", "Ticto", "Yampi", "Stripe"];
@@ -15,6 +15,37 @@ const STATUS: Record<string, { label: string; tone: "green" | "red" | "amber" | 
   unmatched: { label: "Sem produto", tone: "amber" },
   ignored: { label: "Ignorado", tone: "neutral" },
 };
+
+function EmailSummaryCard() {
+  const repo = useRepo();
+  const { data: settings } = useSettings();
+  const status = useStudioQuery("email-status", () => repo.getEmailStatus());
+  const connected = !!status.data?.configured && status.data.keyCheck !== "invalid";
+  const enabled = settings?.email.enabled !== false;
+  return (
+    <Card
+      title={<span className="flex items-center gap-2"><Mail size={18} /> E-mail de boas-vindas</span>}
+      description="A cada venda aprovada, o comprador recebe o login da área de membros no e-mail usado na compra."
+      actions={<ButtonLink to="/membros/studio/emails" size="sm" variant="secondary">Configurar</ButtonLink>}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        {status.isLoading ? (
+          <Loader2 size={15} className="animate-spin text-[#86868b]" />
+        ) : connected && enabled ? (
+          <Badge tone="green">Ativo · Resend conectado</Badge>
+        ) : connected ? (
+          <Badge tone="amber">Resend conectado · envio automático desligado</Badge>
+        ) : (
+          <Badge tone="amber">Resend não conectado</Badge>
+        )}
+        {settings?.email.fromEmail && <Badge>{settings.email.fromEmail}</Badge>}
+      </div>
+      {!connected && !status.isLoading && (
+        <p className="mt-3 text-[12px] text-[#86868b]">Enquanto isso, o comprador entra pelo botão “Primeiro acesso” e cria a própria senha com o e-mail da compra.</p>
+      )}
+    </Card>
+  );
+}
 
 export default function IntegrationsPage() {
   const repo = useRepo();
@@ -66,9 +97,9 @@ export default function IntegrationsPage() {
 
         <ol className="mt-6 space-y-4">
           {[
-            <>No painel do checkout, cadastre o link acima como webhook para <b>compra aprovada</b> (e também <b>reembolso/chargeback</b>, para retirar o acesso).</>,
-            <>Em cada coleção, abra <b>Acesso e venda</b> e informe o ID (ou nome) do produto/oferta como ele aparece no checkout.</>,
-            <>Faça uma compra de teste: ela aparece em <b>Últimos eventos</b> logo abaixo.</>,
+            <>No <b>GGCheckout</b>, abra <b>Integrações → Webhooks</b>, crie um webhook com o link acima e marque os eventos <b>PIX pago</b> e <b>Cartão pago</b> — e também <b>PIX/Cartão reembolsado</b> e <b>chargeback</b>, para retirar o acesso. Se pedir um <i>Secret</i>, cole o código que vem depois de <code className="rounded bg-black/[0.06] px-1">token=</code>. Em outros checkouts, use o evento de <b>compra aprovada</b>.</>,
+            <>Em cada coleção, abra <b>Acesso e venda</b> e informe o ID do produto como ele aparece no checkout (no GGCheckout, o mesmo ID do link de compra).</>,
+            <>Configure o <Link to="/membros/studio/emails" className="font-semibold underline">e-mail de boas-vindas</Link> e faça uma compra de teste: ela aparece em <b>Últimos eventos</b> logo abaixo.</>,
           ].map((step, i) => (
             <li key={i} className="flex gap-4">
               <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#1d1d1f] text-[12px] font-bold text-white">{i + 1}</span>
@@ -97,21 +128,7 @@ export default function IntegrationsPage() {
         )}
       </Card>
 
-      <Card title={<span className="flex items-center gap-2"><Mail size={18} /> E-mails automáticos (opcional)</span>} description="Com o Resend configurado, cada comprador novo recebe o login e a senha por e-mail, e o “Esqueci minha senha” passa a usar o seu remetente.">
-        <div className="grid gap-3 md:grid-cols-3">
-          {[
-            ["RESEND_API_KEY", "Chave da API do resend.com"],
-            ["MEMBERS_EMAIL_FROM", "Ex: Gorg Presets <acesso@gorgpresets.site>"],
-            ["MEMBERS_PORTAL_URL", portalUrl],
-          ].map(([key, text]) => (
-            <div key={key} className="rounded-2xl bg-[#f5f5f7] p-4">
-              <code className="text-[12px] font-bold">{key}</code>
-              <p className="mt-1 break-all text-[12px] text-[#86868b]">{text}</p>
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-[12px] text-[#86868b]">Sem e-mail configurado, o comprador entra pelo botão “Primeiro acesso” e cria a própria senha com o e-mail da compra.</p>
-      </Card>
+      <EmailSummaryCard />
 
       <Card
         title="Últimos eventos"

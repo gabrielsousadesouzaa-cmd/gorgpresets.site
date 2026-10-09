@@ -15,6 +15,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Check, ChevronDown, Copy, ImagePlus, Link2, Loader2, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
@@ -61,6 +62,23 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     </button>
   );
 });
+
+export function ButtonLink({ to, variant = "primary", size = "md", icon, className, children }: { to: string; variant?: Variant; size?: "sm" | "md"; icon?: ReactNode; className?: string; children: ReactNode }) {
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-all duration-200 active:scale-[0.97]",
+        size === "sm" ? "h-8 px-3.5 text-[12px]" : "h-10 px-5 text-[13px]",
+        btnVariants[variant],
+        className,
+      )}
+    >
+      {icon}
+      {children}
+    </Link>
+  );
+}
 
 export function IconButton({ label, className, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
   return (

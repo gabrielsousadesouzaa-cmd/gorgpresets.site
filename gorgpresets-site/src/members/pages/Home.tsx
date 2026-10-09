@@ -1,19 +1,39 @@
-import { useMemo } from "react";
-import { Sparkles } from "lucide-react";
+import { lazy, Suspense, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Pencil, Sparkles } from "lucide-react";
 import { useAccess, useAuth, useCatalog, useProgress, useSettings } from "../context/MembersContext";
 import { continueWatching, productLessons, productProgress } from "../lib/catalog";
-import type { HeroSlide, Product, Row } from "../lib/types";
+import { DEFAULT_SETTINGS } from "../lib/defaults";
+import type { HeroSlide, PortalSettings, Product, Row } from "../lib/types";
 import { sortByOrder } from "../lib/format";
 import { HeroCarousel } from "../components/HeroCarousel";
 import { Rail } from "../components/Rail";
-import { ContinueCard, LandscapeCard, PosterCard, RankedCard, POSTER_WIDTH } from "../components/Cards";
+import { ContinueCard, RowProductCard, POSTER_WIDTH } from "../components/Cards";
 import { BtnLink, Skeleton } from "../components/ui";
 
+// Editor da home: só é baixado quando o produtor liga o modo de edição.
+const HomeEditor = lazy(() => import("../studio/inline/HomeEditor"));
+
 const FALLBACK_ROWS: Row[] = [
-  { id: "fallback-continue", title: "Continuar assistindo", subtitle: "", kind: "continue", cardStyle: "landscape", accentTitle: false, productIds: [], visible: true, sortOrder: 0 },
-  { id: "fallback-owned", title: "Sua Coleção Particular", subtitle: "", kind: "owned", cardStyle: "poster", accentTitle: false, productIds: [], visible: true, sortOrder: 1 },
+  { id: "fallback-owned", title: "Sua Coleção Particular", subtitle: "", kind: "owned", cardStyle: "poster", accentTitle: false, productIds: [], visible: true, sortOrder: 0 },
+  { id: "fallback-continue", title: "Continuar assistindo", subtitle: "", kind: "continue", cardStyle: "landscape", accentTitle: false, productIds: [], visible: true, sortOrder: 1 },
   { id: "fallback-locked", title: "Desbloqueie novas estéticas", subtitle: "", kind: "locked", cardStyle: "poster", accentTitle: false, productIds: [], visible: true, sortOrder: 2 },
 ];
+
+/** Tudo o que a home calcula, compartilhado com o editor da página. */
+export interface HomeModel {
+  products: Product[];
+  owned: Set<string>;
+  percentOf: (p: Product) => number;
+  slides: HeroSlide[];
+  /** true quando os banners vêm da Aparência; false quando são automáticos. */
+  customSlides: boolean;
+  settings: PortalSettings;
+  /** Todas as seções, inclusive as ocultas. */
+  rows: Row[];
+  continueItems: ReturnType<typeof continueWatching>;
+}
 
 export default function Home() {
   const { catalog, isLoading } = useCatalog();
@@ -21,6 +41,20 @@ export default function Home() {
   const { list: progress, map: progressMap } = useProgress();
   const { data: settings } = useSettings();
   const { user } = useAuth();
+  const [params, setParams] = useSearchParams();
+
+  const canEdit = !!user?.isAdmin;
+  const editing = canEdit && params.get("editar") === "1";
+  const setEditing = (on: boolean) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (on) next.set("editar", "1");
+        else next.delete("editar");
+        return next;
+      },
+      { replace: true },
+    );
 
   const products = useMemo(
     () => sortByOrder(catalog.products.filter((p) => p.published || user?.isAdmin)),
@@ -55,10 +89,11 @@ export default function Home() {
     }));
   }, [settings?.heroSlides, products, owned]);
 
+  const allRows = useMemo(() => sortByOrder(catalog.rows), [catalog.rows]);
   const rows = useMemo(() => {
-    const configured = sortByOrder(catalog.rows.filter((r) => r.visible));
+    const configured = allRows.filter((r) => r.visible);
     return configured.length ? configured : FALLBACK_ROWS;
-  }, [catalog.rows]);
+  }, [allRows]);
 
   const continueItems = useMemo(() => continueWatching(catalog, progress, owned), [catalog, progress, owned]);
 
@@ -78,6 +113,24 @@ export default function Home() {
   };
 
   if (isLoading) return <HomeSkeleton />;
+
+  if (editing) {
+    const model: HomeModel = {
+      products,
+      owned,
+      percentOf,
+      slides,
+      customSlides: !!settings?.heroSlides?.length,
+      settings: settings || DEFAULT_SETTINGS,
+      rows: allRows,
+      continueItems,
+    };
+    return (
+      <Suspense fallback={<HomeSkeleton />}>
+        <HomeEditor model={model} onExit={() => setEditing(false)} />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="pb-28 md:pb-16">
@@ -105,10 +158,7 @@ export default function Home() {
             <Rail key={row.id} title={row.title} subtitle={row.subtitle} accent={row.accentTitle}>
               {list.map((p, i) => {
                 const locked = !owned.has(p.id);
-                const percent = locked ? 0 : percentOf(p);
-                if (row.cardStyle === "ranked") return <RankedCard key={p.id} product={p} locked={locked} percent={percent} rank={i + 1} />;
-                if (row.cardStyle === "landscape") return <LandscapeCard key={p.id} product={p} locked={locked} percent={percent} />;
-                return <PosterCard key={p.id} product={p} locked={locked} percent={percent} />;
+                return <RowProductCard key={p.id} style={row.cardStyle} product={p} locked={locked} percent={locked ? 0 : percentOf(p)} rank={i + 1} />;
               })}
             </Rail>
           );
@@ -135,11 +185,25 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {canEdit && (
+        <motion.button
+          type="button"
+          onClick={() => setEditing(true)}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="ma-glass fixed bottom-[calc(80px+env(safe-area-inset-bottom))] right-4 z-40 inline-flex h-11 items-center gap-2 rounded-full px-5 text-[11px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_20px_50px_-15px_rgba(0,0,0,0.9)] ring-1 ring-white/15 transition hover:bg-white hover:text-black md:bottom-8 md:right-8 md:h-12 md:px-6"
+        >
+          <Pencil size={15} />
+          Editar página
+        </motion.button>
+      )}
     </div>
   );
 }
 
-function HomeSkeleton() {
+export function HomeSkeleton() {
   return (
     <div className="pb-24">
       <Skeleton className="h-[78svh] w-full rounded-none md:h-[88vh]" />

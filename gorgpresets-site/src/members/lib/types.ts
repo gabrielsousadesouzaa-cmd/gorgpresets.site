@@ -2,6 +2,9 @@
 // Os nomes aqui são camelCase; o mapeamento para as colunas snake_case do
 // Supabase fica em supabaseRepo.ts.
 
+import type { EmailSettings } from "../../../supabase/functions/members-api/email";
+
+export type { EmailSettings };
 export type ID = string;
 
 export interface HeroSlide {
@@ -51,6 +54,8 @@ export interface PortalSettings {
     faq: FaqItem[];
   };
   footerText: string;
+  /** E-mail de boas-vindas enviado a cada compra aprovada. */
+  email: EmailSettings;
 }
 
 export interface Product {
@@ -211,6 +216,17 @@ export interface AddMemberInput {
   name: string;
   password?: string;
   productIds: ID[];
+}
+
+/** Situação da conexão com o Resend (provedor de e-mail). */
+export interface EmailStatus {
+  configured: boolean;
+  /** "env" = segredo no Supabase; "studio" = chave salva pelo Studio. */
+  source: "env" | "studio" | null;
+  hint: string | null;
+  /** ok = chave completa; send_only = chave só de envio (válida); invalid; unreachable. */
+  keyCheck: "ok" | "send_only" | "invalid" | "unreachable" | null;
+  domains: Array<{ name: string; status: string }> | null;
 }
 
 export interface AddMemberResult {

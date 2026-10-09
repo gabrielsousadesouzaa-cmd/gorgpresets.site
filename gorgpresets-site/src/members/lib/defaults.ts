@@ -1,5 +1,6 @@
-import type { Lesson, Material, Module, PortalSettings, Product, Row } from "./types";
+import type { HeroSlide, Lesson, Material, Module, PortalSettings, Product, Row } from "./types";
 import { uid } from "./format";
+import { DEFAULT_EMAIL } from "../../../supabase/functions/members-api/email";
 
 export const BRAND_RED = "#d82828";
 
@@ -24,6 +25,7 @@ export const DEFAULT_SETTINGS: PortalSettings = {
     faq: [],
   },
   footerText: "© Gorg Presets. Todos os direitos reservados.",
+  email: DEFAULT_EMAIL,
 };
 
 export function blankProduct(sortOrder = 0): Product {
@@ -80,6 +82,10 @@ export function blankRow(sortOrder = 0): Row {
     visible: true,
     sortOrder,
   };
+}
+
+export function blankSlide(): HeroSlide {
+  return { id: uid(), eyebrow: "", title: "", subtitle: "", imageUrl: "", mobileImageUrl: "", videoUrl: "", logoUrl: "", theme: "dark", ctaLabel: "", productId: "", ctaUrl: "" };
 }
 
 export function blankMaterial(productId: string, sortOrder = 0): Material {

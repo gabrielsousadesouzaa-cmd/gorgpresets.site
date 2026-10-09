@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { Check, Eye, EyeOff, History, Layers3, LayoutGrid, Library, Lock, Pencil, Plus, Rows3, Search, Trash2, Trophy } from "lucide-react";
+import { Check, Eye, EyeOff, History, Layers3, LayoutGrid, Library, Lock, MousePointerClick, Pencil, Plus, Rows3, Search, Trash2, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCatalog, useRepo } from "../../context/MembersContext";
 import { blankRow } from "../../lib/defaults";
 import { sortByOrder } from "../../lib/format";
 import type { CardStyle, Product, Row, RowKind } from "../../lib/types";
 import { PosterArt } from "../../components/PosterArt";
-import { Badge, Button, Card, EmptyState, Field, IconButton, Input, Modal, PageHeader, Toggle, useConfirm } from "../ui";
+import { Badge, Button, ButtonLink, Card, EmptyState, Field, IconButton, Input, Modal, PageHeader, Toggle, useConfirm } from "../ui";
 import { SortableList } from "../Sortable";
 import { useStudioAction } from "../hooks";
 
@@ -57,20 +57,25 @@ export default function RowsPage() {
   const products = sortByOrder(catalog.products);
 
   const remove = async (row: Row) => {
-    const ok = await confirm({ title: `Excluir a vitrine “${row.title}”?`, confirmLabel: "Excluir", danger: true });
-    if (ok) await run(() => repo.deleteRow(row.id), { success: "Vitrine excluída" });
+    const ok = await confirm({ title: `Excluir a seção “${row.title}”?`, confirmLabel: "Excluir", danger: true });
+    if (ok) await run(() => repo.deleteRow(row.id), { success: "Seção excluída" });
   };
 
   return (
     <div>
       <PageHeader
-        title="Vitrines da home"
-        subtitle="As fileiras horizontais da página inicial, no estilo Netflix. Arraste para definir a ordem."
-        actions={<Button icon={<Plus size={16} />} onClick={() => setEditing({ row: { ...blankRow(rows.length), title: "Nova vitrine" }, isNew: true })}>Nova vitrine</Button>}
+        title="Seções da home"
+        subtitle="As fileiras horizontais da página inicial, no estilo Netflix. Arraste para definir a ordem — ou edite tudo direto na página inicial."
+        actions={
+          <>
+            <ButtonLink to="/membros?editar=1" variant="secondary" icon={<MousePointerClick size={16} />}>Editar na página inicial</ButtonLink>
+            <Button icon={<Plus size={16} />} onClick={() => setEditing({ row: { ...blankRow(rows.length), title: "Nova seção" }, isNew: true })}>Nova seção</Button>
+          </>
+        }
       />
 
       {rows.length === 0 ? (
-        <EmptyState icon={<Rows3 />} title="Nenhuma vitrine" text="Sem vitrines, a home mostra “Sua coleção” e “Desbloqueie” automaticamente." />
+        <EmptyState icon={<Rows3 />} title="Nenhuma seção" text="Sem seções, a home mostra “Sua coleção” e “Desbloqueie” automaticamente." />
       ) : (
         <SortableList
           items={rows}
@@ -104,7 +109,7 @@ export default function RowsPage() {
                       {picked.length > 5 && <span className="grid h-8 w-8 place-items-center rounded-full bg-[#f5f5f7] text-[11px] font-bold ring-2 ring-white">+{picked.length - 5}</span>}
                     </div>
                   )}
-                  <IconButton label={row.visible ? "Ocultar" : "Mostrar"} onClick={() => run(() => repo.saveRow({ ...row, visible: !row.visible }), { success: row.visible ? "Vitrine oculta" : "Vitrine visível" })}>
+                  <IconButton label={row.visible ? "Ocultar" : "Mostrar"} onClick={() => run(() => repo.saveRow({ ...row, visible: !row.visible }), { success: row.visible ? "Seção oculta" : "Seção visível" })}>
                     {row.visible ? <Eye size={16} /> : <EyeOff size={16} />}
                   </IconButton>
                   <IconButton label="Editar" onClick={() => setEditing({ row, isNew: false })}><Pencil size={15} /></IconButton>
@@ -121,7 +126,7 @@ export default function RowsPage() {
         products={products}
         onClose={() => setEditing(null)}
         onSave={async (row) => {
-          const saved = await run(() => repo.saveRow(row), { success: "Vitrine salva" });
+          const saved = await run(() => repo.saveRow(row), { success: "Seção salva" });
           if (saved) setEditing(null);
         }}
       />
@@ -129,7 +134,7 @@ export default function RowsPage() {
   );
 }
 
-function RowModal({ state, products, onClose, onSave }: { state: { row: Row; isNew: boolean } | null; products: Product[]; onClose: () => void; onSave: (row: Row) => Promise<void> }) {
+export function RowModal({ state, products, onClose, onSave }: { state: { row: Row; isNew: boolean } | null; products: Product[]; onClose: () => void; onSave: (row: Row) => Promise<void> }) {
   const [draft, setDraft] = useState<Row | null>(null);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
@@ -152,7 +157,7 @@ function RowModal({ state, products, onClose, onSave }: { state: { row: Row; isN
       open={!!state}
       onClose={onClose}
       size="lg"
-      title={state?.isNew ? "Nova vitrine" : "Editar vitrine"}
+      title={state?.isNew ? "Nova seção" : "Editar seção"}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
@@ -166,7 +171,7 @@ function RowModal({ state, products, onClose, onSave }: { state: { row: Row; isN
               setSaving(false);
             }}
           >
-            Salvar vitrine
+            Salvar seção
           </Button>
         </>
       }

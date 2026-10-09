@@ -7,6 +7,7 @@ import { SetupRequiredError } from "./repo";
 import type {
   Attachment,
   AuthSnapshot,
+  EmailStatus,
   Grant,
   Lesson,
   Material,
@@ -222,6 +223,7 @@ function mergeSettings(data: Partial<PortalSettings> | null | undefined): Portal
     ...d,
     login: { ...DEFAULT_SETTINGS.login, ...(d.login || {}) },
     support: { ...DEFAULT_SETTINGS.support, ...(d.support || {}) },
+    email: { ...DEFAULT_SETTINGS.email, ...(d.email && typeof d.email === "object" ? d.email : {}) },
     heroSlides: Array.isArray(d.heroSlides) ? d.heroSlides : [],
   };
 }
@@ -594,7 +596,7 @@ export const supabaseRepo: MembersRepo = {
   async addMember({ email, name, password, productIds }) {
     const normalized = normalizeEmail(email);
     try {
-      const res = await invoke<{ createdAccount: boolean; password?: string }>({
+      const res = await invoke<{ createdAccount: boolean; password?: string; emailed?: boolean; emailError?: string }>({
         action: "create_member",
         email: normalized,
         name,
@@ -602,7 +604,11 @@ export const supabaseRepo: MembersRepo = {
         productIds,
         sendEmail: true,
       });
-      return { createdAccount: res.createdAccount, password: res.password };
+      return {
+        createdAccount: res.createdAccount,
+        password: res.password,
+        warning: res.emailError && res.emailError !== "Resend não configurado" ? `Acesso liberado, mas o e-mail não foi enviado: ${res.emailError}.` : undefined,
+      };
     } catch (err) {
       const e = err as Error & { unreachable?: boolean };
       if (!e.unreachable) throw e;
@@ -679,6 +685,18 @@ export const supabaseRepo: MembersRepo = {
   async rotateWebhookToken() {
     check(await client().rpc("member_rotate_webhook_token"));
     return supabaseRepo.getWebhookUrl();
+  },
+
+  async getEmailStatus() {
+    return invoke<EmailStatus>({ action: "email_status" });
+  },
+
+  async saveEmailKey(key) {
+    return invoke<EmailStatus>({ action: "email_save_key", key });
+  },
+
+  async sendTestEmail(to, settings, existingAccount) {
+    await invoke({ action: "email_test", to, settings, existingAccount });
   },
 
   async upload(file, { visibility, productId, folder, onProgress }) {

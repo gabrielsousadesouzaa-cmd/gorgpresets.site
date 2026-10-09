@@ -1,36 +1,45 @@
 // GORG · Área de Membros — Edge Function "members-api"
 //
 // Ações (POST, corpo JSON com { action }):
-//   webhook        → ?action=webhook&token=...  Recebe a venda aprovada do checkout
-//                    (GGCheckout, BuckPay, Kiwify, Hotmart, Cakto...) e libera o acesso.
+//   webhook        → ?action=webhook&token=...  Recebe a venda do checkout (GGCheckout,
+//                    Kiwify, Hotmart, Cakto...), libera o acesso e envia o e-mail de boas-vindas.
+//                    O token também pode vir no header x-secret ou Authorization: Bearer.
 //   first_access   → Comprador cria a própria senha (só se tiver compra e ainda não tiver conta).
 //   recover        → Envia link de redefinição de senha pelo Resend (se configurado).
 //   create_member  → [produtor] Cria conta + libera produtos.
 //   set_password   → [produtor] Define nova senha para um membro.
 //   delete_member  → [produtor] Remove acessos e a conta do membro.
+//   email_status   → [produtor] Situação da conexão com o Resend (chave e domínios).
+//   email_save_key → [produtor] Salva (ou remove) a chave do Resend, depois de validar.
+//   email_test     → [produtor] Envia o e-mail de boas-vindas de teste.
 //
-// Token do webhook: gerado no banco (member_private_settings) e exibido no
-// Studio → Integrações. MEMBERS_WEBHOOK_TOKEN (secret) substitui, se existir.
+// Token do webhook e chave do Resend ficam em member_private_settings (só o
+// servidor lê). Os segredos abaixo, se existirem, têm prioridade.
 //
 // Segredos opcionais (Supabase → Edge Functions → Secrets):
-//   RESEND_API_KEY         opcional — envia e-mail de boas-vindas e de recuperação
-//   MEMBERS_EMAIL_FROM     opcional — ex: "Gorg Presets <acesso@gorgpresets.site>"
+//   MEMBERS_WEBHOOK_TOKEN  opcional — substitui o token gerado no banco
+//   RESEND_API_KEY         opcional — substitui a chave salva pelo Studio
+//   MEMBERS_EMAIL_FROM     opcional — remetente padrão, ex: "Gorg Presets <acesso@gorgpresets.site>"
 //   MEMBERS_PORTAL_URL     opcional — ex: "https://gorgpresets.site/membros"
 // SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY já existem por padrão.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { DEFAULT_EMAIL, type EmailSettings, joinList, renderNoticeEmail, renderWelcomeEmail } from "./email.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const ENV_WEBHOOK_TOKEN = Deno.env.get("MEMBERS_WEBHOOK_TOKEN") || "";
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
-const EMAIL_FROM = Deno.env.get("MEMBERS_EMAIL_FROM") || "Gorg Presets <onboarding@resend.dev>";
-const PORTAL_URL = Deno.env.get("MEMBERS_PORTAL_URL") || "https://gorgpresets.site/membros";
+const ENV_RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
+const ENV_EMAIL_FROM = Deno.env.get("MEMBERS_EMAIL_FROM") || "";
+const PORTAL_URL = (Deno.env.get("MEMBERS_PORTAL_URL") || "https://gorgpresets.site/membros").replace(/\/$/, "");
+const SITE_ORIGIN = new URL(PORTAL_URL).origin;
+// Remetente de testes do Resend: só entrega para o dono da conta Resend.
+const FALLBACK_FROM = "Gorg Presets <onboarding@resend.dev>";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -83,6 +92,8 @@ async function requireProducer(req: Request) {
   });
   const { data, error } = await asUser.rpc("member_is_admin");
   if (error || data !== true) throw new HttpError(403, "Apenas o produtor pode fazer isso.");
+  const { data: who } = await asUser.auth.getUser();
+  return { email: normalizeEmail(who?.user?.email), name: String(who?.user?.user_metadata?.full_name || "") };
 }
 
 async function findUserIdByEmail(email: string): Promise<string | null> {
@@ -123,40 +134,110 @@ async function grant(email: string, productIds: string[], source: string, extern
 }
 
 // ── E-mail (Resend) ─────────────────────────────────────────────────
-async function sendEmail(to: string, subject: string, html: string) {
-  if (!RESEND_API_KEY) return false;
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: EMAIL_FROM, to: [to], subject, html }),
+async function resendKey(): Promise<{ key: string; source: "env" | "studio" | null }> {
+  if (ENV_RESEND_KEY) return { key: ENV_RESEND_KEY, source: "env" };
+  const { data } = await admin.from("member_private_settings").select("value").eq("key", "resend_api_key").maybeSingle();
+  return data?.value ? { key: data.value, source: "studio" } : { key: "", source: null };
+}
+
+interface PortalInfo {
+  brand: string;
+  accent: string;
+  email: EmailSettings;
+}
+
+async function portalInfo(): Promise<PortalInfo> {
+  const { data } = await admin.from("member_settings").select("data").eq("id", "main").maybeSingle();
+  const d = (data?.data || {}) as Record<string, unknown>;
+  return {
+    brand: String(d.brandName || "Gorg Presets"),
+    accent: String(d.accentColor || "#d82828"),
+    email: { ...DEFAULT_EMAIL, ...(d.email && typeof d.email === "object" ? (d.email as Partial<EmailSettings>) : {}) },
+  };
+}
+
+const cleanName = (v: string) => v.replace(/[<>"\r\n]/g, "").trim().slice(0, 80);
+
+function fromAddress(info: PortalInfo) {
+  const address = normalizeEmail(info.email.fromEmail);
+  if (isEmail(address)) return `${cleanName(info.email.fromName || info.brand) || "Gorg Presets"} <${address}>`;
+  return ENV_EMAIL_FROM || FALLBACK_FROM;
+}
+
+const loginLink = (email: string) => `${PORTAL_URL}/entrar?email=${encodeURIComponent(email)}`;
+
+type SendResult = { ok: true; id: string } | { ok: false; error: string };
+
+/** Traduz os erros mais comuns do Resend para algo que o produtor entende. */
+function resendError(status: number, body: { name?: string; message?: string }): string {
+  const message = String(body?.message || "");
+  if (status === 403 && /testing emails|verify a domain|own email/i.test(message)) {
+    return "domínio ainda não verificado no Resend (com o remetente de teste, só o e-mail da sua conta Resend recebe)";
+  }
+  if (status === 403 && /domain.*not verified|not verified/i.test(message)) return "o domínio do remetente ainda não foi verificado no Resend";
+  if (status === 401 || (status === 403 && /api key/i.test(message))) return "chave do Resend inválida";
+  if (status === 422) return `dados recusados pelo Resend: ${message || "verifique o remetente"}`;
+  if (status === 429) return "limite de envios do Resend atingido — tente mais tarde";
+  return message || `erro ${status} no Resend`;
+}
+
+async function sendEmail(
+  key: string,
+  mail: { from: string; to: string; subject: string; html: string; text: string; replyTo?: string; idempotencyKey?: string },
+): Promise<SendResult> {
+  try {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      "User-Agent": "gorgpresets-members/1.0",
+    };
+    if (mail.idempotencyKey) headers["Idempotency-Key"] = mail.idempotencyKey.slice(0, 256);
+    const reply = normalizeEmail(mail.replyTo);
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        from: mail.from,
+        to: [mail.to],
+        subject: mail.subject,
+        html: mail.html,
+        text: mail.text,
+        ...(isEmail(reply) ? { reply_to: reply } : {}),
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: resendError(res.status, body) };
+    return { ok: true, id: String(body?.id || "") };
+  } catch (err) {
+    return { ok: false, error: `sem conexão com o Resend (${(err as Error).message})` };
+  }
+}
+
+async function sendWelcome(
+  key: string,
+  info: PortalInfo,
+  to: { email: string; name: string },
+  products: string[],
+  options: { password?: string; settings?: EmailSettings; idempotencyKey?: string } = {},
+) {
+  const settings = options.settings || info.email;
+  const rendered = renderWelcomeEmail(settings, {
+    brand: info.brand,
+    name: to.name,
+    email: to.email,
+    products,
+    link: loginLink(to.email),
+    password: options.password,
+    logoUrl: `${SITE_ORIGIN}/logo.png`,
+    accent: info.accent,
   });
-  return res.ok;
-}
-
-function emailLayout(title: string, body: string, cta?: { label: string; url: string }) {
-  return `<!doctype html><html><body style="margin:0;background:#000;font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;color:#f5f5f7">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px"><tr><td align="center">
-  <table width="100%" style="max-width:520px;background:#0d0d0f;border:1px solid #222;border-radius:24px;padding:40px">
-  <tr><td style="font-size:12px;letter-spacing:.3em;color:#d82828;font-weight:700;text-transform:uppercase">Gorg Presets</td></tr>
-  <tr><td style="padding-top:16px;font-size:26px;font-weight:700;letter-spacing:-.02em">${title}</td></tr>
-  <tr><td style="padding-top:12px;font-size:15px;line-height:1.6;color:#a1a1a6">${body}</td></tr>
-  ${cta ? `<tr><td style="padding-top:28px"><a href="${cta.url}" style="display:inline-block;background:#fff;color:#000;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;padding:16px 28px;border-radius:999px">${cta.label}</a></td></tr>` : ""}
-  </table></td></tr></table></body></html>`;
-}
-
-async function sendWelcome(email: string, name: string, password?: string) {
-  const greeting = name ? `Olá, ${name.split(" ")[0]}!` : "Olá!";
-  const credentials = password
-    ? `<br><br><strong style="color:#fff">E-mail:</strong> ${email}<br><strong style="color:#fff">Senha:</strong> ${password}<br><br>Você pode trocar a senha depois em “Meu perfil”.`
-    : "<br><br>Entre com o mesmo e-mail da compra.";
-  return sendEmail(
-    email,
-    "Seu acesso à Área de Membros chegou ✨",
-    emailLayout(greeting, `Sua compra foi aprovada e sua coleção já está liberada na Área de Membros Gorg.${credentials}`, {
-      label: "Acessar agora",
-      url: PORTAL_URL,
-    }),
-  );
+  return sendEmail(key, {
+    from: fromAddress({ ...info, email: settings }),
+    to: to.email,
+    replyTo: settings.replyTo,
+    idempotencyKey: options.idempotencyKey,
+    ...rendered,
+  });
 }
 
 // ── Leitura flexível do payload dos checkouts ───────────────────────
@@ -189,7 +270,7 @@ function extractSale(payload: unknown) {
     .filter((f) => /^(status|event|type|event_type|payment_status|order_status|webhook_event_type|trigger)$/.test(f.key))
     .map((f) => f.value.toLowerCase());
   const negative = /(unpaid|not_?paid|nao_?pago|não pago|waiting|aguardando|pending|pendente|refused|recusad|expired|expirad|incomplete|failed|falh)/;
-  const refunded = statusValues.some((v) => /(refund|reembols|chargeback|estorn|cancel|dispute)/.test(v));
+  const refunded = statusValues.some((v) => /(refund|reembols|charge_?d?_?back|estorn|cancel|dispute)/.test(v));
   const approved = !refunded && statusValues.some((v) => /(approved|aprovad|paid|pago|complete|succeeded|confirmed)/.test(v) && !negative.test(v));
 
   const productRefs = new Set<string>();
@@ -197,7 +278,10 @@ function extractSale(payload: unknown) {
     .filter((f) => /(product|produto|offer|oferta|plan|plano|item|sku|course)/.test(f.path) && /(id|code|codigo|hash|uuid|name|nome|title|titulo|sku|slug)/.test(f.key))
     .forEach((f) => f.value.trim() && productRefs.add(f.value.trim().toLowerCase()));
 
-  const orderRef = flat.find((f) => /^(order_?id|transaction(_?id)?|sale_?id|payment_?id|purchase_?id)$/.test(f.key))?.value;
+  const orderRef =
+    flat.find((f) => /^(order_?id|transaction(_?id)?|sale_?id|payment_?id|purchase_?id)$/.test(f.key))?.value ||
+    // GGCheckout: { payment: { id } }
+    flat.find((f) => /^(payment|order|sale|purchase|transaction|pedido)\.id$/.test(f.path))?.value;
   return { email, name, approved, refunded, statusValues, productRefs: Array.from(productRefs), orderRef };
 }
 
@@ -216,9 +300,14 @@ async function logWebhook(status: string, message: string, email: string, payloa
   await admin.from("member_webhook_logs").insert({ status, message, email, payload });
 }
 
+function webhookSecretFrom(req: Request, url: URL) {
+  const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  return [url.searchParams.get("token") || "", req.headers.get("x-secret") || "", bearer].filter(Boolean);
+}
+
 async function handleWebhook(req: Request, url: URL) {
   const expected = await webhookToken();
-  if (!expected || !safeEqual(url.searchParams.get("token") || "", expected)) {
+  if (!expected || !webhookSecretFrom(req, url).some((candidate) => safeEqual(candidate, expected))) {
     throw new HttpError(401, "Token inválido.");
   }
   const raw = await req.text();
@@ -252,18 +341,45 @@ async function handleWebhook(req: Request, url: URL) {
     return json({ ok: true, ignored: "status" });
   }
 
-  await grant(sale.email, products.map((p) => p.id), "webhook", sale.orderRef);
+  // Só as coleções que a pessoa ainda não tinha contam como novidade: assim um
+  // webhook repetido (o checkout reenvia em caso de falha) não dispara outro e-mail.
+  const ids = products.map((p) => p.id);
+  const { data: before } = await admin.from("member_access").select("product_id").eq("email", sale.email).in("product_id", ids);
+  const already = new Set((before || []).map((r) => r.product_id as string));
+  const fresh = products.filter((p) => !already.has(p.id));
+  await grant(sale.email, ids, "webhook", sale.orderRef);
 
-  // Com e-mail configurado, já cria a conta e envia login + senha.
-  // Sem e-mail, o comprador usa "Primeiro acesso" para criar a própria senha.
-  let note = "";
-  if (RESEND_API_KEY) {
-    const account = await ensureAccount(sale.email, sale.name);
-    const sent = await sendWelcome(sale.email, sale.name, account.created ? account.password : undefined);
-    note = sent ? " · e-mail enviado" : " · falha ao enviar e-mail";
+  const titles = products.map((p) => p.title).join(", ");
+  if (!fresh.length) {
+    await logWebhook("granted", `Acesso já estava liberado: ${titles} · e-mail não reenviado`, sale.email, payload);
+    return json({ ok: true, granted: 0 });
   }
-  await logWebhook("granted", `Acesso liberado: ${products.map((p) => p.title).join(", ")}${note}`, sale.email, payload);
-  return json({ ok: true, granted: products.length });
+
+  // Com e-mail configurado, já cria a conta e envia o acesso. Sem e-mail (ou se o
+  // envio falhar), o comprador usa "Primeiro acesso" para criar a própria senha.
+  let note = "";
+  const [{ key }, info] = await Promise.all([resendKey(), portalInfo()]);
+  if (key && info.email.enabled) {
+    const account = await ensureAccount(sale.email, sale.name);
+    const sent = await sendWelcome(key, info, { email: sale.email, name: sale.name }, fresh.map((p) => p.title), {
+      password: account.created ? account.password : undefined,
+      idempotencyKey: `welcome/${sale.orderRef || sale.email}/${fresh.map((p) => p.id).sort().join(",")}`,
+    });
+    if (sent.ok) {
+      note = account.created ? " · conta criada e e-mail enviado" : " · e-mail enviado";
+    } else {
+      // Sem o e-mail a pessoa não saberia a senha: desfaz a conta nova para o "Primeiro acesso" funcionar.
+      if (account.created) {
+        await admin.from("member_profiles").delete().eq("user_id", account.userId);
+        await admin.auth.admin.deleteUser(account.userId);
+      }
+      note = ` · e-mail não enviado: ${sent.error} (o comprador pode entrar pelo “Primeiro acesso”)`;
+    }
+  } else if (!key) {
+    note = " · sem e-mail configurado (o comprador entra pelo “Primeiro acesso”)";
+  }
+  await logWebhook("granted", `Acesso liberado: ${fresh.map((p) => p.title).join(", ")}${note}`, sale.email, payload);
+  return json({ ok: true, granted: fresh.length });
 }
 
 // ── Ações do portal ─────────────────────────────────────────────────
@@ -288,16 +404,29 @@ async function firstAccess(body: Record<string, unknown>) {
 async function recover(body: Record<string, unknown>) {
   const email = normalizeEmail(body.email);
   const redirectTo = String(body.redirectTo || PORTAL_URL);
-  if (!RESEND_API_KEY) return json({ ok: true, fallback: true });
+  const { key } = await resendKey();
+  if (!key) return json({ ok: true, fallback: true });
   if (isEmail(email) && (await findUserIdByEmail(email))) {
     const { data } = await admin.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo } });
     const link = data?.properties?.action_link;
     if (link) {
-      await sendEmail(
-        email,
-        "Redefina sua senha",
-        emailLayout("Redefinir senha", "Recebemos um pedido para redefinir a senha da sua conta. O link vale por 1 hora.", { label: "Criar nova senha", url: link }),
-      );
+      const info = await portalInfo();
+      const rendered = renderNoticeEmail({
+        brand: info.brand,
+        logoUrl: `${SITE_ORIGIN}/logo.png`,
+        accent: info.accent,
+        eyebrow: "Segurança da conta",
+        heading: "Redefina sua senha",
+        message: "Recebemos um pedido para criar uma nova senha para a sua conta na Área de Membros. O link vale por 1 hora.",
+        button: { label: "Criar nova senha", url: link },
+        note: "Se não foi você, pode ignorar este e-mail: sua senha continua a mesma.",
+      });
+      const sent = await sendEmail(key, { from: fromAddress(info), to: email, replyTo: info.email.replyTo, ...rendered });
+      // Se o Resend recusar (ex: domínio não verificado), o portal usa o e-mail padrão do Supabase.
+      if (!sent.ok) {
+        console.error("recover email failed:", sent.error);
+        return json({ ok: true, fallback: true });
+      }
     }
   }
   // Resposta sempre igual para não revelar quem tem conta.
@@ -318,8 +447,20 @@ async function createMember(req: Request, body: Record<string, unknown>) {
     if (name) await admin.from("member_profiles").update({ full_name: name }).eq("user_id", account.userId);
   }
   let emailed = false;
-  if (body.sendEmail) emailed = await sendWelcome(email, name, account.created ? account.password : undefined);
-  return json({ ok: true, createdAccount: account.created, password: account.created ? account.password : undefined, emailed });
+  let emailError = "";
+  if (body.sendEmail) {
+    const [{ key }, info] = await Promise.all([resendKey(), portalInfo()]);
+    if (!key) emailError = "Resend não configurado";
+    else {
+      const { data: rows } = productIds.length ? await admin.from("member_products").select("id, title").in("id", productIds) : { data: [] };
+      const sent = await sendWelcome(key, info, { email, name }, (rows || []).map((r) => String(r.title)), {
+        password: account.created ? account.password : undefined,
+      });
+      emailed = sent.ok;
+      if (!sent.ok) emailError = sent.error;
+    }
+  }
+  return json({ ok: true, createdAccount: account.created, password: account.created ? account.password : undefined, emailed, emailError });
 }
 
 async function setPassword(req: Request, body: Record<string, unknown>) {
@@ -346,6 +487,71 @@ async function deleteMember(req: Request, body: Record<string, unknown>) {
   return json({ ok: true });
 }
 
+// ── E-mail: conexão e teste (Studio) ────────────────────────────────
+async function checkResendKey(key: string) {
+  try {
+    const res = await fetch("https://api.resend.com/domains", {
+      headers: { Authorization: `Bearer ${key}`, "User-Agent": "gorgpresets-members/1.0" },
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok) {
+      const domains = (Array.isArray(body?.data) ? body.data : []).map((d: Record<string, unknown>) => ({ name: String(d.name || ""), status: String(d.status || "") }));
+      return { check: "ok" as const, domains };
+    }
+    // Chave "Sending access": válida, mas não pode listar domínios.
+    if (res.status === 401 && body?.name === "restricted_api_key") return { check: "send_only" as const, domains: null };
+    return { check: "invalid" as const, domains: null };
+  } catch {
+    return { check: "unreachable" as const, domains: null };
+  }
+}
+
+const keyHint = (key: string) => (key ? `${key.slice(0, 3)}…${key.slice(-4)}` : null);
+
+async function emailStatus(req: Request) {
+  await requireProducer(req);
+  const { key, source } = await resendKey();
+  if (!key) return json({ configured: false, source: null, hint: null, keyCheck: null, domains: null });
+  const result = await checkResendKey(key);
+  return json({ configured: true, source, hint: keyHint(key), keyCheck: result.check, domains: result.domains });
+}
+
+async function emailSaveKey(req: Request, body: Record<string, unknown>) {
+  await requireProducer(req);
+  const key = String(body.key || "").trim();
+  if (!key) {
+    await admin.from("member_private_settings").delete().eq("key", "resend_api_key");
+    return emailStatus(req);
+  }
+  if (!/^re_[A-Za-z0-9_-]{8,}$/.test(key)) throw new HttpError(400, "Essa não parece uma chave do Resend. Ela começa com “re_”.");
+  const result = await checkResendKey(key);
+  if (result.check === "invalid") throw new HttpError(400, "O Resend recusou essa chave. Confira se copiou a chave inteira.");
+  const { error } = await admin
+    .from("member_private_settings")
+    .upsert({ key: "resend_api_key", value: key, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  if (error) throw new HttpError(500, error.message);
+  return emailStatus(req);
+}
+
+async function emailTest(req: Request, body: Record<string, unknown>) {
+  const producer = await requireProducer(req);
+  const to = normalizeEmail(body.to) || producer.email;
+  if (!isEmail(to)) throw new HttpError(400, "Informe um e-mail válido para o teste.");
+  const { key } = await resendKey();
+  if (!key) throw new HttpError(400, "Conecte o Resend primeiro (cole a chave da API).");
+  const info = await portalInfo();
+  const draft = body.settings && typeof body.settings === "object" ? (body.settings as Partial<EmailSettings>) : {};
+  const settings: EmailSettings = { ...info.email, ...draft };
+  const { data: sample } = await admin.from("member_products").select("title").eq("published", true).order("sort_order").limit(2);
+  const products = (sample || []).map((p) => String(p.title));
+  const sent = await sendWelcome(key, info, { email: to, name: producer.name || "Ana Julia" }, products.length ? products : ["Coleção de exemplo"], {
+    password: body.existingAccount ? undefined : "Exemplo-7Kq2",
+    settings,
+  });
+  if (!sent.ok) throw new HttpError(400, `Não foi possível enviar: ${sent.error}.`);
+  return json({ ok: true, to, products: joinList(products) });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -364,6 +570,12 @@ Deno.serve(async (req) => {
         return await setPassword(req, body);
       case "delete_member":
         return await deleteMember(req, body);
+      case "email_status":
+        return await emailStatus(req);
+      case "email_save_key":
+        return await emailSaveKey(req, body);
+      case "email_test":
+        return await emailTest(req, body);
       default:
         return json({ error: "Ação desconhecida." }, 400);
     }

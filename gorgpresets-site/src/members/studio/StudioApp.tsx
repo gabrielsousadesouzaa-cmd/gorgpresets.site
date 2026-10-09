@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ExternalLink, Gauge, LayoutTemplate, Loader2, LogOut, Menu, Palette, PlugZap, Rows3, Users, X } from "lucide-react";
+import { ExternalLink, Gauge, LayoutTemplate, Loader2, LogOut, Mail, Menu, Palette, PlugZap, Rows3, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, useRepo } from "../context/MembersContext";
 import { DemoBadge } from "../components/MembersHeader";
@@ -15,13 +15,15 @@ const RowsPage = lazy(() => import("./pages/Rows"));
 const AppearancePage = lazy(() => import("./pages/Appearance"));
 const MembersPage = lazy(() => import("./pages/Members"));
 const IntegrationsPage = lazy(() => import("./pages/Integrations"));
+const EmailsPage = lazy(() => import("./pages/Emails"));
 
 const NAV = [
   { to: "/membros/studio", label: "Visão geral", icon: Gauge, end: true },
   { to: "/membros/studio/colecoes", label: "Coleções e aulas", icon: LayoutTemplate, end: false },
-  { to: "/membros/studio/vitrines", label: "Vitrines da home", icon: Rows3, end: false },
+  { to: "/membros/studio/vitrines", label: "Seções da home", icon: Rows3, end: false },
   { to: "/membros/studio/aparencia", label: "Aparência", icon: Palette, end: false },
   { to: "/membros/studio/membros", label: "Membros", icon: Users, end: false },
+  { to: "/membros/studio/emails", label: "E-mails", icon: Mail, end: false },
   { to: "/membros/studio/integracoes", label: "Integrações", icon: PlugZap, end: false },
 ];
 
@@ -92,6 +94,7 @@ export default function StudioApp() {
                 <Route path="aparencia" element={<AppearancePage />} />
                 <Route path="membros" element={<MembersPage />} />
                 <Route path="integracoes" element={<IntegrationsPage />} />
+                <Route path="emails" element={<EmailsPage />} />
                 <Route path="*" element={<Dashboard />} />
               </Routes>
             </Suspense>

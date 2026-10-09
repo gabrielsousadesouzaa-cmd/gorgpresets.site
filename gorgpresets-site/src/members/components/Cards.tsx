@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import { Check, Play, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Lesson, Product } from "../lib/types";
+import type { CardStyle, Lesson, Product } from "../lib/types";
 import { formatDuration } from "../lib/format";
 import { LandscapeArt, PosterArt } from "./PosterArt";
 import { ProgressBar } from "./ui";
@@ -94,6 +94,13 @@ export const LandscapeCard = memo(function LandscapeCard({ product, locked, perc
     </Link>
   );
 });
+
+/** Card de coleção no estilo escolhido para a vitrine. */
+export function RowProductCard({ style, product, locked, percent, rank }: ProductCardProps & { style: CardStyle; rank: number }) {
+  if (style === "ranked") return <RankedCard product={product} locked={locked} percent={percent} rank={rank} />;
+  if (style === "landscape") return <LandscapeCard product={product} locked={locked} percent={percent} />;
+  return <PosterCard product={product} locked={locked} percent={percent} />;
+}
 
 export const ContinueCard = memo(function ContinueCard({ product, lesson, percent }: { product: Product; lesson: Lesson; percent: number }) {
   return (

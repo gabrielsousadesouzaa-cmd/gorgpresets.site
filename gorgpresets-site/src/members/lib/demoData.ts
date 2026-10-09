@@ -39,6 +39,10 @@ const SEEDS: DemoProductSeed[] = [
     description: "Verdes elegantes, tons terrosos e acabamento clássico. O estilo atemporal do quiet luxury." },
   { id: "p-fitness", title: "FITNESS", accent: "#3b5560", photo: "photo-1517404215738-15263e9f9178",
     description: "Definição, contraste e energia para fotos de treino, academia e lifestyle fitness." },
+  { id: "p-luts", title: "LUTS CINEMÁTICOS", accent: "#a5502c", photo: "photo-1492691527719-9d1e07e534b4",
+    description: "As mesmas cores dos presets, agora nos seus vídeos: LUTs para CapCut, Premiere e DaVinci Resolve." },
+  { id: "p-templates", title: "TEMPLATES STORIES", accent: "#5b4b8a", photo: "photo-1558655146-9f40138edfeb", badge: "EXTRA",
+    description: "Modelos editáveis no Canva para stories, destaques e posts com a identidade da sua marca." },
 ];
 
 export const DEMO_OWNED_IDS = SEEDS.filter((s) => s.owned).map((s) => s.id);
@@ -131,15 +135,26 @@ export function buildDemoCurriculum(products: Product[]): { modules: Module[]; l
 }
 
 export function buildDemoRows(): Row[] {
+  const curated = (id: string, title: string, subtitle: string, productIds: string[], sortOrder: number, cardStyle: Row["cardStyle"] = "poster"): Row => ({
+    id, title, subtitle, kind: "curated", cardStyle, accentTitle: cardStyle === "ranked", productIds, visible: true, sortOrder,
+  });
   return [
-    { id: "row-continue", title: "Continuar assistindo", subtitle: "", kind: "continue", cardStyle: "landscape", accentTitle: false, productIds: [], visible: true, sortOrder: 0 },
-    { id: "row-owned", title: "Sua Coleção Particular", subtitle: "", kind: "owned", cardStyle: "poster", accentTitle: false, productIds: [], visible: true, sortOrder: 1 },
-    { id: "row-top", title: "Top 10 em Alta", subtitle: "Acompanhe os presets mais adquiridos", kind: "curated", cardStyle: "ranked", accentTitle: true,
-      productIds: ["p-silent", "p-feed", "p-minimalist", "p-europa", "p-portrait", "p-verao", "p-oldmoney"], visible: true, sortOrder: 2 },
-    { id: "row-elite", title: "Coleção Elite", subtitle: "O segredo por trás do visual clean e caro das maiores referências.", kind: "curated", cardStyle: "poster", accentTitle: false,
-      productIds: ["p-deep", "p-oldmoney", "p-minimalist", "p-silent", "p-fitness"], visible: true, sortOrder: 3 },
+    { id: "row-owned", title: "Sua Coleção Particular", subtitle: "Seus presets adquiridos, prontos para usar.", kind: "owned", cardStyle: "poster", accentTitle: false, productIds: [], visible: true, sortOrder: 0 },
+    { id: "row-continue", title: "Continuar assistindo", subtitle: "", kind: "continue", cardStyle: "landscape", accentTitle: false, productIds: [], visible: true, sortOrder: 1 },
+    curated("row-top", "Top 10 em Alta", "Acompanhe os presets mais adquiridos.",
+      ["p-silent", "p-feed", "p-minimalist", "p-europa", "p-portrait", "p-verao", "p-oldmoney", "p-urban", "p-deep", "p-fitness"], 2, "ranked"),
+    curated("row-business", "Para o seu Negócio", "Presets estratégicos para elevar o valor da sua marca e serviços.",
+      ["p-portrait", "p-space", "p-feed", "p-fitness", "p-minimalist"], 3),
+    curated("row-elite", "Coleção Elite", "O segredo por trás do visual clean e caro das maiores referências.",
+      ["p-silent", "p-oldmoney", "p-deep", "p-minimalist", "p-space"], 4),
+    curated("row-destinos", "Destinos em Alta", "As cores dos lugares mais desejados e instagramáveis do mundo.",
+      ["p-europa", "p-verao", "p-urban", "p-oldmoney"], 5),
+    curated("row-originais", "Originais GORG", "A harmonia perfeita entre a sua arte e a edição de alta performance.",
+      ["p-silent", "p-urban", "p-deep", "p-portrait", "p-feed"], 6),
+    curated("row-extras", "Extras", "Expanda suas possibilidades com recursos que vão além da fotografia",
+      ["p-luts", "p-templates"], 7),
     { id: "row-locked", title: "Desbloqueie novas estéticas", subtitle: "Coleções que ainda não fazem parte da sua biblioteca", kind: "locked", cardStyle: "landscape", accentTitle: false,
-      productIds: [], visible: true, sortOrder: 4 },
+      productIds: [], visible: true, sortOrder: 8 },
   ];
 }
 

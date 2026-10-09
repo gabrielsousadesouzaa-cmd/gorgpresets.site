@@ -4,6 +4,7 @@
 import type { MembersRepo } from "./repo";
 import type {
   AuthSnapshot,
+  EmailStatus,
   Grant,
   Lesson,
   Material,
@@ -15,10 +16,11 @@ import type {
   Row,
   WebhookLog,
 } from "./types";
+import { DEFAULT_SETTINGS } from "./defaults";
 import { buildDemoCurriculum, buildDemoProducts, buildDemoRows, buildDemoSettings, DEMO_OWNED_IDS } from "./demoData";
 import { generatePassword, normalizeEmail, uid } from "./format";
 
-const DB_KEY = "gorg-members-demo-v2";
+const DB_KEY = "gorg-members-demo-v3";
 const SESSION_KEY = "gorg-members-demo-session";
 export const DEMO_ADMIN_EMAIL = "produtor@gorgpresets.site";
 export const DEMO_MEMBER_EMAIL = "ana@exemplo.com";
@@ -32,6 +34,8 @@ interface DemoMember {
 }
 
 interface DemoDB {
+  /** Chave do Resend no modo demo (nada é enviado de verdade). */
+  emailKey?: string;
   settings: PortalSettings;
   products: Product[];
   modules: Module[];
@@ -101,6 +105,13 @@ function persist() {
   } catch {
     /* cota cheia ou modo privado: segue em memória */
   }
+}
+
+function emailStatus(): EmailStatus {
+  const key = db.emailKey || "";
+  return key
+    ? { configured: true, source: "studio", hint: `${key.slice(0, 3)}…${key.slice(-4)}`, keyCheck: "ok", domains: [{ name: "gorgpresets.site", status: "verified" }] }
+    : { configured: false, source: null, hint: null, keyCheck: null, domains: null };
 }
 
 function sessionEmail(): string | null {
@@ -231,7 +242,7 @@ export const localRepo: MembersRepo = {
   },
 
   async getSettings() {
-    return clone(db.settings);
+    return clone({ ...db.settings, email: { ...DEFAULT_SETTINGS.email, ...(db.settings.email || {}) } });
   },
 
   async getCatalog() {
@@ -455,6 +466,24 @@ export const localRepo: MembersRepo = {
 
   async rotateWebhookToken() {
     return localRepo.getWebhookUrl();
+  },
+
+  async getEmailStatus() {
+    return emailStatus();
+  },
+
+  async saveEmailKey(key) {
+    const value = key.trim();
+    if (value && !/^re_[A-Za-z0-9_-]{8,}$/.test(value)) throw new Error("Essa não parece uma chave do Resend. Ela começa com “re_”.");
+    db.emailKey = value || undefined;
+    persist();
+    return emailStatus();
+  },
+
+  async sendTestEmail(to) {
+    if (!db.emailKey) throw new Error("Conecte o Resend primeiro (cole a chave da API).");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error("Informe um e-mail válido para o teste.");
+    await new Promise((resolve) => setTimeout(resolve, 700));
   },
 
   async upload(file, { onProgress }) {
