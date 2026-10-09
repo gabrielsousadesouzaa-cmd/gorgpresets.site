@@ -2,3 +2,6 @@
 
 [functions.create-pix]
 verify_jwt = false
+
+[functions.members-api]
+verify_jwt = false

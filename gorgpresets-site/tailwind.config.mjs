@@ -21,6 +21,8 @@ module.exports = {
         sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
       },
       colors: {
+        // Cor de destaque da Área de Membros (editável no Studio)
+        ma: "rgb(var(--ma-accent, 216 40 40) / <alpha-value>)",
         border: "hsl(var(--border))",
         "card-border": "hsl(var(--card-border))",
         input: "hsl(var(--input))",
@@ -76,6 +78,10 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+      },
+      transitionTimingFunction: {
+        // Curva "expo out" usada na loja e na Área de Membros
+        expo: "cubic-bezier(0.16, 1, 0.3, 1)",
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/store/cartStore";
@@ -25,10 +25,19 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Admin = lazy(() => import("./pages/Admin"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Checkout = lazy(() => import("./pages/Checkout"));
+const MembersApp = lazy(() => import("./members/MembersApp"));
 
 const queryClient = new QueryClient();
 
 import { FlyToCartProvider } from "@/components/FlyToCart";
+
+// A área de membros tem tema escuro; o Studio e a loja usam o tema claro.
+function AppToaster() {
+  const { pathname } = useLocation();
+  const members = pathname.startsWith("/membros");
+  const dark = members && !pathname.startsWith("/membros/studio");
+  return <Toaster position={members ? "top-center" : "top-right"} expand={true} richColors theme={dark ? "dark" : "light"} />;
+}
 
 function App() {
   return (
@@ -39,8 +48,8 @@ function App() {
           <TooltipProvider>
             <CartProvider>
               <FlyToCartProvider>
-                <Toaster position="top-right" expand={true} richColors />
                 <BrowserRouter>
+                  <AppToaster />
                   <MenuProvider>
                     <ScrollToTop />
                     <SiteTracker />
@@ -53,6 +62,14 @@ function App() {
                           <Admin />
                         </Suspense>
                       } 
+                    />
+                    <Route
+                      path="/membros/*"
+                      element={
+                        <Suspense fallback={<div className="min-h-screen bg-black" />}>
+                          <MembersApp />
+                        </Suspense>
+                      }
                     />
                     <Route 
                       path="/checkout" 
