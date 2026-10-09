@@ -18,21 +18,23 @@ Abra `/membros?demo=1`. Tudo funciona com dados de exemplo salvos só no seu nav
 
 ## Produção — status
 
-Já ativado no Supabase (projeto `ibsnizsdascywkonvcvu`) em 09/10/2026:
+Tudo ativado no Supabase (projeto `ibsnizsdascywkonvcvu`) em 09/10/2026 — migrações em `supabase/migrations/20261009*`:
 
-- tabelas `member_*`, regras de acesso (RLS) e buckets `members-public` / `members-private` (`supabase/migrations/20261009*`);
+- tabelas `member_*`, regras de acesso (RLS) e buckets `members-public` / `members-private`;
 - o login do `/admin` (com 2FA) é o produtor;
-- Edge Function `members-api` publicada;
-- RLS ligado nas 5 tabelas da área de membros antiga.
+- Edge Function `members-api` publicada; o token do webhook é gerado no banco e o link completo aparece em **Studio → Integrações** (botão "Gerar novo" troca o token);
+- só contas criadas pela área de membros (venda, Studio ou "Primeiro acesso") recebem acesso — um cadastro feito direto no Supabase com o e-mail de um comprador não herda as compras;
+- tabelas da loja (`products`, `site_settings`, `sales_settings`, `site_visits`, `lessons`) e uploads de imagens: escrita só do produtor; RLS ligado nas 5 tabelas da área de membros antiga;
+- função `create-pix` (BuckPay) desativada (responde 410, sem token) e checkout próprio removido do site — as vendas seguem pelo GGCheckout.
 
-Falta fazer no painel do Supabase (só o dono da conta consegue):
+Para usar, depois do deploy: entre em `/membros/studio` com o login do `/admin`, preencha **Aparência → Suporte** (WhatsApp), monte as coleções, importe os alunos em **Membros → Importar lista** e cadastre o link de **Integrações** no seu checkout (informando o ID do produto em cada coleção, aba **Acesso e venda**).
 
-1. **Edge Functions → Secrets:** criar `MEMBERS_WEBHOOK_TOKEN` com uma senha longa (protege o webhook). Opcionais, para mandar o login por e-mail: `RESEND_API_KEY` e `MEMBERS_EMAIL_FROM`.
-2. **Authentication → Sign In / Providers:** desligar *Allow new users to sign up* — as contas são criadas pela função (venda, Studio ou "Primeiro acesso").
-3. **Authentication → URL Configuration → Redirect URLs:** adicionar `https://gorgpresets.site/membros/perfil` (link do "Esqueci minha senha").
-4. Rodar `supabase/sql/opcional_proteger_tabelas_da_loja.sql` (SQL Editor) para fechar a escrita pública das tabelas da loja.
+Opcional, no painel do Supabase:
 
-Depois do deploy do site: entre em `/membros/studio` com o login do `/admin`, monte as coleções, importe os alunos em **Membros → Importar lista** e cadastre o webhook mostrado em **Integrações** no seu checkout (informando o ID do produto em cada coleção, aba **Acesso e venda**).
+- **E-mails automáticos:** em *Edge Functions → Secrets*, `RESEND_API_KEY` e `MEMBERS_EMAIL_FROM` (login por e-mail a cada venda e "Esqueci minha senha" com o seu remetente). Sem isso, o aluno entra pelo "Primeiro acesso" e o suporte redefine a senha pelo Studio.
+- **Authentication → URL Configuration:** *Site URL* `https://gorgpresets.site` e, em *Redirect URLs*, `https://gorgpresets.site/membros/perfil`.
+- **Authentication → Sign In / Providers:** desligar *Allow new users to sign up* (não é mais um risco, só evita contas soltas).
+- Apagar a função `create-pix` e o segredo `BUCKPAY_API_TOKEN` (a ferramenta usada aqui não consegue excluir). Gere um token novo na BuckPay: o antigo esteve escrito no código da função.
 
 > Vídeos: o upload direto respeita o limite de arquivo do seu plano Supabase (50 MB no gratuito). Para aulas longas, use YouTube não listado, Vimeo ou Panda Video — basta colar o link.
 
@@ -40,9 +42,8 @@ Depois do deploy do site: entre em `/membros/studio` com o login do `/admin`, mo
 
 - Todas as regras ficam no banco (RLS): o aluno só lê aulas, materiais e vídeos das coleções que comprou; vídeos e arquivos privados são entregues por URL assinada temporária.
 - Editar conteúdo exige ser produtor **e** ter passado pelo 2FA.
-- O acesso é por e-mail confirmado: liberar uma coleção para um e-mail funciona mesmo antes de a pessoa criar a conta.
-- O `/admin` da loja agora recusa contas que não são de produtor (alunos também têm login).
-- **Recomendado:** `supabase/sql/opcional_proteger_tabelas_da_loja.sql` fecha a escrita pública que existe hoje nas tabelas da loja (`products`, `site_settings`, uploads de imagens…).
+- O acesso é por e-mail: liberar uma coleção para um e-mail funciona mesmo antes de a pessoa criar a conta, e só vale para contas criadas pela área de membros.
+- O `/admin` da loja recusa contas que não são de produtor (alunos também têm login) e as tabelas da loja só aceitam escrita do produtor.
 
 ## Código
 

@@ -670,8 +670,15 @@ export const supabaseRepo: MembersRepo = {
     };
   },
 
-  webhookUrl() {
-    return `${SUPABASE_URL}/functions/v1/${FUNCTION}?action=webhook&token=SEU_TOKEN`;
+  async getWebhookUrl() {
+    const token = check(await client().rpc("member_webhook_token")) as string | null;
+    if (!token) throw new Error("Só o produtor (com 2FA) pode ver o link do webhook.");
+    return `${SUPABASE_URL}/functions/v1/${FUNCTION}?action=webhook&token=${token}`;
+  },
+
+  async rotateWebhookToken() {
+    check(await client().rpc("member_rotate_webhook_token"));
+    return supabaseRepo.getWebhookUrl();
   },
 
   async upload(file, { visibility, productId, folder, onProgress }) {

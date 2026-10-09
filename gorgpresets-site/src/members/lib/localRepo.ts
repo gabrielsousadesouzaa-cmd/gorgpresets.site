@@ -449,8 +449,12 @@ export const localRepo: MembersRepo = {
     };
   },
 
-  webhookUrl() {
-    return "https://SEU-PROJETO.functions.supabase.co/members-api?action=webhook&token=SEU_TOKEN";
+  async getWebhookUrl() {
+    return "https://SEU-PROJETO.supabase.co/functions/v1/members-api?action=webhook&token=demo";
+  },
+
+  async rotateWebhookToken() {
+    return localRepo.getWebhookUrl();
   },
 
   async upload(file, { onProgress }) {

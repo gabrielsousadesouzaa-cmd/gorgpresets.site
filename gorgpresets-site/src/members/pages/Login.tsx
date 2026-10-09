@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, MailCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, MailCheck, MessageCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth, useRepo, useSettings } from "../context/MembersContext";
@@ -66,6 +66,7 @@ export default function Login() {
     sent: { title: "Confira seu e-mail", text: `Se existir uma conta para ${email}, você receberá o link em instantes. Olhe também o spam.`, cta: "" },
   };
   const copy = titles[view];
+  const whatsapp = settings.support.whatsapp.replace(/\D/g, "");
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-black">
@@ -185,6 +186,18 @@ export default function Login() {
                 <button type="button" onClick={() => setView("forgot")} className="mt-6 block w-full text-center text-[13px] text-white/55 transition-colors hover:text-white">
                   Esqueci minha senha
                 </button>
+              )}
+
+              {(view === "forgot" || view === "sent") && whatsapp && (
+                <a
+                  href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`Olá! Preciso de ajuda para acessar a Área de Membros. Meu e-mail: ${email}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-white/[0.04] px-4 py-3 text-[13px] text-white/65 ring-1 ring-white/[0.08] transition-colors hover:bg-white/[0.08] hover:text-white"
+                >
+                  <MessageCircle size={15} className="text-emerald-400" />
+                  {view === "sent" ? "Não chegou? Fale com o suporte no WhatsApp" : "Prefere ajuda? Fale com o suporte no WhatsApp"}
+                </a>
               )}
             </motion.div>
           </AnimatePresence>

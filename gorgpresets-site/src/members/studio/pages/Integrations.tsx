@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ChevronDown, ExternalLink, Mail, PlugZap, RefreshCw, Webhook } from "lucide-react";
+import { AlertCircle, ChevronDown, ExternalLink, KeyRound, Loader2, Mail, PlugZap, RefreshCw, Webhook } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCatalog, useRepo } from "../../context/MembersContext";
 import { relativeDate, sortByOrder } from "../../lib/format";
-import { Badge, Button, Card, CopyButton, PageHeader } from "../ui";
-import { useWebhookLogs } from "../hooks";
+import { Badge, Button, Card, CopyButton, PageHeader, useConfirm } from "../ui";
+import { useStudioAction, useStudioQuery, useWebhookLogs } from "../hooks";
 
-const PLATFORMS = ["GGCheckout", "BuckPay", "Kiwify", "Hotmart", "Cakto", "Perfect Pay", "Eduzz", "Ticto", "Yampi", "Stripe"];
+const PLATFORMS = ["GGCheckout", "Kiwify", "Hotmart", "Cakto", "Perfect Pay", "Eduzz", "Ticto", "Yampi", "Stripe"];
 
 const STATUS: Record<string, { label: string; tone: "green" | "red" | "amber" | "neutral" }> = {
   granted: { label: "Liberado", tone: "green" },
@@ -20,6 +20,19 @@ export default function IntegrationsPage() {
   const repo = useRepo();
   const { catalog } = useCatalog();
   const logs = useWebhookLogs();
+  const webhook = useStudioQuery("webhook-url", () => repo.getWebhookUrl());
+  const run = useStudioAction();
+  const confirm = useConfirm();
+
+  const rotate = async () => {
+    const ok = await confirm({
+      title: "Gerar um novo link?",
+      text: "O link atual para de funcionar na hora. Depois atualize o webhook no seu checkout com o novo link.",
+      confirmLabel: "Gerar novo link",
+      danger: true,
+    });
+    if (ok) await run(() => repo.rotateWebhookToken(), { success: "Novo link gerado", scopes: ["studio"] });
+  };
   const [open, setOpen] = useState<string | null>(null);
   const portalUrl = `${window.location.origin}/membros`;
   const products = sortByOrder(catalog.products);
@@ -41,15 +54,21 @@ export default function IntegrationsPage() {
 
       <Card title={<span className="flex items-center gap-2"><Webhook size={18} /> Webhook de vendas</span>} description="Funciona com qualquer checkout que envie um webhook com o e-mail do comprador e o produto.">
         <div className="flex flex-col gap-2 sm:flex-row">
-          <code className="flex min-h-11 flex-1 items-center break-all rounded-xl bg-[#1d1d1f] px-4 py-3 text-[12.5px] text-white">{repo.webhookUrl()}</code>
-          <CopyButton value={repo.webhookUrl()} label="Copiar URL" />
+          <code className="flex min-h-11 flex-1 items-center break-all rounded-xl bg-[#1d1d1f] px-4 py-3 text-[12.5px] text-white">
+            {webhook.isLoading ? <Loader2 size={15} className="animate-spin text-white/60" /> : webhook.data || (webhook.error as Error | null)?.message}
+          </code>
+          <div className="flex gap-2">
+            {webhook.data && <CopyButton value={webhook.data} label="Copiar link" />}
+            <Button size="sm" variant="secondary" icon={<KeyRound size={13} />} onClick={rotate}>Gerar novo</Button>
+          </div>
         </div>
+        <p className="mt-2 text-[12px] text-[#86868b]">O link já contém uma chave secreta. Não compartilhe fora do painel do checkout.</p>
 
         <ol className="mt-6 space-y-4">
           {[
-            <>No Supabase, em <b>Edge Functions → Secrets</b>, crie <code className="rounded bg-black/[0.06] px-1.5 py-0.5 text-[12px]">MEMBERS_WEBHOOK_TOKEN</code> com uma senha longa e troque <b>SEU_TOKEN</b> no link acima por ela.</>,
-            <>No painel do checkout, cadastre o link como webhook para <b>compra aprovada</b> (e também <b>reembolso/chargeback</b>, para retirar o acesso).</>,
+            <>No painel do checkout, cadastre o link acima como webhook para <b>compra aprovada</b> (e também <b>reembolso/chargeback</b>, para retirar o acesso).</>,
             <>Em cada coleção, abra <b>Acesso e venda</b> e informe o ID (ou nome) do produto/oferta como ele aparece no checkout.</>,
+            <>Faça uma compra de teste: ela aparece em <b>Últimos eventos</b> logo abaixo.</>,
           ].map((step, i) => (
             <li key={i} className="flex gap-4">
               <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#1d1d1f] text-[12px] font-bold text-white">{i + 1}</span>

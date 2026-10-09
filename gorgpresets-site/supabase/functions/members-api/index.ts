@@ -9,8 +9,10 @@
 //   set_password   → [produtor] Define nova senha para um membro.
 //   delete_member  → [produtor] Remove acessos e a conta do membro.
 //
-// Segredos (Supabase → Edge Functions → Secrets):
-//   MEMBERS_WEBHOOK_TOKEN  obrigatório para o webhook
+// Token do webhook: gerado no banco (member_private_settings) e exibido no
+// Studio → Integrações. MEMBERS_WEBHOOK_TOKEN (secret) substitui, se existir.
+//
+// Segredos opcionais (Supabase → Edge Functions → Secrets):
 //   RESEND_API_KEY         opcional — envia e-mail de boas-vindas e de recuperação
 //   MEMBERS_EMAIL_FROM     opcional — ex: "Gorg Presets <acesso@gorgpresets.site>"
 //   MEMBERS_PORTAL_URL     opcional — ex: "https://gorgpresets.site/membros"
@@ -21,7 +23,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const WEBHOOK_TOKEN = Deno.env.get("MEMBERS_WEBHOOK_TOKEN") || "";
+const ENV_WEBHOOK_TOKEN = Deno.env.get("MEMBERS_WEBHOOK_TOKEN") || "";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const EMAIL_FROM = Deno.env.get("MEMBERS_EMAIL_FROM") || "Gorg Presets <onboarding@resend.dev>";
 const PORTAL_URL = Deno.env.get("MEMBERS_PORTAL_URL") || "https://gorgpresets.site/membros";
@@ -60,6 +62,16 @@ function safeEqual(a: string, b: string) {
   return diff === 0;
 }
 
+// Contas criadas pela área de membros recebem esta marca (só o servidor grava
+// app_metadata). As regras do banco só liberam compras para contas marcadas.
+const MEMBER_FLAG = { gorg_member: true };
+
+async function webhookToken(): Promise<string> {
+  if (ENV_WEBHOOK_TOKEN) return ENV_WEBHOOK_TOKEN;
+  const { data } = await admin.from("member_private_settings").select("value").eq("key", "webhook_token").maybeSingle();
+  return data?.value || "";
+}
+
 // ── Auth helpers ────────────────────────────────────────────────────
 async function requireProducer(req: Request) {
   const authHeader = req.headers.get("Authorization") || "";
@@ -96,6 +108,7 @@ async function ensureAccount(email: string, name: string, password?: string) {
     password: finalPassword,
     email_confirm: true,
     user_metadata: { full_name: name },
+    app_metadata: MEMBER_FLAG,
   });
   if (error || !data.user) throw new HttpError(400, error?.message || "Não foi possível criar a conta.");
   await admin.from("member_profiles").upsert({ user_id: data.user.id, email, full_name: name || "" });
@@ -204,7 +217,8 @@ async function logWebhook(status: string, message: string, email: string, payloa
 }
 
 async function handleWebhook(req: Request, url: URL) {
-  if (!WEBHOOK_TOKEN || !safeEqual(url.searchParams.get("token") || "", WEBHOOK_TOKEN)) {
+  const expected = await webhookToken();
+  if (!expected || !safeEqual(url.searchParams.get("token") || "", expected)) {
     throw new HttpError(401, "Token inválido.");
   }
   const raw = await req.text();
@@ -298,8 +312,10 @@ async function createMember(req: Request, body: Record<string, unknown>) {
   if (!isEmail(email)) throw new HttpError(400, "E-mail inválido.");
   await grant(email, productIds, "manual");
   const account = await ensureAccount(email, name, body.password ? String(body.password) : undefined);
-  if (!account.created && name) {
-    await admin.from("member_profiles").update({ full_name: name }).eq("user_id", account.userId);
+  if (!account.created) {
+    // O produtor liberou este e-mail manualmente: a conta existente passa a valer.
+    await admin.auth.admin.updateUserById(account.userId, { app_metadata: MEMBER_FLAG });
+    if (name) await admin.from("member_profiles").update({ full_name: name }).eq("user_id", account.userId);
   }
   let emailed = false;
   if (body.sendEmail) emailed = await sendWelcome(email, name, account.created ? account.password : undefined);
@@ -313,7 +329,7 @@ async function setPassword(req: Request, body: Record<string, unknown>) {
   if (password.length < 6) throw new HttpError(400, "A senha precisa ter pelo menos 6 caracteres.");
   const userId = await findUserIdByEmail(email);
   if (!userId) throw new HttpError(404, "Este membro ainda não tem conta.");
-  const { error } = await admin.auth.admin.updateUserById(userId, { password });
+  const { error } = await admin.auth.admin.updateUserById(userId, { password, app_metadata: MEMBER_FLAG });
   if (error) throw new HttpError(400, error.message);
   return json({ ok: true });
 }

@@ -71,7 +71,10 @@ export interface MembersRepo {
   setMemberPassword(email: string, password: string): Promise<void>;
   listWebhookLogs(): Promise<WebhookLog[]>;
   getStats(): Promise<PortalStats>;
-  webhookUrl(): string;
+  /** Link do webhook com o token (visível só para o produtor). */
+  getWebhookUrl(): Promise<string>;
+  /** Gera um novo token; o link antigo para de funcionar. */
+  rotateWebhookToken(): Promise<string>;
 
   upload(file: File, options: UploadOptions): Promise<string>;
 }
