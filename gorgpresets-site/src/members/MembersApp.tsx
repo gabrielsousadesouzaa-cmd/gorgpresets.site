@@ -220,8 +220,8 @@ function SetupRequired() {
         </span>
         <h1 className="mt-6 text-3xl font-bold uppercase tracking-tighter">Quase pronto</h1>
         <p className="mt-3 leading-relaxed text-white/60">
-          A Área de Membros já está no site, mas as tabelas ainda não foram criadas no Supabase. Rode a migração
-          <code className="mx-1 rounded bg-white/10 px-1.5 py-0.5 text-[12px]">supabase/migrations/…_members_area.sql</code>
+          A Área de Membros já está no site, mas as tabelas ainda não foram criadas neste Supabase. Rode as migrações de
+          <code className="mx-1 rounded bg-white/10 px-1.5 py-0.5 text-[12px]">supabase/migrations</code>
           e publique a função <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">members-api</code>.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">

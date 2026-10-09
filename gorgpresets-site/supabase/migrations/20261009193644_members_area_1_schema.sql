@@ -1,8 +1,7 @@
 -- ════════════════════════════════════════════════════════════════════
--- GORG · Área de Membros
--- Tabelas, segurança (RLS) e buckets de storage do portal do aluno e do
--- Studio do produtor. Tudo prefixado com "member_" para não colidir com as
--- tabelas da loja nem com as da área de membros antiga.
+-- GORG · Área de Membros (1/3): tabelas, funções e segurança (RLS) do
+-- portal do aluno e do Studio do produtor. Tudo prefixado com "member_"
+-- para não colidir com as tabelas da loja nem com as da área antiga.
 -- ════════════════════════════════════════════════════════════════════
 
 -- ── Produtores (quem pode editar o portal) ─────────────────────────
@@ -12,7 +11,6 @@ create table if not exists public.member_admins (
 );
 alter table public.member_admins enable row level security;
 
-drop policy if exists "member_admins_select_self" on public.member_admins;
 create policy "member_admins_select_self" on public.member_admins
   for select to authenticated using (user_id = auth.uid());
 
@@ -45,6 +43,7 @@ $$;
 create or replace function public.member_try_uuid(p text)
 returns uuid
 language plpgsql immutable
+set search_path = public
 as $$
 begin
   return p::uuid;
@@ -233,148 +232,69 @@ alter table public.member_progress enable row level security;
 alter table public.member_webhook_logs enable row level security;
 
 -- Configurações: leitura pública (a tela de login mostra logo e fundo).
-drop policy if exists "member_settings_read" on public.member_settings;
 create policy "member_settings_read" on public.member_settings
   for select to anon, authenticated using (true);
-drop policy if exists "member_settings_admin" on public.member_settings;
 create policy "member_settings_admin" on public.member_settings
   for all to authenticated using (public.member_is_admin()) with check (public.member_is_admin());
 
 -- Produtos: membros veem os publicados (inclusive bloqueados, para o upsell).
-drop policy if exists "member_products_read" on public.member_products;
 create policy "member_products_read" on public.member_products
   for select to authenticated using (published or public.member_is_admin());
-drop policy if exists "member_products_admin" on public.member_products;
 create policy "member_products_admin" on public.member_products
   for all to authenticated using (public.member_is_admin()) with check (public.member_is_admin());
 
 -- Módulos: títulos visíveis (vitrine do que existe dentro da coleção).
-drop policy if exists "member_modules_read" on public.member_modules;
 create policy "member_modules_read" on public.member_modules
   for select to authenticated using (
     public.member_is_admin()
     or (published and exists (select 1 from public.member_products p where p.id = product_id and p.published))
   );
-drop policy if exists "member_modules_admin" on public.member_modules;
 create policy "member_modules_admin" on public.member_modules
   for all to authenticated using (public.member_is_admin()) with check (public.member_is_admin());
 
 -- Aulas: só quem tem acesso ao produto.
-drop policy if exists "member_lessons_read" on public.member_lessons;
 create policy "member_lessons_read" on public.member_lessons
   for select to authenticated using (
     public.member_is_admin() or (published and public.member_has_access(product_id))
   );
-drop policy if exists "member_lessons_admin" on public.member_lessons;
 create policy "member_lessons_admin" on public.member_lessons
   for all to authenticated using (public.member_is_admin()) with check (public.member_is_admin());
 
 -- Materiais (downloads): só quem tem acesso ao produto.
-drop policy if exists "member_materials_read" on public.member_materials;
 create policy "member_materials_read" on public.member_materials
   for select to authenticated using (public.member_has_access(product_id));
-drop policy if exists "member_materials_admin" on public.member_materials;
 create policy "member_materials_admin" on public.member_materials
   for all to authenticated using (public.member_is_admin()) with check (public.member_is_admin());
 
 -- Vitrines.
-drop policy if exists "member_rows_read" on public.member_rows;
 create policy "member_rows_read" on public.member_rows
   for select to authenticated using (visible or public.member_is_admin());
-drop policy if exists "member_rows_admin" on public.member_rows;
 create policy "member_rows_admin" on public.member_rows
   for all to authenticated using (public.member_is_admin()) with check (public.member_is_admin());
 
 -- Acessos: o membro vê só os dele; o produtor gerencia todos.
-drop policy if exists "member_access_read" on public.member_access;
 create policy "member_access_read" on public.member_access
   for select to authenticated using (email = public.member_email() or public.member_is_admin());
-drop policy if exists "member_access_admin" on public.member_access;
 create policy "member_access_admin" on public.member_access
   for all to authenticated using (public.member_is_admin()) with check (public.member_is_admin());
 
 -- Perfis: leitura própria / produtor. Escrita só via member_touch_profile().
-drop policy if exists "member_profiles_read" on public.member_profiles;
 create policy "member_profiles_read" on public.member_profiles
   for select to authenticated using (user_id = auth.uid() or public.member_is_admin());
 
 -- Progresso: cada membro grava o seu, apenas em produtos que possui.
-drop policy if exists "member_progress_own" on public.member_progress;
 create policy "member_progress_own" on public.member_progress
   for all to authenticated
   using (user_id = auth.uid())
   with check (user_id = auth.uid() and public.member_has_access(product_id));
-drop policy if exists "member_progress_admin_read" on public.member_progress;
 create policy "member_progress_admin_read" on public.member_progress
   for select to authenticated using (public.member_is_admin());
 
 -- Logs do webhook: só o produtor lê (a Edge Function grava com service role).
-drop policy if exists "member_webhook_logs_admin" on public.member_webhook_logs;
 create policy "member_webhook_logs_admin" on public.member_webhook_logs
   for select to authenticated using (public.member_is_admin());
 
 grant execute on function public.member_is_admin() to anon, authenticated;
+grant execute on function public.member_email() to authenticated;
 grant execute on function public.member_has_access(uuid) to authenticated;
 grant execute on function public.member_touch_profile(text) to authenticated;
-
--- ── Storage ─────────────────────────────────────────────────────────
--- members-public: capas, banners e logos (URL pública).
--- members-private: vídeos e arquivos de download, em pastas por produto
--- ({product_id}/...). Entregues por URL assinada só para quem tem acesso.
-insert into storage.buckets (id, name, public)
-values ('members-public', 'members-public', true)
-on conflict (id) do nothing;
-
-insert into storage.buckets (id, name, public)
-values ('members-private', 'members-private', false)
-on conflict (id) do nothing;
-
-drop policy if exists "members_public_admin_insert" on storage.objects;
-create policy "members_public_admin_insert" on storage.objects
-  for insert to authenticated with check (bucket_id = 'members-public' and public.member_is_admin());
-drop policy if exists "members_public_admin_update" on storage.objects;
-create policy "members_public_admin_update" on storage.objects
-  for update to authenticated using (bucket_id = 'members-public' and public.member_is_admin());
-drop policy if exists "members_public_admin_delete" on storage.objects;
-create policy "members_public_admin_delete" on storage.objects
-  for delete to authenticated using (bucket_id = 'members-public' and public.member_is_admin());
-
-drop policy if exists "members_private_read" on storage.objects;
-create policy "members_private_read" on storage.objects
-  for select to authenticated using (
-    bucket_id = 'members-private'
-    and (
-      public.member_is_admin()
-      or public.member_has_access(public.member_try_uuid((storage.foldername(name))[1]))
-    )
-  );
-drop policy if exists "members_private_admin_insert" on storage.objects;
-create policy "members_private_admin_insert" on storage.objects
-  for insert to authenticated with check (bucket_id = 'members-private' and public.member_is_admin());
-drop policy if exists "members_private_admin_update" on storage.objects;
-create policy "members_private_admin_update" on storage.objects
-  for update to authenticated using (bucket_id = 'members-private' and public.member_is_admin());
-drop policy if exists "members_private_admin_delete" on storage.objects;
-create policy "members_private_admin_delete" on storage.objects
-  for delete to authenticated using (bucket_id = 'members-private' and public.member_is_admin());
-
--- ── Dados iniciais ──────────────────────────────────────────────────
-insert into public.member_settings (id, data) values ('main', '{}'::jsonb)
-on conflict (id) do nothing;
-
-insert into public.member_rows (title, subtitle, kind, card_style, accent_title, sort_order)
-select * from (values
-  ('Continuar assistindo', '', 'continue', 'landscape', false, 0),
-  ('Sua Coleção Particular', '', 'owned', 'poster', false, 1),
-  ('Desbloqueie novas estéticas', 'Coleções que ainda não fazem parte da sua biblioteca', 'locked', 'poster', false, 2)
-) as v(title, subtitle, kind, card_style, accent_title, sort_order)
-where not exists (select 1 from public.member_rows);
-
--- Produtor inicial = o login do painel /admin da loja, que obrigatoriamente
--- usa autenticação em 2 etapas (membros não têm 2FA, então nunca entram aqui).
--- Para adicionar outro produtor depois:
---   insert into public.member_admins (user_id)
---   select id from auth.users where email = 'email@do-produtor.com';
-insert into public.member_admins (user_id)
-select distinct f.user_id from auth.mfa_factors f where f.status = 'verified'
-on conflict (user_id) do nothing;

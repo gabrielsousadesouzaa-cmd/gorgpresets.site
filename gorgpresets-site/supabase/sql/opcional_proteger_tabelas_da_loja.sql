@@ -3,11 +3,11 @@
 --
 -- Hoje as políticas de products, site_settings, sales_settings e dos buckets
 -- product-images/assets aceitam escrita de QUALQUER visitante (a chave anon
--- vai no código do site). E 5 tabelas da área de membros antiga estão sem RLS.
+-- vai no código do site).
 -- Este script deixa a escrita só para o produtor (mesma regra do Studio,
 -- com 2FA). A leitura pública da vitrine continua igual.
 --
--- Pré-requisito: a migração 20261009120000_members_area.sql já aplicada.
+-- Pré-requisito: migrações members_area_* já aplicadas (feito em 09/10/2026).
 -- Revise antes de rodar. Para desfazer, recrie as políticas antigas.
 -- ════════════════════════════════════════════════════════════════════
 
@@ -36,13 +36,9 @@ create policy "site_visits_producer_read" on public.site_visits
 create policy "site_visits_producer_delete" on public.site_visits
   for delete to authenticated using (public.member_is_admin());
 
--- Área de membros antiga (não é mais usada pelo site).
+-- Área de membros antiga (não é mais usada pelo site). O RLS das outras
+-- tabelas antigas já foi ligado na migração legacy_members_tables_enable_rls.
 drop policy if exists "Admin All" on public.lessons;
-alter table public.profiles enable row level security;
-alter table public.webhook_configs enable row level security;
-alter table public.webhook_logs enable row level security;
-alter table public.portal_settings enable row level security;
-alter table public.modules_presets enable row level security;
 
 -- Uploads de imagens da loja: só o produtor envia/troca/apaga.
 drop policy if exists "Permitir Tudo 16wiy3a_1" on storage.objects;

@@ -16,18 +16,23 @@
 
 Abra `/membros?demo=1`. Tudo funciona com dados de exemplo salvos só no seu navegador (`?demo=0` sai do modo demo). Sem as variáveis do Supabase (ex.: rodando localmente) o modo demo é automático.
 
-## Ativar em produção
+## Produção — status
 
-1. **Banco de dados** — rode `supabase/migrations/20261009120000_members_area.sql` (SQL Editor do Supabase ou `supabase db push`). Ele só **cria** tabelas `member_*` e os buckets `members-public`/`members-private`; não altera nada da loja. O login que hoje usa o `/admin` (com 2FA) vira o produtor.
-2. **Função** — `supabase functions deploy members-api --no-verify-jwt`
-3. **Segredos** (Supabase → Edge Functions → Secrets):
-   - `MEMBERS_WEBHOOK_TOKEN` — uma senha longa (protege o webhook)
-   - opcionais, para enviar login por e-mail: `RESEND_API_KEY`, `MEMBERS_EMAIL_FROM`, `MEMBERS_PORTAL_URL` (`https://gorgpresets.site/membros`)
-4. **Auth** (Supabase → Authentication):
-   - desative *Allow new users to sign up* — as contas são criadas pela função (venda, Studio ou "Primeiro acesso");
-   - em *URL Configuration → Redirect URLs*, adicione `https://gorgpresets.site/membros/perfil` (link de "Esqueci minha senha").
-5. Entre em `/membros/studio` com o login do `/admin`, monte as coleções e importe os alunos atuais em **Membros → Importar lista**.
-6. Cadastre o webhook em **Studio → Integrações** no seu checkout e informe o ID do produto em cada coleção (**Acesso e venda**).
+Já ativado no Supabase (projeto `ibsnizsdascywkonvcvu`) em 09/10/2026:
+
+- tabelas `member_*`, regras de acesso (RLS) e buckets `members-public` / `members-private` (`supabase/migrations/20261009*`);
+- o login do `/admin` (com 2FA) é o produtor;
+- Edge Function `members-api` publicada;
+- RLS ligado nas 5 tabelas da área de membros antiga.
+
+Falta fazer no painel do Supabase (só o dono da conta consegue):
+
+1. **Edge Functions → Secrets:** criar `MEMBERS_WEBHOOK_TOKEN` com uma senha longa (protege o webhook). Opcionais, para mandar o login por e-mail: `RESEND_API_KEY` e `MEMBERS_EMAIL_FROM`.
+2. **Authentication → Sign In / Providers:** desligar *Allow new users to sign up* — as contas são criadas pela função (venda, Studio ou "Primeiro acesso").
+3. **Authentication → URL Configuration → Redirect URLs:** adicionar `https://gorgpresets.site/membros/perfil` (link do "Esqueci minha senha").
+4. Rodar `supabase/sql/opcional_proteger_tabelas_da_loja.sql` (SQL Editor) para fechar a escrita pública das tabelas da loja.
+
+Depois do deploy do site: entre em `/membros/studio` com o login do `/admin`, monte as coleções, importe os alunos em **Membros → Importar lista** e cadastre o webhook mostrado em **Integrações** no seu checkout (informando o ID do produto em cada coleção, aba **Acesso e venda**).
 
 > Vídeos: o upload direto respeita o limite de arquivo do seu plano Supabase (50 MB no gratuito). Para aulas longas, use YouTube não listado, Vimeo ou Panda Video — basta colar o link.
 
@@ -37,7 +42,7 @@ Abra `/membros?demo=1`. Tudo funciona com dados de exemplo salvos só no seu nav
 - Editar conteúdo exige ser produtor **e** ter passado pelo 2FA.
 - O acesso é por e-mail confirmado: liberar uma coleção para um e-mail funciona mesmo antes de a pessoa criar a conta.
 - O `/admin` da loja agora recusa contas que não são de produtor (alunos também têm login).
-- **Recomendado:** `supabase/sql/opcional_proteger_tabelas_da_loja.sql` fecha a escrita pública que existe hoje nas tabelas da loja (`products`, `site_settings`, uploads de imagens…) e liga o RLS nas tabelas da área de membros antiga. Revise antes de rodar.
+- **Recomendado:** `supabase/sql/opcional_proteger_tabelas_da_loja.sql` fecha a escrita pública que existe hoje nas tabelas da loja (`products`, `site_settings`, uploads de imagens…).
 
 ## Código
 
@@ -48,6 +53,6 @@ src/members/
   components/           header, banner, vitrines, cards, player, materiais
   pages/                login, home, coleção, aula, biblioteca, suporte, perfil
   studio/               Studio do produtor (páginas, editor de aulas, kit de UI)
-supabase/migrations/    tabelas, RLS e storage
+supabase/migrations/    tabelas, RLS e storage (já aplicadas)
 supabase/functions/members-api/   webhook, criação de contas, primeiro acesso, recuperação de senha
 ```
