@@ -95,6 +95,7 @@ export function demoRender(state: DemoAutomationState, kind: TemplateKind, templ
     products,
     link: `${PORTAL}/entrar?email=${encodeURIComponent(to.email)}`,
     password,
+    mustChangePassword: !!password && mergeAutomation(state.settings.automation).forcePasswordChange,
     orderId,
     logoUrl: LOGO,
     accent: state.settings.accentColor,

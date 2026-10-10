@@ -572,6 +572,7 @@ async function processSale(payload: unknown, headers: Record<string, string>, op
     template,
     emailContext(config, { email: sale.email, name: sale.name, phone: sale.phone }, claimedNames, {
       password: account.created ? account.password : undefined,
+      mustChangePassword: account.created && automation.forcePasswordChange,
       orderId: sale.orderId,
     }),
   );
@@ -743,6 +744,7 @@ async function createMember(req: Request, body: Record<string, unknown>) {
       const titles = await productTitles(productIds);
       const rendered = renderEmail("welcome", config.email.welcome, emailContext(config, { email, name }, productIds.map((id) => titles.get(id) || "Coleção"), {
         password: account.created ? account.password : undefined,
+        mustChangePassword: account.created && config.automation.forcePasswordChange && !body.password,
       }));
       const sent = await deliver(config, { kind: "access", to: email, ...rendered, meta: { manual: true } });
       emailed = sent.ok;
@@ -817,7 +819,7 @@ async function resendAccess(req: Request, body: Record<string, unknown>) {
   let emailError = "";
   if (mailerReady(config)) {
     const titles = await productTitles(productIds);
-    const rendered = renderEmail("welcome", config.email.welcome, emailContext(config, { email, name, phone: String(profile?.phone || "") }, productIds.map((id) => titles.get(id) || "Coleção"), { password }));
+    const rendered = renderEmail("welcome", config.email.welcome, emailContext(config, { email, name, phone: String(profile?.phone || "") }, productIds.map((id) => titles.get(id) || "Coleção"), { password, mustChangePassword: mustChange }));
     const sent = await deliver(config, { kind: "access", to: email, ...rendered, meta: { manual: true } });
     emailed = sent.ok;
     emailError = sent.error;
@@ -974,6 +976,7 @@ async function emailTest(req: Request, body: Record<string, unknown>) {
     template,
     emailContext(config, { email: to, name: producer.name || "Ana Julia", phone: "5511999999999" }, products.length ? products : ["Coleção de exemplo"], {
       password: kind === "welcome" && !body.existingAccount ? "Exemplo-7Kq2" : undefined,
+      mustChangePassword: config.automation.forcePasswordChange,
       orderId: "TESTE-123",
     }),
   );

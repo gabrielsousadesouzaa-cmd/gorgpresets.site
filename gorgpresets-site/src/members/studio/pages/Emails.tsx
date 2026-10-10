@@ -2,8 +2,8 @@
 // quem aparece como remetente e os modelos de boas-vindas e de acesso
 // retirado — no modo visual ou em código HTML —, com prévia ao vivo (o mesmo
 // modelo que a Edge Function envia) e envio de teste.
-import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -34,7 +34,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth, useCatalog, useRepo, useSettings } from "../../context/MembersContext";
+import { useAuth, useCatalog, useRefreshPortal, useRepo, useSettings } from "../../context/MembersContext";
 import { DEFAULT_EMAIL, EMAIL_VARIABLES, mergeEmailSettings, renderEmail, templateToHtml } from "../../../../supabase/functions/members-api/email";
 import { mergeAutomation } from "../../../../supabase/functions/members-api/automation";
 import { formatBytes, isValidEmail, normalizeEmail, sortByOrder } from "../../lib/format";
@@ -196,7 +196,8 @@ function computeSender(draft: EmailSettings, status: EmailProviderStatus | undef
     const user = status?.smtp.configured ? status.smtp.username : "";
     return { name, email: isValidEmail(user) ? normalizeEmail(user) : "" };
   }
-  return { name, email: status?.from.email || "" };
+  // No Resend, sem remetente do domínio nada sai (o servidor não usa o padrão).
+  return { name, email: "" };
 }
 
 // ── Página ──────────────────────────────────────────────────────────
@@ -208,6 +209,8 @@ export default function EmailsPage() {
   const { catalog } = useCatalog();
   const run = useStudioAction();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const confirm = useConfirm();
   const statusQuery = useStudioQuery("email-status", () => repo.getEmailStatus());
   const status = statusQuery.data;
   const [params, setParams] = useSearchParams();
@@ -263,19 +266,31 @@ export default function EmailsPage() {
     if (ok) void statusQuery.refetch();
   };
 
-  /** Depois de salvar um provedor: atualiza a situação e, se nada estava saindo, já passa a usá-lo. */
+  /**
+   * Depois de salvar um provedor: atualiza a situação; se nada estava saindo, já
+   * passa a usá-lo; e o remetente que acompanha o usuário do SMTP é salvo junto
+   * (para não sobrar “Alterações não salvas” logo depois de conectar).
+   */
   const onProviderSaved = async (next: EmailProviderStatus, provider: Provider) => {
     const wasReady = status?.ready ?? false;
     queryClient.setQueryData(STATUS_KEY, next);
     const configured = provider === "smtp" ? next.smtp.configured : next.resend.configured;
-    if (!settings || !saved || !configured || wasReady || saved.provider === provider) return;
-    const smtpUser = normalizeEmail(next.smtp.username || "");
-    const fromEmail = saved.fromEmail || (provider === "smtp" && isValidEmail(smtpUser) ? smtpUser : "");
-    const ok = await run(() => repo.saveSettings({ ...settings, email: { ...saved, provider, fromEmail } }).then(() => true), { scopes: ["settings"] });
+    if (!settings || !saved || !configured) return;
+    const current = draftRef.current;
+    const smtpUser = provider === "smtp" && isValidEmail(next.smtp.username) ? normalizeEmail(next.smtp.username) : "";
+    const switching = !wasReady && saved.provider !== provider;
+    const follows = !!smtpUser && (switching || saved.provider === provider) && !!current && sameEmail(current.fromEmail, smtpUser) && !sameEmail(saved.fromEmail, smtpUser);
+    if (!switching && !follows) return;
+    const fromEmail = follows ? smtpUser : saved.fromEmail || smtpUser;
+    const ok = await run(() => repo.saveSettings({ ...settings, email: { ...saved, fromEmail, ...(switching ? { provider } : {}) } }).then(() => true), { scopes: ["settings"] });
     if (!ok) return;
-    setDraft((d) => (d ? { ...d, provider, fromEmail: d.fromEmail || fromEmail } : d));
+    setDraft((d) => {
+      if (!d) return d;
+      const from = !d.fromEmail || sameEmail(d.fromEmail, fromEmail) ? fromEmail : d.fromEmail;
+      return { ...d, ...(switching ? { provider } : {}), fromEmail: from };
+    });
     void statusQuery.refetch();
-    toast.success(provider === "smtp" ? "Os e-mails agora saem pelo seu SMTP" : "Os e-mails agora saem pelo Resend");
+    if (switching) toast.success(provider === "smtp" ? "Os e-mails agora saem pelo seu SMTP" : "Os e-mails agora saem pelo Resend");
   };
 
   // Ctrl/⌘ + S salva; sair da página com alterações pede confirmação.
@@ -283,6 +298,39 @@ export default function EmailsPage() {
   saveRef.current = save;
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const confirmRef = useRef(confirm);
+  confirmRef.current = confirm;
+
+  // Links internos (menu, registro, automações) com alterações pendentes pedem
+  // confirmação antes de sair — o beforeunload só cobre fechar/recarregar a aba.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!dirtyRef.current || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const anchor = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!anchor || (anchor.target && anchor.target !== "_self") || anchor.hasAttribute("download")) return;
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
+      e.preventDefault();
+      e.stopPropagation();
+      void confirmRef
+        .current({
+          title: "Sair sem salvar?",
+          text: "Você tem alterações nos e-mails que ainda não foram salvas. Se sair agora, elas serão perdidas.",
+          confirmLabel: "Sair sem salvar",
+          danger: true,
+        })
+        .then((leave) => {
+          if (!leave) return;
+          dirtyRef.current = false;
+          navigate(url.pathname + url.search + url.hash);
+        });
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [navigate]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s" && dirtyRef.current) {
@@ -330,7 +378,8 @@ export default function EmailsPage() {
   const ready = !!computed && computed.ready && (unchanged ? !!status?.ready : true);
   const sender = unchanged && status?.ready ? status.from : computeSender(draft, status, settings.brandName);
   const autoOn = draft.welcome.enabled || draft.refund.enabled;
-  const showWarning = !!status && autoOn && !ready;
+  // Só explorando outro provedor (sem salvar) enquanto o atual funciona: nada parou de sair.
+  const showWarning = !!status && autoOn && !ready && !(draft.provider !== saved.provider && status.ready);
   const providerName = draft.provider === "smtp" ? "seu e-mail (SMTP)" : "Resend";
 
   return (
@@ -503,7 +552,13 @@ function TabLabel({ text, dot, off }: { text: string; dot?: "green" | "amber"; o
           <span className="sr-only">{dot === "green" ? "(pronto)" : "(falta configurar)"}</span>
         </>
       )}
-      {off && <span className="rounded-full bg-black/[0.05] px-1.5 py-px text-[10px] font-semibold text-[#86868b]">Desligado</span>}
+      {off && (
+        <>
+          <span className="hidden rounded-full bg-black/[0.05] px-1.5 py-px text-[10px] font-semibold text-[#86868b] sm:inline">Desligado</span>
+          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-black/20 sm:hidden" />
+          <span className="sr-only sm:hidden">(desligado)</span>
+        </>
+      )}
     </span>
   );
 }
@@ -571,8 +626,8 @@ function StatusCard({
           {!known ? <Loader2 size={20} className={cn(loading && "animate-spin")} /> : ready ? <CheckCircle2 size={22} /> : <AlertTriangle size={20} />}
         </span>
         <div className="min-w-0">
-          <p className="text-[16px] font-bold tracking-tight">{!known ? (loading ? "Verificando o envio…" : "Situação indisponível") : ready ? "Pronto para enviar ✓" : "Falta configurar"}</p>
-          {readiness && <p className="mt-0.5 truncate text-[12.5px] text-[#6e6e73]" title={readiness.via}>{readiness.via}</p>}
+          <p className="text-[16px] font-bold tracking-tight">{!known ? (loading ? "Verificando o envio…" : "Situação indisponível") : ready ? "Pronto para enviar" : "Falta configurar"}</p>
+          {readiness && <p className="mt-0.5 break-words text-[12.5px] leading-snug text-[#6e6e73]">{readiness.via}</p>}
         </div>
       </div>
 
@@ -762,6 +817,8 @@ function SmtpCard({
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState<"save" | "skip" | "test" | "remove" | null>(null);
   const [result, setResult] = useState<Result>(null);
+  const hostRef = useRef<HTMLInputElement>(null);
+  const portRef = useRef<HTMLInputElement>(null);
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -773,7 +830,9 @@ function SmtpCard({
   const configured = !!smtp?.configured;
   const port = Number(form.port);
   const portBlocked = BLOCKED_PORTS.includes(port);
-  const mismatch = isValidEmail(draft.fromEmail) && isValidEmail(form.username) && !sameEmail(draft.fromEmail, form.username);
+  // Com o usuário salvo, o aviso fica no cartão do Remetente; aqui só enquanto o usuário é novo.
+  const newUsername = !configured || !sameEmail(form.username, smtp?.username || "");
+  const mismatch = newUsername && isValidEmail(draft.fromEmail) && isValidEmail(form.username) && !sameEmail(draft.fromEmail, form.username);
   const isGmail = /(^|\.)(gmail|googlemail)\.com$/i.test(form.host.trim());
 
   const update = (patch: Partial<SmtpForm>) => {
@@ -807,19 +866,21 @@ function SmtpCard({
     requestAnimationFrame(() => (username ? passwordRef : usernameRef).current?.focus());
   };
 
-  const validate = (): string | null => {
-    if (!form.host.trim()) return "Informe o servidor SMTP (ex: smtp.hostinger.com).";
-    if (!Number.isInteger(port) || port < 1 || port > 65535) return "Informe uma porta válida (ex: 465).";
-    if (portBlocked) return `A porta ${port} é bloqueada no servidor. Use a 465 com SSL.`;
-    if (!form.username.trim()) return "Informe o usuário (normalmente o próprio e-mail).";
-    if (!form.password && !smtp?.hasPassword) return "Informe a senha do e-mail.";
+  /** O que falta (e o campo para levar o cursor). A porta bloqueada já tem o próprio aviso. */
+  const validate = (): { message: string | null; field: RefObject<HTMLInputElement> } | null => {
+    if (!form.host.trim()) return { message: "Informe o servidor SMTP (ex: smtp.hostinger.com).", field: hostRef };
+    if (!Number.isInteger(port) || port < 1 || port > 65535) return { message: "Informe uma porta válida (ex: 465).", field: portRef };
+    if (portBlocked) return { message: null, field: portRef };
+    if (!form.username.trim()) return { message: "Informe o usuário (normalmente o próprio e-mail).", field: usernameRef };
+    if (!form.password && !smtp?.hasPassword) return { message: "Informe a senha do e-mail.", field: passwordRef };
     return null;
   };
 
   const save = async (skipVerify: boolean) => {
     const problem = validate();
     if (problem) {
-      setResult({ ok: false, message: problem });
+      setResult(problem.message ? { ok: false, message: problem.message } : null);
+      problem.field.current?.focus();
       return;
     }
     setBusy(skipVerify ? "skip" : "save");
@@ -921,6 +982,7 @@ function SmtpCard({
         <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_120px]">
           <Field label="Servidor SMTP">
             <Input
+              ref={hostRef}
               value={form.host}
               onChange={(e) => update({ host: e.target.value })}
               placeholder="smtp.hostinger.com"
@@ -932,6 +994,7 @@ function SmtpCard({
           </Field>
           <Field label="Porta">
             <Input
+              ref={portRef}
               inputMode="numeric"
               value={form.port}
               onChange={(e) => update({ port: e.target.value.replace(/\D/g, "").slice(0, 5) })}
@@ -1405,9 +1468,9 @@ function TestCard({
   description?: string;
 }) {
   const repo = useRepo();
-  const run = useStudioAction();
+  const refresh = useRefreshPortal();
   const [sending, setSending] = useState(false);
-  const [outcome, setOutcome] = useState<{ ok: boolean; to: string } | null>(null);
+  const [outcome, setOutcome] = useState<{ ok: boolean; to: string; error?: string } | null>(null);
 
   const send = async () => {
     if (!isValidEmail(to)) {
@@ -1417,12 +1480,17 @@ function TestCard({
     const target = normalizeEmail(to);
     setSending(true);
     setOutcome(null);
-    const ok = await run(() => repo.sendTestEmail({ to: target, kind, template, settings: emailSettings, existingAccount }).then(() => true), {
-      success: `Teste enviado para ${target}`,
-      scopes: ["studio"],
-    });
-    setSending(false);
-    setOutcome({ ok: !!ok, to: target });
+    try {
+      await repo.sendTestEmail({ to: target, kind, template, settings: emailSettings, existingAccount });
+      setOutcome({ ok: true, to: target });
+      toast.success(`Teste enviado para ${target}`);
+    } catch (err) {
+      setOutcome({ ok: false, to: target, error: (err as Error)?.message || "Não foi possível enviar o teste." });
+    } finally {
+      setSending(false);
+      // O teste entra no registro (enviado ou com o motivo da falha).
+      void refresh("studio");
+    }
   };
 
   return (
@@ -1462,20 +1530,25 @@ function TestCard({
             )}
           </p>
         ) : outcome?.ok ? (
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-emerald-50 px-3.5 py-2.5 text-[12.5px] text-emerald-900 ring-1 ring-inset ring-emerald-200/70">
-            <CheckCircle2 size={14} className="shrink-0" />
-            <span className="min-w-0 break-all">Enviado para {outcome.to}. Confira a caixa de entrada (e o spam).</span>
-            <Link to={LOGS_URL} className="font-semibold underline-offset-2 hover:underline">
-              Ver no registro →
-            </Link>
-          </p>
+          <div className="flex gap-2.5 rounded-xl bg-emerald-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-emerald-900 ring-1 ring-inset ring-emerald-200/70">
+            <CheckCircle2 size={15} className="mt-0.5 shrink-0" />
+            <p className="min-w-0 break-words">
+              Enviado para <b className="break-all font-semibold">{outcome.to}</b>. Confira a caixa de entrada (e o spam).{" "}
+              <Link to={LOGS_URL} className="whitespace-nowrap font-semibold underline underline-offset-2">
+                Ver no registro →
+              </Link>
+            </p>
+          </div>
         ) : outcome ? (
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-red-700">
-            Não foi enviado. O motivo também fica no registro.
-            <Link to={LOGS_URL} className="font-semibold underline-offset-2 hover:underline">
-              Ver no registro →
-            </Link>
-          </p>
+          <div className="flex gap-2.5 rounded-xl bg-red-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-red-800 ring-1 ring-inset ring-red-200/70">
+            <XCircle size={15} className="mt-0.5 shrink-0" />
+            <p className="min-w-0 break-words">
+              {outcome.error}{" "}
+              <Link to={LOGS_URL} className="whitespace-nowrap font-semibold underline underline-offset-2">
+                Ver no registro →
+              </Link>
+            </p>
+          </div>
         ) : (
           <p className="text-[12px] text-[#86868b]">Usa o que está na tela, mesmo antes de salvar.</p>
         )}
@@ -1534,14 +1607,17 @@ function TemplateTab({
       products: sampleProducts,
       link: `${base}/membros/entrar?email=${encodeURIComponent(email)}`,
       password: kind === "welcome" && audience === "new" ? "Exemplo-7Kq2" : undefined,
+      mustChangePassword: automation.forcePasswordChange,
       logoUrl: `${base}/logo.png`,
       accent: settings.accentColor,
       supportUrl: whatsapp ? `https://wa.me/${whatsapp}` : `${base}/membros/suporte`,
     };
-  }, [testTo, settings.support.whatsapp, settings.brandName, settings.accentColor, sampleProducts, kind, audience]);
+  }, [testTo, settings.support.whatsapp, settings.brandName, settings.accentColor, sampleProducts, kind, audience, automation.forcePasswordChange]);
   const preview = useMemo(() => safeRender(kind, previewTemplate, ctx), [kind, previewTemplate, ctx]);
 
-  const visualVariables = useMemo(() => EMAIL_VARIABLES.filter((v) => !v.html), []);
+  // No acesso retirado não existe senha nem dados de acesso: essas variáveis sairiam vazias.
+  const variables = useMemo(() => (kind === "refund" ? EMAIL_VARIABLES.filter((v) => v.key !== "{senha}" && v.key !== "{bloco_acesso}") : EMAIL_VARIABLES), [kind]);
+  const visualVariables = useMemo(() => variables.filter((v) => !v.html), [variables]);
 
   const insert = (token: string, block: boolean) => {
     const target: FieldKey = isHtml ? (block || focused !== "subject" ? "html" : "subject") : focused === "html" ? "message" : focused;
@@ -1677,7 +1753,7 @@ function TemplateTab({
                   <Input {...bind("subject")} placeholder={defaults.subject} />
                 </Field>
                 <VariableChips
-                  variables={EMAIL_VARIABLES}
+                  variables={variables}
                   onInsert={insert}
                   label="Variáveis"
                   hint="Clique para inserir no cursor. Os blocos (em vermelho) entram prontos, com o visual padrão."

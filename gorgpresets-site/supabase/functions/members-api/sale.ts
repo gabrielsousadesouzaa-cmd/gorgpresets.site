@@ -63,9 +63,10 @@ function normKey(key: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
-/** Valor para comparar: "PURCHASE_APPROVED", "pix.paid", "Pagamento Aprovado" → "purchase_approved"... */
+/** Valor para comparar: "PURCHASE_APPROVED", "pix.paid", "paymentApproved", "Pagamento Aprovado" → "purchase_approved"... */
 function slug(value: unknown): string {
   return deaccent(String(value ?? ""))
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
@@ -82,10 +83,12 @@ function text(value: unknown): string {
 const digits = (value: unknown) => text(value).replace(/\D/g, "");
 // Limite de tamanho antes da regex: texto enorme travaria a checagem (tempo quadrático).
 const isEmail = (v: string) => v.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+/** Caracteres invisíveis que vêm de copiar e colar (espaço de largura zero, BOM). */
+const invisible = (v: string) => v.replace(/[\u200b-\u200d\u2060\ufeff\u00ad]/g, "");
 
 /** E-mail em minúsculas; aceita "Nome <email@x.com>". "" se não for e-mail. */
 function cleanEmail(value: unknown): string {
-  const v = text(value).toLowerCase();
+  const v = invisible(text(value)).trim().toLowerCase();
   if (v.length > 320) return "";
   const inner = v.match(/<([^<>\s]+)>/)?.[1] || v.replace(/^mailto:/, "");
   return isEmail(inner) ? inner : "";
@@ -194,7 +197,7 @@ const outside = (segs: string[]) => segs.some((s) => OUTSIDE.test(s));
 const BUYER =
   /^(customers?|buyers?|clients?|clientes?|compradore?s?|payers?|pagador(es)?|purchasers?|customer_details|billing_details|contacts?|contatos?|leads?|alunos?|students?|subscribers?|assinantes?|members?|membros?|users?|usuarios?|consumers?|shoppers?)$/;
 const PRODUCT =
-  /^(products?|produtos?|items?|itens|line_items|order_items|cart_items|courses?|cursos?|ebooks?|bundles?|order_bumps?|bumps?|upsells?|downsells?)$/;
+  /^(products?|produtos?|items?|itens|line_items|order_items|cart_items|lines|courses?|cursos?|ebooks?|bundles?|order_bumps?|bumps?|upsells?|downsells?)$/;
 const OFFER = /^(offers?|ofertas?|plans?|planos?|skus?|variants?|variantes?|prices?)$/;
 /** Listas que repetem produtos sem serem a compra (entregas, reembolsos parciais...). */
 const NOT_ITEMS = /^(fulfillments?|refunds?|refund_line_items|returns?|shipping_lines|tax_lines|discount_applications|discount_allocations|duties)$/;
@@ -208,19 +211,25 @@ const hasOwn = (obj: Obj, key: string) => Object.prototype.hasOwnProperty.call(o
 /** Form-urlencoded ("venda[codigo]=1") vira objeto; texto com JSON é aberto. */
 function prepare(payload: unknown): Obj {
   let p = payload;
+  // Pares chave/valor na ordem em que chegaram: em form-urlencoded "itens[]=a&itens[]=b"
+  // repete a chave, e as duas entradas precisam virar dois itens.
+  let entries: Array<[string, unknown]> | null = null;
   if (typeof payload === "string") {
+    const raw = payload.replace(/^\ufeff/, "").trim();
     try {
-      p = JSON.parse(payload);
+      p = JSON.parse(raw);
     } catch {
-      const form: Obj = {};
-      new URLSearchParams(payload).forEach((v, k) => setOwn(form, k, v));
-      p = form;
+      entries = Array.from(new URLSearchParams(raw));
     }
   }
-  if (Array.isArray(p) && isObj(p[0])) p = p[0];
-  if (!isObj(p)) return {};
+  if (!entries) {
+    if (Array.isArray(p) && isObj(p[0])) p = p[0];
+    if (!isObj(p)) return {};
+    entries = Object.entries(p);
+  }
   const out: Obj = {};
-  for (const [k, v] of Object.entries(p)) {
+  let bracketed = false;
+  for (const [k, v] of entries) {
     let value = v;
     if (typeof v === "string" && /^\s*[[{]/.test(v)) {
       try {
@@ -247,8 +256,19 @@ function prepare(payload: unknown): Obj {
         cur = cur[key] as Obj;
       }
     });
+    bracketed = true;
   }
-  return out;
+  return bracketed ? (listify(out, 0) as Obj) : out;
+}
+
+/** {"0": a, "1": b} montado por "itens[]=a&itens[]=b" (ou itens[0], itens[1]) vira lista. */
+function listify(value: unknown, depth: number): unknown {
+  if (!isObj(value) || depth > 12) return value;
+  const keys = Object.keys(value);
+  const list = keys.length > 0 && keys.every((k, i) => k === String(i));
+  if (list) return keys.map((k) => listify(value[k], depth + 1));
+  for (const k of keys) setOwn(value, k, listify(value[k], depth + 1));
+  return value;
 }
 
 function lowerHeaders(headers?: Record<string, string>): Record<string, string> {
@@ -317,7 +337,9 @@ function platformFromPayload(p: Obj, leaves: Leaf[]): string {
     present(get(p, "webhook"), "business_id") ||
     /^(pix|card|boleto|billet)\.[a-z_]+$/i.test(event) ||
     (present(payment, "payment_method") && present(payment, "gateway")) ||
-    (/^payment\.(created|paid|refunded|expired|chargeback)$/.test(event) && isObj(get(payment, "customer")))
+    // Formato do MCP: "payment.paid", "payment.charged_back", "payment.canceled"... com o comprador dentro do pagamento.
+    (/^payment\.[a-z_]+$/i.test(event) && isObj(get(payment, "customer"))) ||
+    /^(pix|card|boleto|billet)\.[a-z_]+$/i.test(text(get(payment, "method")))
   ) {
     return "ggcheckout";
   }
@@ -375,7 +397,8 @@ function parseAmount(raw: string): { n: number; integer: boolean } | null {
   const int = (at >= 0 ? s.slice(0, at) : s).replace(/[.,]/g, "");
   const frac = at >= 0 ? s.slice(at + 1) : "";
   const n = Number(`${int || "0"}.${frac || "0"}`);
-  return Number.isFinite(n) ? { n, integer: !sep } : null;
+  // Só "9700" puro é ambíguo (pode ser centavos). "1.297", "R$ 197" e "197,00" já vêm formatados em reais.
+  return Number.isFinite(n) ? { n, integer: /^-?\d+$/.test(raw.trim()) } : null;
 }
 
 /**
@@ -473,8 +496,9 @@ const BUYER_PREFIX = /^(cus|client|cliente|customer|buyer|comprador|payer|pagado
 /** Objetos do pedido em si (a raiz, "order", "payment"...), onde o e-mail às vezes fica solto. */
 const ORDER_SEG = /^(orders?|pedidos?|sales?|vendas?|purchases?|compras?|transactions?|transacao|payments?|pagamentos?|checkouts?|charges?|invoices?|faturas?|sessions?)$/;
 // "shop"/"store"/"loja" só como palavra inteira: "shopper_email" é do comprador.
+// "aff_email" (Eduzz/Hotmart v1) é do afiliado; "pro_email"/"prod_email", do produtor.
 const EMAIL_BAD =
-  /(support|suporte|producer|produtor|affiliate|afiliado|seller|vendedor|owner|merchant|(^|_)(store|loja|shop)(_|$)|sender|remetente|from|reply|notification|admin|company|empresa|business|partner|parceiro|recipient|receiver|recebedor|collector)/;
+  /(support|suporte|producer|produtor|affiliate|afiliado|seller|vendedor|owner|merchant|(^|_)(store|loja|shop)(_|$)|(^|_)(aff|afil|pro|prod|coprod)_|sender|remetente|from|reply|notification|admin|company|empresa|business|partner|parceiro|recipient|receiver|recebedor|collector)/;
 
 function emailOf(f: Fields): string {
   const keys = Array.from(f.prim.keys()).sort((a, b) => Number(a !== "email") - Number(b !== "email"));
@@ -487,8 +511,10 @@ function emailOf(f: Fields): string {
 }
 
 function cleanName(value: unknown): string {
-  const v = text(value).replace(/\s+/g, " ");
+  const v = invisible(text(value)).replace(/\s+/g, " ").trim();
   if (!v || v.length > 120 || isEmail(v) || /^https?:/i.test(v) || !/\p{L}/u.test(v)) return "";
+  // "null null", "undefined" (nome montado por sistemas que juntam campos vazios).
+  if (v.split(" ").every((w) => /^(null|undefined|none|nil)$/i.test(w))) return "";
   return v;
 }
 
@@ -501,6 +527,9 @@ function nameOf(f: Fields, plain: boolean): string {
   }
   const first = cleanName(pick(f, ["first_name", "firstname", "primeiro_nome", "given_name"]));
   const last = cleanName(pick(f, ["last_name", "lastname", "sobrenome", "ultimo_nome", "family_name", "surname"]));
+  // Alguns checkouts mandam o nome completo em first_name: "Ana Julia Pereira" + "Pereira" não repete o sobrenome.
+  const lower = (s: string) => deaccent(s).toLowerCase();
+  if (first && last && (lower(first) === lower(last) || lower(first).endsWith(` ${lower(last)}`))) return first;
   return [first, last].filter(Boolean).join(" ").slice(0, 120);
 }
 
@@ -525,13 +554,15 @@ const PHONE_KEYS = [
   "contact_phone",
   "formated_number",
   "formatted_number",
+  "phone_checkout_number",
 ];
 const PHONE_KID = /^(phone|phones|telefone|telefones|fone|celular|mobile|mobile_phone|cellphone|whatsapp|phone_number|contact_phone)$/;
 
 /** Telefone só com dígitos. Junta DDI + DDD + número quando vêm separados (Ticto, Perfect Pay). */
 function composePhone(f: Fields, phoneObject: boolean): string {
   const ddi = digits(pick(f, ["ddi", "country_code", "phone_country_code", "phone_ddi", "dial_code", "country_calling_code"]));
-  const area = digits(pick(f, ["area_code", "phone_area_code", "ddd", "phone_ddd"]));
+  // Hotmart v1 (form): phone_local_code + phone_number.
+  const area = digits(pick(f, ["area_code", "phone_area_code", "ddd", "phone_ddd", "local_code", "phone_local_code", "phone_checkout_local_code"]));
   for (const key of phoneObject ? [...PHONE_KEYS, "number", "numero"] : PHONE_KEYS) {
     const d = digits(f.prim.get(key));
     // Mais de 15 dígitos não é telefone (E.164): provavelmente dois números juntos.
@@ -578,6 +609,8 @@ function cleanDoc(value: unknown): string {
   let d = digits(value);
   if (typeof value === "number" && d.length >= 9 && d.length < 11) d = d.padStart(11, "0");
   else if (typeof value === "number" && (d.length === 12 || d.length === 13)) d = d.padStart(14, "0");
+  // "000.000.000-00", "111.111.111-11": preenchimento de teste, não documento (e viraria senha fraca no modo CPF).
+  if (/^(\d)\1+$/.test(d)) return "";
   return d.length === 11 || d.length === 14 ? d : "";
 }
 
@@ -648,7 +681,11 @@ function readBuyer(nodes: Node[], leaves: Leaf[]) {
 }
 
 // ── Status e evento ─────────────────────────────────────────────────
-type StatusClass = "chargeback" | "refunded" | "canceled" | "failed" | "pending" | "approved" | "unknown";
+/**
+ * "disputed": disputa/reclamação/mediação aberta, ainda sem resultado (não retira o acesso).
+ * "partial": reembolso parcial (não retira o pedido inteiro). "lost": disputa perdida (Stripe "lost").
+ */
+type StatusClass = "chargeback" | "refunded" | "partial" | "disputed" | "lost" | "canceled" | "failed" | "pending" | "approved" | "unknown";
 
 const EVENT_KEYS = [
   "event",
@@ -667,13 +704,18 @@ const EVENT_KEYS = [
 const STATUS_BAD_KEY =
   /^(fulfillment|shipping|shipment|delivery|entrega|frete|funds|subscription|assinatura|card|refund|webhook|product|produto|account|kyc|document|email|tracking|nfe|nota|commission|affiliate|recurrence|recorrencia|item|antifraud|risk|previous|prev|old|from|before|anterior|initial)_/;
 const STATUS_BAD_SEG =
-  /^(subscriptions?|assinaturas?|recurrences?|products?|produtos?|items?|itens|line_items|offers?|ofertas?|plans?|planos?|shipping|shipments?|fulfillments?|delivery|entrega|frete|address|endereco|billing_address|shipping_address|customers?|buyers?|clients?|clientes?|compradore?s?|cards?|cartao|refunds?|disputes?|nfe|nota_fiscal|antifraud|risk)$/;
+  /^(subscriptions?|assinaturas?|recurrences?|products?|produtos?|items?|itens|line_items|offers?|ofertas?|plans?|planos?|shipping|shipments?|fulfillments?|delivery|entrega|frete|address|endereco|billing_address|shipping_address|customers?|buyers?|clients?|clientes?|compradore?s?|cards?|cartao|refunds?|disputes?|nfe|nota_fiscal|antifraud|risk|previous_attributes|previous|anterior|old_values?|changes)$/;
 
 function isStatusKey(key: string, segs: string[]): boolean {
-  if ((key === "alias" || key === "slug") && kindOf(segs) === "status") return true; // Yampi: status.data.alias
+  // Status como objeto: Yampi status.data.alias, { status: { name: "Refunded" } }.
+  if (/^(alias|slug|name|nome|code|codigo|description|descricao|value)$/.test(key) && /^(status|situacao)$/.test(kindOf(segs))) return true;
   if (key === "descricao" && kindOf(segs) === "tipo_postback") return true; // Monetizze
   if (STATUS_BAD_KEY.test(key)) return false;
-  return /(^|_)status($|_(detail|enum|name|alias|descricao|description))/.test(key) || /^situacao(_|$)/.test(key);
+  // "statusPagamento", "payment_status", "sale_status_detail"...
+  return (
+    /(^|_)status($|_(detail|enum|name|alias|descricao|description|pagamento|payment|venda|sale|pedido|order|compra|purchase|transacao|transaction))/.test(key) ||
+    /^situacao(_|$)/.test(key)
+  );
 }
 
 // Códigos numéricos conhecidos.
@@ -681,7 +723,8 @@ const EDUZZ_STATUS: Record<string, StatusClass> = {
   "1": "pending",
   "3": "approved",
   "4": "canceled",
-  "6": "refunded",
+  // 6 = "Aguardando reembolso": o reembolso ainda não saiu; quem retira o acesso é o 7.
+  "6": "pending",
   "7": "refunded",
   "9": "canceled",
   "10": "canceled",
@@ -692,7 +735,8 @@ const PERFECTPAY_STATUS: Record<string, StatusClass> = {
   "1": "pending",
   "2": "approved",
   "3": "pending",
-  "4": "chargeback",
+  // 4 = in_mediation: disputa aberta, ainda sem resultado (o 9 é o chargeback).
+  "4": "disputed",
   "5": "canceled",
   "6": "canceled",
   "7": "refunded",
@@ -714,16 +758,38 @@ function classify(raw: string, key: string, platform: string): StatusClass {
     if (platform === "perfectpay" && key === "sale_status_enum") return PERFECTPAY_STATUS[s] || "unknown";
     return "unknown";
   }
+  // Stripe "no_payment_required" (cupom de 100% ou teste grátis): não é recusa; o evento/status decide.
+  if (s === "no_payment_required") return "unknown";
+  if (/^(lost|perdid[ao]|perdeu)$/.test(s)) return "lost";
   const words = s.split("_");
   const has = (re: RegExp) => words.some((w) => re.test(w));
   // "no"/"sem" só negam no começo ("NO_FUNDS", "Sem saldo"); no meio são preposição ("Pago no PIX").
   const lacks = words[0] === "no" || words[0] === "sem";
-  const chargeback = /charge_?d?_?back/.test(s) || has(/^(disput|protest|contest|reclamad|claimed$|mediat|mediac)/);
+  const chargeback = /charge_?d?_?back/.test(s);
+  // Disputa/reclamação/mediação aberta: o resultado ainda não saiu (Hotmart PURCHASE_PROTEST, Ticto "claimed",
+  // Perfect Pay "in_mediation", Stripe charge.dispute.created).
+  const dispute = has(/^(disput|protest|contest|reclam|claim|mediat|mediac)/);
   const refund = has(/^(refund|reembols|estorn|devolv|devoluc|returned$|revers)/);
   // "refund_failed", "estorno_negado", "not_refunded", "chargeback_won": o reembolso/chargeback não aconteceu.
-  if ((chargeback || refund) && (lacks || has(/^(refus|recus|reject|rejeit|denied$|deny$|negad|fail|falh|won$|ganh|not$|nao$)/))) return "unknown";
-  if (chargeback) return "chargeback";
-  if (refund) return "refunded";
+  if ((chargeback || dispute || refund) && (lacks || has(/^(refus|recus|reject|rejeit|denied$|deny$|negad|fail|falh|won$|ganh|venceu|vencid|not$|nao$)/))) {
+    return "unknown";
+  }
+  const partial = has(/^(partial|parcial)/);
+  if (chargeback) {
+    // "chargeback_reversed"/"chargeback revertido": o produtor recuperou o valor.
+    if (has(/^(revers|revert)/)) return "unknown";
+    return partial ? "partial" : "chargeback";
+  }
+  if (dispute) return has(/^(lost$|perdid|perdeu$)/) ? "chargeback" : "disputed";
+  if (refund) {
+    if (partial) return "partial";
+    // Pedido de reembolso ainda não feito ("Reembolso solicitado", "Estorno pendente", "waiting_refund"):
+    // o checkout manda o "reembolsado" quando sair; retirar antes tiraria o acesso de quem desistiu do pedido.
+    if (has(/^(request|solicit|pend|aguard|waiting$|await|processing$|processando$|progress$|andamento$|analis|analys|review$|scheduled$|agendad)/)) {
+      return "pending";
+    }
+    return "refunded";
+  }
   if (has(/^(cancel|anulad|void|abandon|desist|deleted$|excluid)/) || /out_of_shopping_cart/.test(s)) return "canceled";
   // Hotmart NO_FUNDS, "Sem saldo", "insufficient_funds".
   if (lacks || has(/^(refus|recus|reject|rejeit|reprov|denied$|declin|negad|expir|vencid|venceu|fail|falh|error$|erro$|incomplete$|block|bloque|duplic|fraud|insufficient|insuficient)/)) {
@@ -744,13 +810,20 @@ function classify(raw: string, key: string, platform: string): StatusClass {
   return "unknown";
 }
 
-/** Reembolso e chargeback têm prioridade; aprovado só sem nenhum sinal contrário. */
+/**
+ * Reembolso e chargeback têm prioridade; aprovado só sem nenhum sinal contrário.
+ * Reembolso parcial e disputa em aberto não retiram nem liberam: ficam "pending".
+ */
 function decide(classes: StatusClass[]): SaleStatus {
   const any = (c: StatusClass) => classes.includes(c);
   if (any("chargeback")) return "chargeback";
+  // Stripe charge.dispute.closed + status "lost".
+  if (any("disputed") && any("lost")) return "chargeback";
+  // "PURCHASE_REFUNDED" + "PARTIALLY_REFUNDED": só parte do pedido foi devolvida.
+  if (any("partial")) return "pending";
   if (any("refunded")) return "refunded";
   if (any("canceled") || any("failed")) return "canceled";
-  if (any("pending")) return "pending";
+  if (any("pending") || any("disputed")) return "pending";
   if (any("approved")) return "approved";
   return "unknown";
 }
@@ -785,7 +858,13 @@ function readStatus(leaves: Leaf[], headers: Record<string, string>, platform: s
       statusValues.push(f.value);
     }
   }
-  const status = decide(found.map((f) => classify(f.value, f.key, platform)));
+  const classes = found.map((f) => classify(f.value, f.key, platform));
+  // Stripe manda "charge.refunded" também no reembolso parcial; aí a cobrança continua com refunded: false.
+  if (platform === "stripe" && classes.includes("refunded")) {
+    const charge = leaves.find((l) => l.key === "refunded" && !l.inArray && l.segs.every((s) => WRAPPER.test(s)));
+    if (charge && (charge.value === false || charge.value === "false")) classes.push("partial");
+  }
+  const status = decide(classes);
   return { event: events[0]?.value || (header ? text(header[1]) : ""), status, statusValues };
 }
 
@@ -912,7 +991,9 @@ interface Draft {
 }
 
 /** Listas de linhas do pedido, onde o "id" costuma ser da linha e não do produto. */
-const LINE = /^(items?|itens|line_items|order_items|cart_items)$/;
+const LINE = /^(items?|itens|line_items|order_items|cart_items|lines)$/;
+/** Listas só com os ids dos produtos: { products: ["abc", "def"] }. */
+const ID_LIST = /^(products?|produtos?|product_ids|produto_ids|products_ids|produtos_ids|items?|itens)$/;
 
 const PRODUCT_ID_KEYS = [
   "product_id",
@@ -1050,7 +1131,18 @@ function collectItems(
   if (depth > MAX_DEPTH || segs.length > 24 || open.has(input)) return;
   if (Array.isArray(input)) {
     open.add(input);
-    for (const v of input) collectItems(v, segs, true, owner, platform, out, orphans, depth + 1, open);
+    const ids = ID_LIST.test(kindOf(segs)) && !outside(segs) && !segs.some((s) => NOT_ITEMS.test(s));
+    for (const v of input) {
+      if (isPrim(v)) {
+        if (!ids) continue;
+        // Texto com espaço é nome, não id. Dentro de um produto (pacote), os ids só completam as referências.
+        const id = validId(v);
+        if (id && !/\s/.test(id)) {
+          if (owner) owner.refs.push(id);
+          else out.push({ id, title: "", type: "", price: null, refs: [], offer: false });
+        } else if (cleanTitle(v)) orphans.push(cleanTitle(v));
+      } else collectItems(v, segs, true, owner, platform, out, orphans, depth + 1, open);
+    }
     open.delete(input);
     return;
   }
@@ -1060,8 +1152,11 @@ function collectItems(
   const kind = kindOf(segs);
   let next = owner;
   if (PRODUCT.test(kind) || OFFER.test(kind)) {
-    const ids = idsOf(f);
+    let ids = idsOf(f);
     const title = cleanTitle(pick(f, TITLE_KEYS));
+    // Preço/plano que aponta o produto pelo id (Stripe price.product = "prod_..."): o produto é o item.
+    const productRef = OFFER.test(kind) ? [f.prim.get("product"), f.prim.get("produto")].map(validId).find((v) => v && !/\s/.test(v)) || "" : "";
+    if (productRef) ids = [productRef, ...ids.filter((x) => x !== productRef)];
     if (ids.length) {
       const draft: Draft = {
         id: ids[0],
@@ -1069,7 +1164,7 @@ function collectItems(
         type: typeOf(f, kind),
         price: priceOf(f, PRICE_KEYS, platform),
         refs: ids.slice(1),
-        offer: !PRODUCT.test(kind),
+        offer: !PRODUCT.test(kind) && !productRef,
         line: LINE.test(kind) && !PRODUCT_ID_KEYS.some((k) => validId(f.prim.get(k))),
       };
       if (owner && !listItem) merge(owner, draft);
@@ -1137,6 +1232,9 @@ function readItems(data: Obj, leaves: Leaf[], platform: string): { items: SaleIt
     }
   }
   if (items.length === 1 && !items[0].type) items[0].type = saleTypeHint(leaves) || "main";
+  // Principal sem tipo ao lado de order bumps/upsells (Ticto item + order_bumps): é o principal.
+  const untyped = items.filter((i) => !i.type);
+  if (items.length > 1 && untyped.length === 1 && items.some((i) => i.type && i.type !== "main")) untyped[0].type = "main";
   const productRefs = Array.from(new Set(refs.map((r) => String(r || "").trim().toLowerCase()).filter((r) => r && r !== "0")));
   return { items, productRefs };
 }
