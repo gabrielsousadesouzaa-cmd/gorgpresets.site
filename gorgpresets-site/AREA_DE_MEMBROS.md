@@ -2,23 +2,28 @@
 
 Área de membros própria, no estilo Netflix / Apple TV, com o **Studio do produtor** para editar tudo sem código.
 
+A área tem **endereço próprio, `https://area.gorgpresets.com`**, separado da loja (`www.gorgpresets.com`) e da área antiga (`membros.gorgpresets.com`, WordPress). Lá as rotas ficam na raiz:
+
 | Endereço | O que é |
 | --- | --- |
-| `/membros` | Portal do aluno: banner rotativo, vitrines, "Continuar assistindo" |
-| `/membros/colecao/:slug` | Página da coleção: módulos, aulas, materiais para download |
-| `/membros/colecao/:slug/aula/:id` | Player com progresso salvo, próxima aula automática |
-| `/membros/minha-colecao` · `/suporte` · `/perfil` | Biblioteca, suporte (WhatsApp/FAQ) e conta |
-| `/membros/studio` | Studio do produtor (só para o login do `/admin`, com 2FA) |
+| `/` | Portal do aluno: banner rotativo, vitrines, "Continuar assistindo" |
+| `/colecao/:slug` | Página da coleção: módulos, aulas, materiais para download |
+| `/colecao/:slug/aula/:id` | Player com progresso salvo, próxima aula automática |
+| `/minha-colecao` · `/suporte` · `/perfil` | Biblioteca, suporte (WhatsApp/FAQ) e conta |
+| `/studio` | Studio do produtor (só para o login do `/admin`, com 2FA) |
+| `/entrar` | Login, primeiro acesso e "esqueci minha senha" |
+
+Na loja, qualquer `/membros/...` leva para o endereço próprio (`/membros/colecao/x` → `area.gorgpresets.com/colecao/x`). Nas prévias da Vercel e no computador a área continua em `/membros` (ex.: `/membros/studio`). O endereço próprio fica fora do Google (`noindex`) e não carrega nada da loja (carrinho, cabeçalho, rastreio de visitas).
 
 **No Studio:** coleções (capa, banner, cor, selo, preço), módulos e aulas (arrastar para ordenar; vídeo por link do YouTube/Vimeo/Panda/Bunny/Drive ou upload protegido), materiais para download, seções da home (seleção manual, Top 10, coleção do membro, upsell…), aparência (logo, cor, banners com imagem ou vídeo, tela de login, suporte e FAQ), membros (editar, liberar/remover coleções, senha, link de redefinição, reenviar acesso, bloquear, ações em massa), automações (webhook, regras, senha dos alunos, produtos do checkout, venda de teste), e-mails (SMTP ou Resend, modelos de boas-vindas e de acesso retirado em modo visual ou código HTML, prévia e teste) e registros (cada venda com os dados recebidos e cada e-mail enviado ou com falha).
 
-**Editar na própria página:** logado como produtor, a home mostra o botão **Editar página** (ou abra `/membros?editar=1`). Dá para mudar título e subtítulo das seções clicando neles, subir/descer, ocultar, excluir, adicionar seções em qualquer posição, escolher e reordenar as coleções de cada seção e editar/criar/remover banners — tudo salvo na hora.
+**Editar na própria página:** logado como produtor, a home mostra o botão **Editar página** (ou abra `/?editar=1`). Dá para mudar título e subtítulo das seções clicando neles, subir/descer, ocultar, excluir, adicionar seções em qualquer posição, escolher e reordenar as coleções de cada seção e editar/criar/remover banners — tudo salvo na hora.
 
 **Seções da home (ordem padrão):** Sua Coleção Particular (o que o membro comprou) · Continuar assistindo · Top 10 em Alta · Para o seu Negócio · Coleção Elite · Destinos em Alta · Originais GORG · Extras · Desbloqueie novas estéticas. Seções de seleção manual vazias não aparecem para os membros.
 
 ## Ver agora (modo demonstração)
 
-Abra `/membros?demo=1`. Tudo funciona com dados de exemplo salvos só no seu navegador (`?demo=0` sai do modo demo). Sem as variáveis do Supabase (ex.: rodando localmente) o modo demo é automático.
+Abra `area.gorgpresets.com/?demo=1` (ou `/membros?demo=1` numa prévia da Vercel). Tudo funciona com dados de exemplo salvos só no seu navegador (`?demo=0` sai do modo demo). Sem as variáveis do Supabase (ex.: rodando localmente) o modo demo é automático.
 
 ## Produção — status
 
@@ -31,7 +36,18 @@ Tudo ativado no Supabase (projeto `ibsnizsdascywkonvcvu`) em 09/10/2026 — migr
 - tabelas da loja (`products`, `site_settings`, `sales_settings`, `site_visits`, `lessons`) e uploads de imagens: escrita só do produtor; RLS ligado nas 5 tabelas da área de membros antiga;
 - função `create-pix` (BuckPay) desativada (responde 410, sem token) e checkout próprio removido do site — as vendas seguem pelo GGCheckout.
 
-Para usar, depois do deploy: entre em `/membros/studio` com o login do `/admin`, preencha **Aparência → Suporte** (WhatsApp), monte as coleções, importe os alunos em **Membros → Importar lista** e cadastre o link de **Integrações** no seu checkout (informando o ID do produto em cada coleção, aba **Acesso e venda**).
+Para usar, depois do deploy: entre em `area.gorgpresets.com/studio` com o login do `/admin`, preencha **Aparência → Suporte** (WhatsApp), monte as coleções, importe os alunos em **Membros → Importar lista** e cadastre o link de **Integrações** no seu checkout (informando o ID do produto em cada coleção, aba **Acesso e venda**).
+
+## Ligar o endereço próprio (uma vez)
+
+1. **Vercel** → projeto do site → *Settings → Domains* → *Add* → `area.gorgpresets.com`. A Vercel mostra o registro a criar (um CNAME, normalmente `cname.vercel-dns.com`).
+2. **Hostinger** → *Domínios → gorgpresets.com → DNS / Nameservers* → adicionar **CNAME**, nome `area`, apontando para o valor que a Vercel mostrou. Não mexa nos registros MX/e-mail nem no `membros`.
+3. **Supabase** → *Authentication → URL Configuration*: *Site URL* `https://www.gorgpresets.com` e, em *Redirect URLs*, `https://area.gorgpresets.com/**`.
+4. Em alguns minutos a Vercel emite o certificado (cadeado) e `https://area.gorgpresets.com` abre a área.
+
+A área antiga (`membros.gorgpresets.com`) continua funcionando durante a migração — o link "Área de membros" do cabeçalho da loja ainda aponta para ela. Quando os alunos estiverem na área nova (importados em **Membros → Importar lista** ou liberados pelas vendas), troque o link do cabeçalho e, se quiser, aponte `membros.gorgpresets.com` para a Vercel também: o código já trata `membros.` como endereço da área nova.
+
+Os e-mails usam `https://area.gorgpresets.com` nos links e o logo da loja (`www.gorgpresets.com/logo.png`). Para outro endereço, defina os segredos `MEMBERS_PORTAL_URL` / `MEMBERS_STORE_URL` da função `members-api`.
 
 ## Automações (Studio → Automações)
 
@@ -45,7 +61,8 @@ Para usar, depois do deploy: entre em `/membros/studio` com o login do `/admin`,
 
 - **Envio:** pelo seu próprio e-mail via **SMTP** (Hostinger: `smtp.hostinger.com`, porta **465**, SSL, usuário = o e-mail) ou pela API do **Resend**. As portas 25 e 587 são bloqueadas no Supabase — use 465. O servidor testa o login antes de salvar; a senha fica guardada só no servidor.
 - **Remetente:** nome, e-mail (com SMTP, o mesmo da conta), responder-para e cópia oculta (BCC).
-- **Modelos:** boas-vindas (acesso liberado, com login e senha provisória para quem é novo) e acesso retirado (reembolso/chargeback), cada um no modo **visual** ou em **código HTML**, com variáveis (`{primeiro_nome}`, `{produtos}`, `{senha}`, `{link}`, blocos prontos como `{bloco_acesso}`), prévia ao vivo (computador/celular) e envio de teste.
+- **Modelos:** boas-vindas (acesso liberado, com login e senha provisória para quem é novo) e acesso retirado (reembolso/chargeback), cada um no modo **visual** ou em **código HTML**, com variáveis (`{primeiro_nome}`, `{produtos}`, `{senha}`, `{link}`, `{logo_url}`, blocos prontos como `{bloco_acesso}`), prévia ao vivo (computador/celular) e envio de teste.
+- **Reembolso:** o modelo padrão é o e-mail "Reembolso processado" da loja, refeito em HTML de tabela (abre igual no Gmail, Outlook e celular): logo, título em vermelho, aviso de que o valor foi enviado à operadora, as coleções retiradas com o número do pedido, o prazo de 1 a 2 faturas e o botão "Falar com o suporte". **Restaurar padrão** volta a ele.
 - Se o envio falhar, o acesso é liberado mesmo assim: sem senha conhecida a conta não fica criada pela metade e o comprador entra pelo **Primeiro acesso**. Falhas temporárias fazem o checkout reenviar o webhook.
 
 ## Registros (Studio → Registros)
@@ -59,7 +76,6 @@ Lista com coleções, situação (ativo, sem conta, bloqueado, troca de senha pe
 
 Opcional, no painel do Supabase:
 
-- **Authentication → URL Configuration:** *Site URL* `https://gorgpresets.site` e, em *Redirect URLs*, `https://gorgpresets.site/membros/perfil`.
 - **Authentication → Sign In / Providers:** desligar *Allow new users to sign up* (não é mais um risco, só evita contas soltas).
 - Apagar a função `create-pix` e o segredo `BUCKPAY_API_TOKEN` (a ferramenta usada aqui não consegue excluir). Gere um token novo na BuckPay: o antigo esteve escrito no código da função.
 
