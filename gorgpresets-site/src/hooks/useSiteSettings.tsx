@@ -52,7 +52,7 @@ export interface HomeSectionOrder {
 export interface IntegrationSettings {
   checkoutBaseUrl: string;
   isCartEnabled: boolean;
-  gateway: 'buckpay' | 'ggcheckout';
+  gateway: 'ggcheckout';
   isBuy3Get1FreeEnabled: boolean;
   defaultCurrency?: 'BRL' | 'USD' | 'EUR';
 }
@@ -94,7 +94,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   integration: {
     checkoutBaseUrl: "https://ggcheckout.app/s/F3LEikOi-0/cart",
     isCartEnabled: true,
-    gateway: 'buckpay',
+    gateway: 'ggcheckout',
     isBuy3Get1FreeEnabled: true,
     defaultCurrency: 'BRL',
   },
