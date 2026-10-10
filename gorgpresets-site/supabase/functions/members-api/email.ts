@@ -34,12 +34,17 @@ export interface EmailSettings {
   refund: EmailTemplate;
 }
 
-/**
- * "Reembolso processado": o modelo que a Gorg já usava, refeito para funcionar em
- * todos os leitores (Gmail, Outlook, Apple Mail, celular), com as coleções
- * encerradas, o número do pedido e o botão do suporte.
- */
-const REFUND_HTML = `<!doctype html>
+// ── Modelos prontos (modo código) ───────────────────────────────────
+// Os e-mails que a Gorg já usava (cartão branco sobre cinza, logo, título,
+// destaque colorido e botão vermelho), refeitos em tabelas para abrir igual no
+// Gmail, Outlook, Apple Mail e celular. São o ponto de partida do modo código:
+// o produtor edita à vontade e "Restaurar padrão" volta a eles.
+
+const CLASSIC_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
+/** Esqueleto comum: cabeçalho com logo, conteúdo, rodapé com assinatura e aviso final. */
+function classicEmail(p: { title: string; preheader: string; body: string; help: string; smallPrint: string }): string {
+  return `<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
@@ -47,7 +52,7 @@ const REFUND_HTML = `<!doctype html>
 <meta name="x-apple-disable-message-reformatting">
 <meta name="color-scheme" content="light only">
 <meta name="supported-color-schemes" content="light">
-<title>Reembolso processado</title>
+<title>${p.title}</title>
 <style>
   @media (max-width: 600px) {
     .card { padding: 32px 22px !important; }
@@ -58,12 +63,12 @@ const REFUND_HTML = `<!doctype html>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f7f9;word-spacing:normal;">
 <!-- Pré-cabeçalho: aparece só na lista de e-mails -->
-<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;">O valor foi enviado para a operadora do seu meio de pagamento.&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;">${p.preheader}${"&#8199;&#65279;&#847;".repeat(12)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f7f9" style="background-color:#f4f7f9;">
 <tr><td align="center" style="padding:48px 16px;">
 <!--[if mso]><table role="presentation" align="center" width="550" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:550px;">
-<tr><td class="card" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #eaeaea;border-radius:12px;padding:40px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#333333;">
+<tr><td class="card" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #eaeaea;border-radius:12px;padding:40px;font-family:${CLASSIC_FONT};color:#333333;">
 
 <!-- Logo (fundo branco fixo: no modo escuro do Gmail o logo preto continua visível) -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -77,49 +82,19 @@ const REFUND_HTML = `<!doctype html>
 <tr><td style="border-top:1px solid #eaeaea;font-size:0;line-height:0;">&nbsp;</td></tr>
 </table>
 
-<!-- Título -->
-<h1 class="titulo" style="margin:30px 0 0;font-size:23px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:#d82828;text-align:center;">Reembolso processado</h1>
-
-<!-- Mensagem -->
-<p style="margin:28px 0 0;font-size:16px;line-height:1.6;color:#444444;">Olá, <strong style="color:#222222;">{primeiro_nome}</strong>.</p>
-<p style="margin:14px 0 0;font-size:16px;line-height:1.6;color:#444444;">Informamos que a sua solicitação de reembolso foi concluída com sucesso. Conforme o procedimento padrão, o seu acesso à <strong style="color:#222222;">Área de Membros da {marca}</strong> foi encerrado.</p>
-
-<!-- Destaque -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr><td style="height:26px;line-height:26px;font-size:1px;">&nbsp;</td></tr>
-<tr><td bgcolor="#fff5f5" style="background-color:#fff5f5;border:1px solid #feb2b2;border-radius:8px;padding:18px 20px;text-align:center;">
-<p style="margin:0;font-size:15px;line-height:1.5;font-weight:600;color:#c53030;">O reembolso foi enviado para a operadora do seu meio de pagamento.</p>
-</td></tr>
-</table>
-
-<!-- Coleções encerradas e número do pedido (somem quando não há) -->
-{lista_produtos}
-
-<p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#666666;">Dependendo do seu banco ou da operadora do cartão, o valor pode aparecer na sua fatura em até 1 ou 2 ciclos de cobrança.</p>
-
-<!-- Botão do suporte -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr><td style="height:30px;line-height:30px;font-size:1px;">&nbsp;</td></tr>
-<tr><td align="center">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-<td align="center" bgcolor="#d82828" style="border-radius:999px;background-color:#d82828;mso-padding-alt:14px 30px;">
-<a href="{suporte}" target="_blank" style="display:inline-block;padding:14px 30px;border-radius:999px;font-size:14px;font-weight:700;line-height:1;color:#ffffff;text-decoration:none;">Falar com o suporte</a>
-</td>
-</tr></table>
-</td></tr>
-</table>
+${p.body}
 
 <!-- Rodapé -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 <tr><td style="height:36px;line-height:36px;font-size:1px;">&nbsp;</td></tr>
 <tr><td style="border-top:1px solid #eeeeee;padding:22px 0 0;text-align:center;font-size:14px;line-height:1.6;color:#999999;">
-Se tiver qualquer dúvida, é só responder este e-mail ou falar com o nosso suporte.<br><br>
+${p.help}<br><br>
 <strong style="color:#555555;">Equipe {marca}</strong>
 </td></tr>
 </table>
 
 </td></tr>
-<tr><td align="center" style="padding:20px 12px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.6;color:#a0a7ae;">Você recebeu este e-mail porque houve uma atualização em um pedido seu na {marca}.</td></tr>
+<tr><td align="center" style="padding:20px 12px 0;font-family:${CLASSIC_FONT};font-size:11px;line-height:1.6;color:#a0a7ae;">${p.smallPrint}</td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
 </td></tr>
@@ -127,6 +102,89 @@ Se tiver qualquer dúvida, é só responder este e-mail ou falar com o nosso sup
 </body>
 </html>
 `;
+}
+
+/** Faixa de destaque (vermelha no reembolso, verde na compra aprovada). */
+const classicNotice = (text: string, c: { bg: string; border: string; color: string }) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="height:26px;line-height:26px;font-size:1px;">&nbsp;</td></tr>
+<tr><td bgcolor="${c.bg}" style="background-color:${c.bg};border:1px solid ${c.border};border-radius:8px;padding:18px 20px;text-align:center;">
+<p style="margin:0;font-size:15px;line-height:1.5;font-weight:600;color:${c.color};">${text}</p>
+</td></tr>
+</table>`;
+
+/** Botão vermelho (a célula leva o padding porque o Outlook ignora padding no <a>). */
+const classicButton = (comment: string, href: string, label: string) => `<!-- ${comment} -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="height:30px;line-height:30px;font-size:1px;">&nbsp;</td></tr>
+<tr><td align="center">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td align="center" bgcolor="#d82828" style="border-radius:999px;background-color:#d82828;mso-padding-alt:14px 30px;">
+<a href="${href}" target="_blank" style="display:inline-block;padding:14px 30px;border-radius:999px;font-size:14px;font-weight:700;line-height:1;color:#ffffff;text-decoration:none;">${label}</a>
+</td>
+</tr></table>
+</td></tr>
+</table>`;
+
+const CLASSIC_P = "font-size:16px;line-height:1.6;color:#444444;";
+
+/**
+ * "Acesso liberado": o e-mail de aprovação que a Gorg já usava, com as coleções
+ * compradas, os dados de acesso ({bloco_acesso}: senha provisória para conta nova,
+ * "a senha que você já usa" para quem já tinha conta) e o botão da área.
+ */
+const WELCOME_HTML = classicEmail({
+  title: "Acesso liberado",
+  preheader: "Sua compra foi aprovada e o seu acesso à Área de Membros já está liberado.",
+  body: `<!-- Saudação (sem nome, vira "Olá!") -->
+<h1 class="titulo" style="margin:30px 0 0;font-size:23px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:#1a1a1a;">Olá, {primeiro_nome}!</h1>
+
+<!-- Mensagem -->
+<p style="margin:16px 0 0;${CLASSIC_P}">Parabéns pela sua nova aquisição na <strong style="color:#222222;">{marca}</strong>! Ficamos muito felizes por você ter escolhido os nossos presets: a partir de agora, suas edições ganham um novo nível de profissionalismo.</p>
+
+<!-- Destaque -->
+${classicNotice("&#10003;&nbsp; Pagamento aprovado: o seu acesso já está liberado.", { bg: "#f0faf4", border: "#b4e2c5", color: "#1f7a45" })}
+
+<p style="margin:24px 0 0;${CLASSIC_P}">Na nossa <strong style="color:#222222;">Área de Membros</strong> exclusiva você encontra todos os arquivos para download e vídeos tutoriais que mostram, passo a passo, como baixar, instalar e ajustar cada preset no seu dispositivo.</p>
+
+<!-- Coleções liberadas (some quando não há) -->
+{lista_produtos}
+
+<!-- Dados de acesso (muda sozinho: conta nova ou conta que já existia) -->
+{bloco_acesso}
+
+${classicButton("Botão da área de membros", "{link}", "Acessar Área de Membros")}
+
+<p style="margin:18px 0 0;font-size:12px;line-height:1.6;color:#999999;text-align:center;">Se o botão não abrir, copie e cole no navegador:<br><a href="{link}" target="_blank" style="color:#d82828;text-decoration:underline;word-break:break-all;">{link}</a></p>`,
+  help: `Se tiver qualquer dúvida, é só responder este e-mail ou <a href="{suporte}" target="_blank" style="color:#555555;text-decoration:underline;">falar com o nosso suporte</a>.`,
+  smallPrint: "Você recebeu este e-mail porque fez uma compra na {marca}.",
+});
+
+/**
+ * "Reembolso processado": o modelo que a Gorg já usava, com as coleções
+ * encerradas, o número do pedido e o botão do suporte.
+ */
+const REFUND_HTML = classicEmail({
+  title: "Reembolso processado",
+  preheader: "O valor foi enviado para a operadora do seu meio de pagamento.",
+  body: `<!-- Título -->
+<h1 class="titulo" style="margin:30px 0 0;font-size:23px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:#d82828;text-align:center;">Reembolso processado</h1>
+
+<!-- Mensagem -->
+<p style="margin:28px 0 0;${CLASSIC_P}">Olá, <strong style="color:#222222;">{primeiro_nome}</strong>.</p>
+<p style="margin:14px 0 0;${CLASSIC_P}">Informamos que a sua solicitação de reembolso foi concluída com sucesso. Conforme o procedimento padrão, o seu acesso à <strong style="color:#222222;">Área de Membros da {marca}</strong> foi encerrado.</p>
+
+<!-- Destaque -->
+${classicNotice("O reembolso foi enviado para a operadora do seu meio de pagamento.", { bg: "#fff5f5", border: "#feb2b2", color: "#c53030" })}
+
+<!-- Coleções encerradas e número do pedido (somem quando não há) -->
+{lista_produtos}
+
+<p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#666666;">Dependendo do seu banco ou da operadora do cartão, o valor pode aparecer na sua fatura em até 1 ou 2 ciclos de cobrança.</p>
+
+${classicButton("Botão do suporte", "{suporte}", "Falar com o suporte")}`,
+  help: "Se tiver qualquer dúvida, é só responder este e-mail ou falar com o nosso suporte.",
+  smallPrint: "Você recebeu este e-mail porque houve uma atualização em um pedido seu na {marca}.",
+});
 
 export const DEFAULT_EMAIL: EmailSettings = {
   provider: "smtp",
@@ -139,11 +197,11 @@ export const DEFAULT_EMAIL: EmailSettings = {
     subject: "Seu acesso chegou, {primeiro_nome} ✨",
     heading: "Bem-vindo(a), {primeiro_nome}!",
     message:
-      "Sua compra foi aprovada e os seus presets já estão liberados na Área de Membros.\n\nLá você baixa os arquivos e assiste às aulas que mostram, passo a passo, como instalar e usar no celular e no computador.",
-    buttonLabel: "Acessar minha área",
-    signature: "Com carinho,\nEquipe {marca}",
-    mode: "visual",
-    html: "",
+      "Parabéns pela sua nova aquisição na {marca}! Sua compra foi aprovada e os seus presets já estão liberados na Área de Membros.\n\nLá você encontra todos os arquivos para download e vídeos tutoriais que mostram, passo a passo, como baixar, instalar e ajustar cada preset no seu dispositivo.",
+    buttonLabel: "Acessar Área de Membros",
+    signature: "Se tiver qualquer dúvida, é só responder este e-mail.\nEquipe {marca}",
+    mode: "html",
+    html: WELCOME_HTML,
   },
   refund: {
     enabled: false,
@@ -330,12 +388,27 @@ function variableValues(ctx: EmailContext, kind: TemplateKind): Record<string, s
   };
 }
 
-/** "{{ nome }}", "{ Nome }" e "{NOME}" viram "{nome}" (só as variáveis conhecidas; o resto fica igual). */
+/** Nomes usados nos modelos da área antiga (Wander Members): continuam funcionando se forem colados aqui. */
+const VARIABLE_ALIASES: Record<string, string> = {
+  site_nome: "marca",
+  nome_site: "marca",
+  cursos: "lista_produtos",
+  link_login_magico: "link",
+  link_login: "link",
+};
+
+/**
+ * "{{ nome }}", "{ Nome }" e "{NOME}" viram "{nome}" (só as variáveis conhecidas; o resto fica igual).
+ * Os nomes antigos viram os atuais, e "http://{link}" vira "{link}" (o link já vem completo).
+ */
 function normalizeVariables(text: string): string {
-  return str(text).replace(/\{\{[ \t]*(\w+)[ \t]*\}\}|\{[ \t]*(\w+)[ \t]*\}/g, (match, a?: string, b?: string) => {
-    const key = (a ?? b ?? "").toLowerCase();
-    return KNOWN_KEYS.has(key) ? `{${key}}` : match;
-  });
+  return str(text)
+    .replace(/\{\{[ \t]*(\w+)[ \t]*\}\}|\{[ \t]*(\w+)[ \t]*\}/g, (match, a?: string, b?: string) => {
+      const lower = (a ?? b ?? "").toLowerCase();
+      const key = own(VARIABLE_ALIASES, lower) ? VARIABLE_ALIASES[lower] : lower;
+      return KNOWN_KEYS.has(key) ? `{${key}}` : match;
+    })
+    .replace(/https?:\/\/(?=\{(?:link|suporte|logo_url)\})/gi, "");
 }
 
 /**
@@ -563,15 +636,30 @@ function design(kind: TemplateKind, t: EmailTemplate, hasProducts = true): strin
 
 function mergeTemplate(base: EmailTemplate, ...sources: unknown[]): EmailTemplate {
   const out: EmailTemplate = { ...base };
+  let hasMode = false;
+  let hasHtml = false;
+  let hasTexts = false;
   for (const src of sources) {
     if (!isObj(src)) continue;
     if (typeof src.enabled === "boolean") out.enabled = src.enabled;
     for (const key of ["subject", "heading", "message", "buttonLabel", "signature", "html"] as const) {
       const value = src[key];
       // CRLF (colado do Windows ou vindo da API) vira \n nos textos; o HTML fica como veio.
-      if (typeof value === "string") out[key] = key === "html" ? value : value.replace(/\r\n?/g, "\n");
+      if (typeof value !== "string") continue;
+      out[key] = key === "html" ? value : value.replace(/\r\n?/g, "\n");
+      if (key === "html") hasHtml = true;
+      if (key === "heading" || key === "message") hasTexts = true;
     }
-    if (src.mode === "visual" || src.mode === "html") out.mode = src.mode;
+    if (src.mode === "visual" || src.mode === "html") {
+      out.mode = src.mode;
+      hasMode = true;
+    }
+  }
+  // Modelo salvo antes do modo código (sem "mode") e com textos próprios: continua no
+  // visual com esses textos, em vez de trocar para o HTML padrão.
+  if (!hasMode && hasTexts && out.mode === "html") {
+    out.mode = "visual";
+    if (!hasHtml) out.html = "";
   }
   return out;
 }
