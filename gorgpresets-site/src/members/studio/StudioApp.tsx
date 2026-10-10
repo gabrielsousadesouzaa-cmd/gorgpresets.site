@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { Link, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ExternalLink, Gauge, LayoutTemplate, Loader2, LogOut, Mail, Menu, Palette, PlugZap, Rows3, Users, X } from "lucide-react";
+import { ExternalLink, Gauge, History, LayoutTemplate, Loader2, LogOut, Mail, Menu, Palette, Rows3, Users, Workflow, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, useRepo } from "../context/MembersContext";
 import { DemoBadge } from "../components/MembersHeader";
@@ -14,8 +14,9 @@ const ProductEditor = lazy(() => import("./pages/ProductEditor"));
 const RowsPage = lazy(() => import("./pages/Rows"));
 const AppearancePage = lazy(() => import("./pages/Appearance"));
 const MembersPage = lazy(() => import("./pages/Members"));
-const IntegrationsPage = lazy(() => import("./pages/Integrations"));
+const AutomationsPage = lazy(() => import("./pages/Automations"));
 const EmailsPage = lazy(() => import("./pages/Emails"));
+const LogsPage = lazy(() => import("./pages/Logs"));
 
 const NAV = [
   { to: "/membros/studio", label: "Visão geral", icon: Gauge, end: true },
@@ -23,8 +24,9 @@ const NAV = [
   { to: "/membros/studio/vitrines", label: "Seções da home", icon: Rows3, end: false },
   { to: "/membros/studio/aparencia", label: "Aparência", icon: Palette, end: false },
   { to: "/membros/studio/membros", label: "Membros", icon: Users, end: false },
+  { to: "/membros/studio/automacoes", label: "Automações", icon: Workflow, end: false },
   { to: "/membros/studio/emails", label: "E-mails", icon: Mail, end: false },
-  { to: "/membros/studio/integracoes", label: "Integrações", icon: PlugZap, end: false },
+  { to: "/membros/studio/registros", label: "Registros", icon: History, end: false },
 ];
 
 export default function StudioApp() {
@@ -93,8 +95,10 @@ export default function StudioApp() {
                 <Route path="vitrines" element={<RowsPage />} />
                 <Route path="aparencia" element={<AppearancePage />} />
                 <Route path="membros" element={<MembersPage />} />
-                <Route path="integracoes" element={<IntegrationsPage />} />
+                <Route path="automacoes" element={<AutomationsPage />} />
+                <Route path="integracoes" element={<Navigate to="/membros/studio/automacoes" replace />} />
                 <Route path="emails" element={<EmailsPage />} />
+                <Route path="registros" element={<LogsPage />} />
                 <Route path="*" element={<Dashboard />} />
               </Routes>
             </Suspense>

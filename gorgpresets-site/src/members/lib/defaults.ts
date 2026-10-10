@@ -1,6 +1,7 @@
 import type { HeroSlide, Lesson, Material, Module, PortalSettings, Product, Row } from "./types";
 import { uid } from "./format";
 import { DEFAULT_EMAIL } from "../../../supabase/functions/members-api/email";
+import { DEFAULT_AUTOMATION } from "../../../supabase/functions/members-api/automation";
 
 export const BRAND_RED = "#d82828";
 
@@ -26,6 +27,7 @@ export const DEFAULT_SETTINGS: PortalSettings = {
   },
   footerText: "© Gorg Presets. Todos os direitos reservados.",
   email: DEFAULT_EMAIL,
+  automation: DEFAULT_AUTOMATION,
 };
 
 export function blankProduct(sortOrder = 0): Product {

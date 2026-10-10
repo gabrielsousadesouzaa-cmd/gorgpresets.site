@@ -4,7 +4,6 @@
 import type { MembersRepo } from "./repo";
 import type {
   AuthSnapshot,
-  EmailStatus,
   Grant,
   Lesson,
   Material,
@@ -16,26 +15,18 @@ import type {
   Row,
   WebhookLog,
 } from "./types";
-import { DEFAULT_SETTINGS } from "./defaults";
+import { mergeEmailSettings } from "../../../supabase/functions/members-api/email";
+import { mergeAutomation } from "../../../supabase/functions/members-api/automation";
+import { demoDeliver, demoNotice, demoProviderStatus, demoReady, demoRender, ggPayload, processDemoSale, seedDemoAutomation, type DemoAutomationState, type DemoMember } from "./demoAutomation";
 import { buildDemoCurriculum, buildDemoProducts, buildDemoRows, buildDemoSettings, DEMO_OWNED_IDS } from "./demoData";
 import { generatePassword, normalizeEmail, uid } from "./format";
 
-const DB_KEY = "gorg-members-demo-v3";
+const DB_KEY = "gorg-members-demo-v4";
 const SESSION_KEY = "gorg-members-demo-session";
 export const DEMO_ADMIN_EMAIL = "produtor@gorgpresets.site";
 export const DEMO_MEMBER_EMAIL = "ana@exemplo.com";
 
-interface DemoMember {
-  email: string;
-  name: string;
-  password: string;
-  createdAt: string;
-  lastSeenAt: string | null;
-}
-
-interface DemoDB {
-  /** Chave do Resend no modo demo (nada é enviado de verdade). */
-  emailKey?: string;
+interface DemoDB extends DemoAutomationState {
   settings: PortalSettings;
   products: Product[];
   modules: Module[];
@@ -63,27 +54,23 @@ function seed(): DemoDB {
     { lessonId: started[1].id, productId: started[1].productId, completed: false, position: 230, duration: 412, updatedAt: now },
     { lessonId: started[6].id, productId: started[6].productId, completed: false, position: 70, duration: 154, updatedAt: new Date(Date.now() - 3600_000).toISOString() },
   ];
-  return {
+  const state: DemoDB = {
     settings: buildDemoSettings(),
     products,
     modules,
     lessons,
     materials,
     rows: buildDemoRows(),
-    members: [
-      member,
-      { email: "bruna.costa@exemplo.com", name: "Bruna Costa", password: "demo", createdAt: new Date(Date.now() - 2 * 86400000).toISOString(), lastSeenAt: null },
-    ],
-    grants: [
-      ...grants,
-      { id: uid(), email: "bruna.costa@exemplo.com", productId: "p-feed", source: "webhook", createdAt: now, expiresAt: null },
-      { id: uid(), email: "lucas@exemplo.com", productId: "p-urban", source: "webhook", createdAt: now, expiresAt: null },
-    ],
+    members: [member],
+    grants,
     progress: { [member.email]: progress },
-    webhookLogs: [
-      { id: uid(), receivedAt: now, status: "granted", message: "Acesso liberado: FEED AESTHETIC", email: "bruna.costa@exemplo.com", payload: { event: "purchase.approved" } },
-    ],
+    webhookLogs: [],
+    checkoutItems: [],
+    emailLogs: [],
+    emailProvider: {},
   };
+  seedDemoAutomation(state);
+  return state;
 }
 
 function load(): DemoDB {
@@ -107,11 +94,10 @@ function persist() {
   }
 }
 
-function emailStatus(): EmailStatus {
-  const key = db.emailKey || "";
-  return key
-    ? { configured: true, source: "studio", hint: `${key.slice(0, 3)}…${key.slice(-4)}`, keyCheck: "ok", domains: [{ name: "gorgpresets.site", status: "verified" }] }
-    : { configured: false, source: null, hint: null, keyCheck: null, domains: null };
+const demoEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+function memberOf(email: string) {
+  return db.members.find((m) => m.email === email);
 }
 
 function sessionEmail(): string | null {
@@ -173,7 +159,13 @@ export const localRepo: MembersRepo = {
     if (!email) return { user: null, needsMfa: false };
     const member = db.members.find((m) => m.email === email);
     return {
-      user: { id: email, email, name: member?.name || (isAdminEmail(email) ? "Produtor" : ""), isAdmin: isAdminEmail(email) },
+      user: {
+        id: email,
+        email,
+        name: member?.name || (isAdminEmail(email) ? "Produtor" : ""),
+        isAdmin: isAdminEmail(email),
+        mustChangePassword: !isAdminEmail(email) && !!member?.mustChangePassword,
+      },
       needsMfa: false,
     };
   },
@@ -197,6 +189,7 @@ export const localRepo: MembersRepo = {
         );
       }
     }
+    if (member.blocked) throw new Error("Seu acesso está bloqueado. Fale com o suporte.");
     member.lastSeenAt = new Date().toISOString();
     persist();
     setSession(email);
@@ -229,6 +222,18 @@ export const localRepo: MembersRepo = {
     persist();
   },
 
+  async completePasswordChange(password) {
+    if (password.length < 6) throw new Error("A senha precisa ter pelo menos 6 caracteres.");
+    const member = db.members.find((m) => m.email === requireEmail());
+    if (member) {
+      if (member.password === password) throw new Error("A nova senha precisa ser diferente da atual.");
+      member.password = password;
+      member.mustChangePassword = false;
+    }
+    persist();
+    listeners.forEach((cb) => cb());
+  },
+
   async updateName(name) {
     const email = requireEmail();
     const member = db.members.find((m) => m.email === email);
@@ -242,7 +247,7 @@ export const localRepo: MembersRepo = {
   },
 
   async getSettings() {
-    return clone({ ...db.settings, email: { ...DEFAULT_SETTINGS.email, ...(db.settings.email || {}) } });
+    return clone({ ...db.settings, email: mergeEmailSettings(db.settings.email), automation: mergeAutomation(db.settings.automation) });
   },
 
   async getCatalog() {
@@ -253,6 +258,8 @@ export const localRepo: MembersRepo = {
     const email = sessionEmail();
     if (!email) return [];
     if (isAdminEmail(email)) return db.products.map((p) => p.id);
+    const me = memberOf(email);
+    if (me?.blocked || me?.mustChangePassword) return [];
     const now = Date.now();
     const granted = db.grants
       .filter((g) => g.email === email && (!g.expiresAt || new Date(g.expiresAt).getTime() > now))
@@ -379,6 +386,10 @@ export const localRepo: MembersRepo = {
           grants,
           createdAt: member?.createdAt || grants[0]?.createdAt || new Date().toISOString(),
           lastSeenAt: member?.lastSeenAt || null,
+          phone: member?.phone || "",
+          document: member?.document || "",
+          blocked: !!member?.blocked,
+          mustChangePassword: !!member?.mustChangePassword,
         };
       })
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -437,15 +448,78 @@ export const localRepo: MembersRepo = {
     persist();
   },
 
-  async setMemberPassword(rawEmail, password) {
+  async setMemberPassword(rawEmail, password, forceChange) {
     const member = db.members.find((m) => m.email === normalizeEmail(rawEmail));
     if (!member) throw new Error("Este membro ainda não criou a conta.");
+    if (password.length < 6) throw new Error("A senha precisa ter pelo menos 6 caracteres.");
     member.password = password;
+    member.mustChangePassword = !!forceChange;
     persist();
   },
 
-  async listWebhookLogs() {
-    return clone(db.webhookLogs);
+  async sendPasswordReset(rawEmail) {
+    const email = normalizeEmail(rawEmail);
+    if (!demoReady(db)) throw new Error("Configure o envio de e-mail em Studio → E-mails primeiro.");
+    if (!memberOf(email)) throw new Error("Este membro ainda não tem conta.");
+    const notice = demoNotice(db, email);
+    demoDeliver(db, { kind: "reset", to: email, subject: notice.subject, html: notice.html });
+    persist();
+  },
+
+  async resendAccess(rawEmail) {
+    const email = normalizeEmail(rawEmail);
+    const productIds = db.grants.filter((g) => g.email === email).map((g) => g.productId);
+    if (!productIds.length) throw new Error("Este e-mail ainda não tem nenhuma coleção liberada.");
+    const automation = mergeAutomation(db.settings.automation);
+    const password = generatePassword();
+    let member = memberOf(email);
+    if (!member) {
+      member = { email, name: "", password, createdAt: new Date().toISOString(), lastSeenAt: null };
+      db.members.push(member);
+    }
+    member.password = password;
+    member.mustChangePassword = automation.forcePasswordChange;
+    let emailed = false;
+    let emailError = "envio de e-mail não configurado";
+    if (demoReady(db)) {
+      const titles = productIds.map((id) => db.products.find((p) => p.id === id)?.title || "Coleção");
+      const rendered = demoRender(db, "welcome", mergeEmailSettings(db.settings.email).welcome, { email, name: member.name, phone: member.phone }, titles, password);
+      const log = demoDeliver(db, { kind: "access", to: email, subject: rendered.subject, html: rendered.html, meta: { manual: true } });
+      emailed = log.status === "sent";
+      emailError = log.error;
+    }
+    persist();
+    return { password, emailed, emailError };
+  },
+
+  async setMemberBlocked(rawEmail, blocked) {
+    const member = memberOf(normalizeEmail(rawEmail));
+    if (!member) throw new Error("Este membro ainda não tem conta.");
+    member.blocked = blocked;
+    persist();
+  },
+
+  async updateMember(rawEmail, patch) {
+    const email = normalizeEmail(rawEmail);
+    const next = normalizeEmail(patch.newEmail || email);
+    if (!demoEmail(next)) throw new Error("Novo e-mail inválido.");
+    if (next !== email && memberOf(next)) throw new Error("Já existe uma conta com o novo e-mail.");
+    const member = memberOf(email);
+    if (member) {
+      member.email = next;
+      if (typeof patch.name === "string") member.name = patch.name.trim();
+    }
+    if (next !== email) {
+      db.grants = db.grants
+        .map((g) => (g.email === email ? { ...g, email: next } : g))
+        .filter((g, i, all) => all.findIndex((x) => x.email === g.email && x.productId === g.productId) === i);
+      if (db.progress[email]) {
+        db.progress[next] = db.progress[email];
+        delete db.progress[email];
+      }
+    }
+    persist();
+    return next;
   },
 
   async getStats() {
@@ -468,22 +542,167 @@ export const localRepo: MembersRepo = {
     return localRepo.getWebhookUrl();
   },
 
-  async getEmailStatus() {
-    return emailStatus();
+  async listCheckoutItems() {
+    return clone(db.checkoutItems);
   },
 
-  async saveEmailKey(key) {
-    const value = key.trim();
-    if (value && !/^re_[A-Za-z0-9_-]{8,}$/.test(value)) throw new Error("Essa não parece uma chave do Resend. Ela começa com “re_”.");
-    db.emailKey = value || undefined;
+  async saveCheckoutItem(item) {
+    const externalId = item.externalId.trim();
+    if (!externalId) throw new Error("Informe o ID do produto no checkout.");
+    if (db.checkoutItems.some((c) => c.id !== item.id && c.externalId.trim().toLowerCase() === externalId.toLowerCase())) {
+      throw new Error("Já existe um produto do checkout com esse ID.");
+    }
+    const saved = { ...item, externalId, title: item.title.trim() };
+    db.checkoutItems = upsert(db.checkoutItems, saved);
     persist();
-    return emailStatus();
+    return clone(saved);
   },
 
-  async sendTestEmail(to) {
-    if (!db.emailKey) throw new Error("Conecte o Resend primeiro (cole a chave da API).");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error("Informe um e-mail válido para o teste.");
-    await new Promise((resolve) => setTimeout(resolve, 700));
+  async deleteCheckoutItem(id) {
+    db.checkoutItems = db.checkoutItems.filter((c) => c.id !== id);
+    persist();
+  },
+
+  async getAutomationStatus() {
+    return { hasFixedPassword: !!db.fixedPassword };
+  },
+
+  async saveFixedPassword(password) {
+    if (password && password.length < 6) throw new Error("A senha padrão precisa ter pelo menos 6 caracteres.");
+    db.fixedPassword = password || undefined;
+    persist();
+    return { hasFixedPassword: !!db.fixedPassword };
+  },
+
+  async simulateSale(input) {
+    const email = normalizeEmail(input.email);
+    if (!demoEmail(email)) throw new Error("Informe um e-mail válido para a venda de teste.");
+    const items = db.checkoutItems.filter((c) => input.items.includes(c.id));
+    if (!items.length) throw new Error("Escolha pelo menos um produto do checkout.");
+    const refund = input.event === "refunded";
+    const result = processDemoSale(
+      db,
+      ggPayload({
+        event: refund ? "pix.refunded" : "pix.paid",
+        status: refund ? "refunded" : "paid",
+        name: input.name || "Cliente Teste",
+        email,
+        phone: input.phone,
+        document: input.document,
+        amount: 0,
+        items: items.map((c) => ({ id: c.externalId, title: c.title })),
+      }),
+      { simulated: true },
+    );
+    persist();
+    return result;
+  },
+
+  async listWebhookLogs(filter = {}) {
+    const term = (filter.search || "").trim().toLowerCase();
+    return clone(
+      db.webhookLogs
+        .filter((l) => !filter.status || l.status === filter.status)
+        .filter((l) => !filter.before || l.receivedAt < filter.before)
+        .filter((l) => !term || [l.email, l.buyerName, l.orderId].some((v) => v.toLowerCase().includes(term)))
+        .slice(0, filter.limit || 50),
+    );
+  },
+
+  async replayWebhook(id) {
+    const log = db.webhookLogs.find((l) => l.id === id);
+    if (!log) throw new Error("Evento não encontrado.");
+    const result = processDemoSale(db, log.payload, { replayOf: id });
+    persist();
+    return result;
+  },
+
+  async clearWebhookLogs() {
+    db.webhookLogs = [];
+    persist();
+  },
+
+  async listEmailLogs(filter = {}) {
+    const term = (filter.search || "").trim().toLowerCase();
+    return clone(
+      db.emailLogs
+        .filter((l) => !filter.status || l.status === filter.status)
+        .filter((l) => !filter.kind || l.kind === filter.kind)
+        .filter((l) => !filter.before || l.createdAt < filter.before)
+        .filter((l) => !term || l.to.toLowerCase().includes(term) || l.subject.toLowerCase().includes(term))
+        .slice(0, filter.limit || 50)
+        .map(({ html: _html, ...log }) => log),
+    );
+  },
+
+  async getEmailHtml(id) {
+    return db.emailLogs.find((l) => l.id === id)?.html || "";
+  },
+
+  async resendEmail(id, to) {
+    const log = db.emailLogs.find((l) => l.id === id);
+    if (!log) throw new Error("Registro de e-mail não encontrado.");
+    if (log.kind === "reset") throw new Error("Links de senha não são reenviados: envie um novo pela tela de Membros.");
+    const target = normalizeEmail(to || log.to);
+    const sent = demoDeliver(db, { kind: log.kind, to: target, subject: log.subject, html: log.html, webhookLogId: log.webhookLogId, meta: { resendOf: id } });
+    persist();
+    if (sent.status === "failed") throw new Error(`Não foi possível reenviar: ${sent.error}.`);
+  },
+
+  async clearEmailLogs() {
+    db.emailLogs = [];
+    persist();
+  },
+
+  async getEmailStatus() {
+    return demoProviderStatus(db);
+  },
+
+  async saveEmailProvider(input) {
+    if (input.smtp === null) db.emailProvider.smtp = undefined;
+    else if (input.smtp) {
+      const host = input.smtp.host.trim().replace(/^[a-z]+:\/\//i, "").replace(/\/.*$/, "");
+      if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(host)) throw new Error("Servidor SMTP inválido (ex: smtp.hostinger.com).");
+      if (input.smtp.port === 25 || input.smtp.port === 587) throw new Error("As portas 25 e 587 são bloqueadas no servidor. Use a 465 com SSL.");
+      if (!input.smtp.username.trim()) throw new Error("Informe o usuário do SMTP (normalmente o próprio e-mail).");
+      const password = input.smtp.password || db.emailProvider.smtp?.password || "";
+      if (!password) throw new Error("Informe a senha do SMTP.");
+      if (!input.skipVerify && password === "errada") throw new Error("O servidor recusou a conexão: usuário ou senha do SMTP recusados pelo servidor (535).");
+      db.emailProvider.smtp = { host, port: input.smtp.port, security: input.smtp.security, username: input.smtp.username.trim(), password };
+    }
+    if (input.resendKey === null || input.resendKey === "") db.emailProvider.resendKey = undefined;
+    else if (typeof input.resendKey === "string") {
+      if (!/^re_[A-Za-z0-9_-]{8,}$/.test(input.resendKey.trim())) throw new Error("Essa não parece uma chave do Resend. Ela começa com “re_”.");
+      db.emailProvider.resendKey = input.resendKey.trim();
+    }
+    persist();
+    return demoProviderStatus(db);
+  },
+
+  async testEmailConnection() {
+    const status = demoProviderStatus(db);
+    if (status.provider === "smtp") {
+      if (!status.smtp.configured) return { ok: false, message: "Salve os dados do SMTP primeiro." };
+      return { ok: true, message: `Conectado a ${status.smtp.host}:${status.smtp.port} e autenticado (demonstração).` };
+    }
+    return status.resend.configured ? { ok: true, message: "Chave válida (demonstração)." } : { ok: false, message: "Salve a chave do Resend primeiro." };
+  },
+
+  async sendTestEmail({ to, kind, template, settings, existingAccount }) {
+    const target = normalizeEmail(to);
+    if (!demoEmail(target)) throw new Error("Informe um e-mail válido para o teste.");
+    const saved = db.settings.email;
+    db.settings.email = mergeEmailSettings(settings);
+    try {
+      if (!demoReady(db)) throw new Error("Não foi possível enviar: configure o envio de e-mail primeiro.");
+      const products = db.products.filter((p) => p.published).slice(0, 2).map((p) => p.title);
+      const rendered = demoRender(db, kind, template, { email: target, name: "Ana Julia", phone: "5511999999999" }, products, kind === "welcome" && !existingAccount ? "Exemplo-7Kq2" : undefined, "TESTE-123");
+      demoDeliver(db, { kind: "test", to: target, subject: rendered.subject, html: rendered.html, meta: { template: kind } });
+    } finally {
+      db.settings.email = saved;
+      persist();
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
   },
 
   async upload(file, { onProgress }) {

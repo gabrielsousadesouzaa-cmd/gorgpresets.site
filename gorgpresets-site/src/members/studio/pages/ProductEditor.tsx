@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ExternalLink, FolderDown, Info, Layers, Save, ShoppingBag, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ExternalLink, FolderDown, History, Info, Layers, Link2, Loader2, Package, PackagePlus, RefreshCw, Save, ShoppingBag, Trash2, Unlink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCatalog, useRepo } from "../../context/MembersContext";
-import { toSlug } from "../../lib/format";
-import type { Product } from "../../lib/types";
+import { relativeDate, toSlug } from "../../lib/format";
+import type { CheckoutItem, Product } from "../../lib/types";
 import { LandscapeArt, PosterArt } from "../../components/PosterArt";
-import { Badge, Button, Card, ColorField, Field, ImageField, Input, TagInput, Textarea, Toggle, useConfirm } from "../ui";
-import { useStudioAction } from "../hooks";
+import { Badge, Button, Card, ColorField, Field, IconButton, ImageField, Input, Select, Textarea, Toggle, useConfirm } from "../ui";
+import { useStudioAction, useStudioQuery } from "../hooks";
+import { blankCheckoutItem } from "../components/MapItemModal";
+import { toast } from "sonner";
 import { CurriculumEditor } from "../editor/CurriculumEditor";
 import { MaterialsEditor } from "../editor/MaterialsEditor";
 
@@ -191,11 +193,11 @@ export default function ProductEditor() {
             </div>
           </Card>
 
-          <Card title="Liberação automática" description="Quando o checkout avisar uma venda aprovada (webhook), o acesso é liberado sozinho para o e-mail do comprador.">
-            <Field label="IDs do produto na plataforma de pagamento" hint={<>Cole o ID, código ou nome do produto/oferta como aparece no checkout e aperte Enter. Veja <Link to="/membros/studio/integracoes" className="font-semibold text-[#1d1d1f] underline">Integrações</Link>.</>}>
-              <TagInput value={draft.externalIds} onChange={(externalIds) => set({ externalIds })} placeholder="Ex: F3LEikOi-0" />
-            </Field>
-          </Card>
+          <CheckoutLinksCard
+            product={product}
+            isFree={draft.isFree}
+            onLegacyConverted={(externalIds) => setDraft((d) => (d ? { ...d, externalIds } : d))}
+          />
         </div>
       )}
 
@@ -217,5 +219,224 @@ export default function ProductEditor() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ── Acesso e venda: produtos do checkout que liberam esta coleção ────
+const sameId = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+function CheckoutLinksCard({ product, isFree, onLegacyConverted }: { product: Product; isFree: boolean; onLegacyConverted: (externalIds: string[]) => void }) {
+  const repo = useRepo();
+  const run = useStudioAction();
+  const confirm = useConfirm();
+  const query = useStudioQuery("checkout-items", () => repo.listCheckoutItems());
+  const [pick, setPick] = useState("");
+  const [newId, setNewId] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const items = query.data || [];
+  const linked = items.filter((i) => i.productIds.includes(product.id));
+  const available = items.filter((i) => !i.productIds.includes(product.id));
+  const groups = [
+    { label: "Sem coleção", list: available.filter((i) => !i.ignored && i.productIds.length === 0) },
+    { label: "Já liberam outras coleções", list: available.filter((i) => !i.ignored && i.productIds.length > 0) },
+    { label: "Ignorados", list: available.filter((i) => i.ignored) },
+  ].filter((g) => g.list.length > 0);
+  const legacy = Array.from(new Set(product.externalIds.map((x) => x.trim()).filter(Boolean)));
+  const name = (item: CheckoutItem) => item.title || item.externalId;
+
+  const link = (item: CheckoutItem) =>
+    run(() => repo.saveCheckoutItem({ ...item, ignored: false, productIds: Array.from(new Set([...item.productIds, product.id])) }), {
+      success: `“${name(item)}” agora libera esta coleção`,
+      scopes: ["studio"],
+    });
+
+  const linkPicked = async () => {
+    const item = items.find((i) => i.id === pick);
+    if (!item) return;
+    setBusy("pick");
+    const saved = await link(item);
+    setBusy(null);
+    if (saved) setPick("");
+  };
+
+  const addNew = async () => {
+    const externalId = newId.trim();
+    if (!externalId) return;
+    const existing = items.find((i) => sameId(i.externalId, externalId));
+    if (existing?.productIds.includes(product.id)) {
+      toast.info("Esse ID já libera esta coleção.");
+      return;
+    }
+    setBusy("new");
+    const saved = existing
+      ? await link(existing)
+      : await run(() => repo.saveCheckoutItem({ ...blankCheckoutItem(externalId, product.title, ""), productIds: [product.id] }), {
+          success: "Produto do checkout adicionado",
+          scopes: ["studio"],
+        });
+    setBusy(null);
+    if (saved) setNewId("");
+  };
+
+  const unlink = async (item: CheckoutItem) => {
+    const ok = await confirm({
+      title: `Desligar “${name(item)}”?`,
+      text: "As próximas vendas deste produto deixam de liberar esta coleção. Quem já comprou continua com acesso.",
+      confirmLabel: "Desligar",
+      danger: true,
+    });
+    if (!ok) return;
+    setBusy(item.id);
+    await run(() => repo.saveCheckoutItem({ ...item, productIds: item.productIds.filter((id) => id !== product.id) }), { success: "Produto desligado desta coleção", scopes: ["studio"] });
+    setBusy(null);
+  };
+
+  // IDs do formato antigo (na própria coleção) viram produtos do checkout ligados a ela.
+  const convertLegacy = async () => {
+    setBusy("legacy");
+    const done = await run(
+      async () => {
+        const current = await repo.listCheckoutItems();
+        for (const externalId of legacy) {
+          const existing = current.find((i) => sameId(i.externalId, externalId));
+          if (!existing) await repo.saveCheckoutItem({ ...blankCheckoutItem(externalId, product.title, ""), productIds: [product.id] });
+          else if (!existing.productIds.includes(product.id) || existing.ignored)
+            await repo.saveCheckoutItem({ ...existing, ignored: false, productIds: Array.from(new Set([...existing.productIds, product.id])) });
+        }
+        await repo.saveProduct({ ...product, externalIds: [] });
+        return true;
+      },
+      { success: legacy.length === 1 ? "ID convertido em produto do checkout" : `${legacy.length} IDs convertidos em produtos do checkout`, scopes: ["catalog", "studio"] },
+    );
+    setBusy(null);
+    if (done) onLegacyConverted([]);
+  };
+
+  return (
+    <Card
+      title="Produtos do checkout que liberam esta coleção"
+      description="Quando alguém comprar um destes produtos, o acesso a esta coleção é liberado sozinho para o e-mail da compra."
+    >
+      {isFree && (
+        <p className="mb-5 rounded-2xl bg-sky-50 px-4 py-3 text-[12.5px] leading-relaxed text-sky-900 ring-1 ring-inset ring-sky-200/70">
+          Esta coleção já está liberada para todos os membros. Ligar um produto do checkout ainda serve para criar a conta de quem compra e enviar o e-mail de acesso.
+        </p>
+      )}
+
+      {query.isLoading ? (
+        <div className="flex items-center justify-center gap-2 rounded-2xl bg-[#f5f5f7] py-8 text-[13px] text-[#86868b]">
+          <Loader2 size={15} className="animate-spin" /> Carregando produtos do checkout…
+        </div>
+      ) : query.error ? (
+        <div className="flex flex-col items-center gap-3 rounded-2xl bg-red-50 px-5 py-6 text-center ring-1 ring-inset ring-red-200/70">
+          <p className="text-[13px] text-red-800">Não foi possível carregar os produtos do checkout: {(query.error as Error).message}</p>
+          <Button size="sm" variant="secondary" icon={<RefreshCw size={13} />} onClick={() => query.refetch()}>Tentar de novo</Button>
+        </div>
+      ) : (
+        <>
+          {linked.length ? (
+            <ul className="space-y-2">
+              {linked.map((item) => {
+                const others = item.productIds.filter((id) => id !== product.id).length;
+                return (
+                  <li key={item.id} className={cn("flex items-center gap-3 rounded-2xl bg-[#f5f5f7] p-3 pr-2 ring-1 ring-inset ring-black/[0.04]", busy === item.id && "opacity-60")}>
+                    <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", item.ignored ? "bg-amber-100 text-amber-700" : "bg-[#1d1d1f] text-white")}>
+                      <Package size={16} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold">{item.title || "Sem nome"}</p>
+                      <p className="truncate font-mono text-[11.5px] text-[#86868b]" title={item.externalId}>{item.externalId}</p>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        <Badge>{item.salesCount} {item.salesCount === 1 ? "venda" : "vendas"}</Badge>
+                        {others > 0 && <Badge tone="blue">+{others} {others === 1 ? "coleção" : "coleções"}</Badge>}
+                        {item.email?.enabled && <Badge tone="blue">E-mail próprio</Badge>}
+                        {item.ignored && <Badge tone="amber">Ignorado: não libera</Badge>}
+                      </div>
+                    </div>
+                    <span className="hidden shrink-0 text-[11px] text-[#a1a1a6] sm:block" title={item.lastSeenAt ? new Date(item.lastSeenAt).toLocaleString("pt-BR") : undefined}>
+                      {item.lastSeenAt ? `visto ${relativeDate(item.lastSeenAt)}` : "ainda não recebido"}
+                    </span>
+                    <IconButton label={`Desligar ${name(item)} desta coleção`} onClick={() => unlink(item)} disabled={busy === item.id} className="hover:text-red-600">
+                      <Unlink size={15} />
+                    </IconButton>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="rounded-2xl border-2 border-dashed border-black/[0.08] px-5 py-8 text-center">
+              <Package className="mx-auto h-7 w-7 text-[#c7c7cc]" />
+              <p className="mt-2 text-[14px] font-semibold">Nenhum produto do checkout libera esta coleção</p>
+              <p className="mx-auto mt-1 max-w-sm text-[12.5px] text-[#86868b]">Escolha um produto que o checkout já enviou ou adicione o ID abaixo.</p>
+            </div>
+          )}
+
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <Field label="Ligar um produto já conhecido" hint={available.length ? "Produtos que já chegaram pelo webhook ou foram cadastrados." : "Nenhum outro produto do checkout por enquanto."}>
+              <div className="flex gap-2">
+                <div className="min-w-0 flex-1">
+                  <Select value={pick} onChange={(e) => setPick(e.target.value)} disabled={!available.length} aria-label="Produto do checkout">
+                    <option value="">{available.length ? "Escolha um produto…" : "Nenhum disponível"}</option>
+                    {groups.map((g) => (
+                      <optgroup key={g.label} label={g.label}>
+                        {g.list.map((i) => (
+                          <option key={i.id} value={i.id}>
+                            {name(i)}
+                            {i.title ? ` · ${i.externalId}` : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </Select>
+                </div>
+                <Button onClick={linkPicked} disabled={!pick} loading={busy === "pick"} icon={<Link2 size={14} />}>Ligar</Button>
+              </div>
+            </Field>
+            <Field label="Adicionar um ID novo" hint="Exatamente como o checkout envia. No GGCheckout, é o ID do link de compra.">
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void addNew();
+                }}
+              >
+                <Input value={newId} onChange={(e) => setNewId(e.target.value)} placeholder="Ex: gAW1Y7y6Pfq7w604nzmD" className="min-w-0 flex-1 font-mono" aria-label="ID do produto no checkout" />
+                <Button type="submit" variant="secondary" disabled={!newId.trim()} loading={busy === "new"} icon={<PackagePlus size={14} />}>Adicionar</Button>
+              </form>
+            </Field>
+          </div>
+
+          {legacy.length > 0 && (
+            <div className="mt-6 rounded-2xl bg-amber-50 p-4 ring-1 ring-inset ring-amber-200/70">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 text-[13px] font-bold text-amber-900">
+                    <History size={15} /> IDs antigos
+                  </p>
+                  <p className="mt-0.5 text-[12px] leading-relaxed text-amber-800/90">
+                    Cadastrados no formato anterior. Continuam liberando o acesso, mas como produtos do checkout você vê as vendas, usa e-mail próprio e gerencia tudo em Automações.
+                  </p>
+                </div>
+                <Button size="sm" variant="secondary" className="shrink-0 self-start" icon={<RefreshCw size={13} />} loading={busy === "legacy"} onClick={convertLegacy}>
+                  Converter em produto do checkout
+                </Button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {legacy.map((id) => (
+                  <code key={id} className="max-w-full truncate rounded-lg bg-white px-2.5 py-1 font-mono text-[12px] text-amber-950 ring-1 ring-inset ring-amber-200">
+                    {id}
+                  </code>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <Link to="/membros/studio/automacoes#produtos" className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1d1d1f] hover:underline">
+        Ver todos os produtos do checkout em Automações <ArrowRight size={14} />
+      </Link>
+    </Card>
   );
 }

@@ -10,7 +10,7 @@
 | `/membros/minha-colecao` · `/suporte` · `/perfil` | Biblioteca, suporte (WhatsApp/FAQ) e conta |
 | `/membros/studio` | Studio do produtor (só para o login do `/admin`, com 2FA) |
 
-**No Studio:** coleções (capa, banner, cor, selo, preço), módulos e aulas (arrastar para ordenar; vídeo por link do YouTube/Vimeo/Panda/Bunny/Drive ou upload protegido), materiais para download, seções da home (seleção manual, Top 10, coleção do membro, upsell…), aparência (logo, cor, banners com imagem ou vídeo, tela de login, suporte e FAQ), membros (adicionar, importar lista, liberar coleções, redefinir senha), e-mails (boas-vindas com prévia ao vivo e envio de teste) e integrações (webhook do checkout + histórico).
+**No Studio:** coleções (capa, banner, cor, selo, preço), módulos e aulas (arrastar para ordenar; vídeo por link do YouTube/Vimeo/Panda/Bunny/Drive ou upload protegido), materiais para download, seções da home (seleção manual, Top 10, coleção do membro, upsell…), aparência (logo, cor, banners com imagem ou vídeo, tela de login, suporte e FAQ), membros (editar, liberar/remover coleções, senha, link de redefinição, reenviar acesso, bloquear, ações em massa), automações (webhook, regras, senha dos alunos, produtos do checkout, venda de teste), e-mails (SMTP ou Resend, modelos de boas-vindas e de acesso retirado em modo visual ou código HTML, prévia e teste) e registros (cada venda com os dados recebidos e cada e-mail enviado ou com falha).
 
 **Editar na própria página:** logado como produtor, a home mostra o botão **Editar página** (ou abra `/membros?editar=1`). Dá para mudar título e subtítulo das seções clicando neles, subir/descer, ocultar, excluir, adicionar seções em qualquer posição, escolher e reordenar as coleções de cada seção e editar/criar/remover banners — tudo salvo na hora.
 
@@ -33,20 +33,29 @@ Tudo ativado no Supabase (projeto `ibsnizsdascywkonvcvu`) em 09/10/2026 — migr
 
 Para usar, depois do deploy: entre em `/membros/studio` com o login do `/admin`, preencha **Aparência → Suporte** (WhatsApp), monte as coleções, importe os alunos em **Membros → Importar lista** e cadastre o link de **Integrações** no seu checkout (informando o ID do produto em cada coleção, aba **Acesso e venda**).
 
-## E-mail de boas-vindas (Resend)
+## Automações (Studio → Automações)
 
-A cada compra aprovada no GGCheckout, o webhook libera as coleções, cria a conta do comprador e envia um e-mail com o login e uma senha provisória (cliente que já tem conta recebe só o aviso das coleções novas). Webhooks repetidos não reenviam o e-mail.
+- **Webhook:** um link só para todas as vendas. No GGCheckout: *Integrações → Webhooks* → cole o link → eventos *PIX pago*, *Cartão pago*, *PIX/Cartão reembolsado* e *chargeback*. Se pedir *Secret*, use o código depois de `token=` (o servidor aceita o token no link, no header `x-secret` ou em `Authorization: Bearer`). Funciona também com Hotmart, Kiwify, Cakto, Eduzz, Perfect Pay, Ticto, Yampi, CartPanda, Shopify e Stripe.
+- **Regras:** liberar na compra aprovada, retirar no reembolso, retirar no chargeback, pausar tudo, e juntar compras seguidas num só e-mail.
+- **Produtos do checkout (aprendizado automático):** todo produto que chega num webhook aparece sozinho, com nome, plataforma e vendas. Basta ligar o ID às coleções (um ID pode liberar várias). Itens como o "carrinho" podem ser ignorados. Cada produto pode ter um **e-mail próprio**.
+- **Senha dos alunos:** aleatória (padrão, enviada por e-mail), senha padrão ou CPF — com a opção de **exigir uma senha nova no primeiro acesso** (o conteúdo só abre depois da troca; a regra vale no banco, não só na tela).
+- **Venda de teste:** escolha produtos e um e-mail e veja o fluxo inteiro (liberação, conta e e-mail) sem pagar nada.
 
-1. Crie uma conta grátis em [resend.com](https://resend.com) (3.000 e-mails/mês, 100/dia).
-2. **Domains → Add Domain** → `gorgpresets.site` (região São Paulo) → copie os registros DNS (MX e TXT `send`, TXT `resend._domainkey`) para o provedor do domínio → **Verify**. Recomendado: um TXT `_dmarc` com `v=DMARC1; p=none;`.
-3. **API Keys → Create API Key** (permissão *Sending access*) e cole em **Studio → E-mails**. A chave fica no banco, só a Edge Function lê.
-4. Em **Studio → E-mails**, preencha o remetente (ex: `acesso@gorgpresets.site`), ajuste o texto e clique em **Enviar teste**.
+## E-mails (Studio → E-mails)
 
-Se o envio falhar (ex: domínio ainda não verificado), o acesso é liberado mesmo assim e o comprador entra pelo **Primeiro acesso**; o motivo aparece em **Integrações → Últimos eventos**. O "Esqueci minha senha" também passa a sair pelo Resend.
+- **Envio:** pelo seu próprio e-mail via **SMTP** (Hostinger: `smtp.hostinger.com`, porta **465**, SSL, usuário = o e-mail) ou pela API do **Resend**. As portas 25 e 587 são bloqueadas no Supabase — use 465. O servidor testa o login antes de salvar; a senha fica guardada só no servidor.
+- **Remetente:** nome, e-mail (com SMTP, o mesmo da conta), responder-para e cópia oculta (BCC).
+- **Modelos:** boas-vindas (acesso liberado, com login e senha provisória para quem é novo) e acesso retirado (reembolso/chargeback), cada um no modo **visual** ou em **código HTML**, com variáveis (`{primeiro_nome}`, `{produtos}`, `{senha}`, `{link}`, blocos prontos como `{bloco_acesso}`), prévia ao vivo (computador/celular) e envio de teste.
+- Se o envio falhar, o acesso é liberado mesmo assim: sem senha conhecida a conta não fica criada pela metade e o comprador entra pelo **Primeiro acesso**. Falhas temporárias fazem o checkout reenviar o webhook.
 
-## GGCheckout
+## Registros (Studio → Registros)
 
-Em **Integrações → Webhooks** do GGCheckout, cadastre o link de **Studio → Integrações** com os eventos *PIX pago*, *Cartão pago*, *PIX/Cartão reembolsado* e *chargeback*. Se pedir um *Secret*, use o código depois de `token=` (o servidor aceita o token no link, no header `x-secret` ou em `Authorization: Bearer`). Em cada coleção, informe o ID do produto do GGCheckout em **Acesso e venda**.
+- **Vendas:** cada webhook com o que foi lido (nome, e-mail, telefone, CPF, pedido, valor, pagamento, evento, plataforma), os produtos detectados (ligados, ignorados ou sem coleção — com "ligar" em um clique), as coleções afetadas, a situação do e-mail e o payload bruto. Dá para **reprocessar** um evento (ex: depois de ligar um produto), filtrar e limpar.
+- **E-mails:** cada envio com status (enviado ou o motivo da falha), o e-mail exatamente como foi enviado e **reenviar**.
+
+## Membros (Studio → Membros)
+
+Lista com coleções, situação (ativo, sem conta, bloqueado, troca de senha pendente) e último acesso; filtros, busca, seleção múltipla com ações em massa; painel do membro para editar nome/e-mail, liberar/remover coleções (selecionar todas), definir senha, enviar link de redefinição, reenviar acesso (com a senha nova para mandar por WhatsApp), bloquear/desbloquear, excluir e ver o histórico de vendas e e-mails da pessoa.
 
 Opcional, no painel do Supabase:
 
@@ -54,13 +63,13 @@ Opcional, no painel do Supabase:
 - **Authentication → Sign In / Providers:** desligar *Allow new users to sign up* (não é mais um risco, só evita contas soltas).
 - Apagar a função `create-pix` e o segredo `BUCKPAY_API_TOKEN` (a ferramenta usada aqui não consegue excluir). Gere um token novo na BuckPay: o antigo esteve escrito no código da função.
 
-> Vídeos: o upload direto respeita o limite de arquivo do seu plano Supabase (50 MB no gratuito). Para aulas longas, use YouTube não listado, Vimeo ou Panda Video — basta colar o link.
-
 ## Segurança
 
 - Todas as regras ficam no banco (RLS): o aluno só lê aulas, materiais e vídeos das coleções que comprou; vídeos e arquivos privados são entregues por URL assinada temporária.
 - Editar conteúdo exige ser produtor **e** ter passado pelo 2FA.
 - O acesso é por e-mail: liberar uma coleção para um e-mail funciona mesmo antes de a pessoa criar a conta, e só vale para contas criadas pela área de membros.
+- Conta bloqueada ou com troca de senha pendente não lê conteúdo (regra no banco). Senhas de SMTP, chave do Resend, senha padrão e token do webhook ficam em uma tabela que só o servidor lê.
+- "Esqueci minha senha" tem limite de tentativas e responde igual para qualquer e-mail (não revela quem é cliente).
 - O `/admin` da loja recusa contas que não são de produtor (alunos também têm login) e as tabelas da loja só aceitam escrita do produtor.
 
 ## Código
@@ -74,5 +83,7 @@ src/members/
   studio/               Studio do produtor (páginas, editor de aulas, kit de UI)
   studio/inline/        modo "Editar página" da home (carregado só para o produtor)
 supabase/migrations/    tabelas, RLS e storage (já aplicadas)
-supabase/functions/members-api/   webhook, criação de contas, primeiro acesso, recuperação de senha, e-mails (email.ts = modelo usado no envio e na prévia do Studio)
+supabase/functions/members-api/   index.ts (webhook, contas, membros, e-mails, registros), sale.ts (leitor universal do payload),
+                                  mailer.ts (SMTP e Resend), email.ts (modelos — também usados na prévia do Studio),
+                                  automation.ts (regras da automação)
 ```

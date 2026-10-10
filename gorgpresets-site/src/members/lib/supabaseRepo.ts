@@ -7,7 +7,10 @@ import { SetupRequiredError } from "./repo";
 import type {
   Attachment,
   AuthSnapshot,
-  EmailStatus,
+  CheckoutItem,
+  EmailLog,
+  EmailProviderStatus,
+  EmailTemplate,
   Grant,
   Lesson,
   Material,
@@ -21,6 +24,8 @@ import type {
   WebhookLog,
 } from "./types";
 import { DEFAULT_SETTINGS } from "./defaults";
+import { mergeEmailSettings } from "../../../supabase/functions/members-api/email";
+import { mergeAutomation } from "../../../supabase/functions/members-api/automation";
 import { normalizeEmail, uid } from "./format";
 
 const metaEnv = (import.meta as unknown as { env: Record<string, string | undefined> }).env;
@@ -69,6 +74,7 @@ const translateAuthError = (message: string) => {
   if (/invalid totp|invalid code|expired/i.test(message)) return "Código inválido ou expirado.";
   if (/should be at least/i.test(message)) return "A senha precisa ter pelo menos 6 caracteres.";
   if (/same.*password|different from the old/i.test(message)) return "A nova senha precisa ser diferente da atual.";
+  if (/banned/i.test(message)) return "Seu acesso está bloqueado. Fale com o suporte.";
   return message;
 };
 
@@ -223,10 +229,63 @@ function mergeSettings(data: Partial<PortalSettings> | null | undefined): Portal
     ...d,
     login: { ...DEFAULT_SETTINGS.login, ...(d.login || {}) },
     support: { ...DEFAULT_SETTINGS.support, ...(d.support || {}) },
-    email: { ...DEFAULT_SETTINGS.email, ...(d.email && typeof d.email === "object" ? d.email : {}) },
+    email: mergeEmailSettings(d.email),
+    automation: mergeAutomation(d.automation),
     heroSlides: Array.isArray(d.heroSlides) ? d.heroSlides : [],
   };
 }
+
+const toWebhookLog = (r: DbRow): WebhookLog => ({
+  id: r.id,
+  receivedAt: r.received_at,
+  status: r.status || "",
+  message: r.message || "",
+  email: r.email || "",
+  payload: r.payload,
+  event: r.event || "",
+  platform: r.platform || "",
+  orderId: r.order_id || "",
+  buyerName: r.buyer_name || "",
+  buyerPhone: r.buyer_phone || "",
+  buyerDocument: r.buyer_document || "",
+  amount: r.amount === null || r.amount === undefined ? null : Number(r.amount),
+  paymentMethod: r.payment_method || "",
+  items: Array.isArray(r.items) ? r.items : [],
+  productIds: r.product_ids || [],
+  emailStatus: r.email_status || "",
+  emailLogId: r.email_log_id || null,
+  replayOf: r.replay_of || null,
+});
+
+const toEmailLog = (r: DbRow): EmailLog => ({
+  id: r.id,
+  createdAt: r.created_at,
+  kind: r.kind || "",
+  to: r.to_email || "",
+  subject: r.subject || "",
+  status: r.status === "failed" ? "failed" : "sent",
+  provider: r.provider || "",
+  error: r.error || "",
+  messageId: r.message_id || "",
+  webhookLogId: r.webhook_log_id || null,
+  meta: r.meta && typeof r.meta === "object" ? r.meta : {},
+});
+
+const toCheckoutItem = (r: DbRow): CheckoutItem => ({
+  id: r.id,
+  externalId: r.external_id,
+  title: r.title || "",
+  platform: r.platform || "",
+  productIds: r.product_ids || [],
+  ignored: !!r.ignored,
+  email: r.email ? (mergeEmailSettings({ welcome: r.email }).welcome as EmailTemplate) : null,
+  salesCount: r.sales_count || 0,
+  lastSeenAt: r.last_seen_at || null,
+  createdAt: r.created_at,
+});
+
+/** Busca em texto para o filtro dos históricos (vírgulas e parênteses quebram o filtro "or"). */
+const searchTerm = (v: string) => v.trim().replace(/[,()%*]/g, " ").trim();
 
 // ── Edge Function ───────────────────────────────────────────────────
 async function invoke<T = Record<string, unknown>>(body: Record<string, unknown>): Promise<T> {
@@ -326,8 +385,12 @@ export const supabaseRepo: MembersRepo = {
     const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
     const needsMfa = !!aal && aal.nextLevel === "aal2" && aal.currentLevel !== "aal2";
 
-    const { data: producerRow } = await sb.from("member_admins").select("user_id").eq("user_id", u.id).maybeSingle();
+    const [{ data: producerRow }, { data: profile }] = await Promise.all([
+      sb.from("member_admins").select("user_id").eq("user_id", u.id).maybeSingle(),
+      sb.from("member_profiles").select("must_change_password").eq("user_id", u.id).maybeSingle(),
+    ]);
     const admin = producerRow ? await isAdmin(u.id) : false;
+    const mustChangePassword = !producerRow && (profile ? !!profile.must_change_password : u.app_metadata?.must_change_password === true);
 
     if (touchedFor !== u.id) {
       touchedFor = u.id;
@@ -339,6 +402,7 @@ export const supabaseRepo: MembersRepo = {
         email: (u.email || "").toLowerCase(),
         name: (u.user_metadata?.full_name as string) || "",
         isAdmin: admin,
+        mustChangePassword,
       },
       needsMfa: !!producerRow && needsMfa,
     };
@@ -392,6 +456,14 @@ export const supabaseRepo: MembersRepo = {
   async updatePassword(password) {
     const { error } = await client().auth.updateUser({ password });
     if (error) throw new Error(translateAuthError(error.message));
+  },
+
+  async completePasswordChange(password) {
+    const sb = client();
+    const { error } = await sb.auth.updateUser({ password });
+    if (error) throw new Error(translateAuthError(error.message));
+    await invoke({ action: "password_changed" });
+    await sb.auth.refreshSession();
   },
 
   async updateName(name) {
@@ -580,12 +652,16 @@ export const supabaseRepo: MembersRepo = {
           grants: [],
           createdAt: p.created_at,
           lastSeenAt: p.last_seen_at,
+          phone: p.phone || "",
+          document: p.document || "",
+          blocked: !!p.blocked,
+          mustChangePassword: !!p.must_change_password,
         }),
       );
     grants.forEach((g) => {
       const entry =
         byEmail.get(g.email) ||
-        ({ email: g.email, name: "", hasAccount: false, grants: [], createdAt: g.createdAt, lastSeenAt: null } as MemberSummary);
+        ({ email: g.email, name: "", hasAccount: false, grants: [], createdAt: g.createdAt, lastSeenAt: null, phone: "", document: "", blocked: false, mustChangePassword: false } as MemberSummary);
       entry.grants.push(g);
       if (g.createdAt < entry.createdAt) entry.createdAt = g.createdAt;
       byEmail.set(g.email, entry);
@@ -640,20 +716,109 @@ export const supabaseRepo: MembersRepo = {
     }
   },
 
-  async setMemberPassword(email, password) {
-    await invoke({ action: "set_password", email: normalizeEmail(email), password });
+  async setMemberPassword(email, password, forceChange) {
+    await invoke({ action: "set_password", email: normalizeEmail(email), password, forceChange: !!forceChange });
   },
 
-  async listWebhookLogs(): Promise<WebhookLog[]> {
-    const data = check(await client().from("member_webhook_logs").select("*").order("received_at", { ascending: false }).limit(50));
-    return (data as DbRow[]).map((r) => ({
-      id: r.id,
-      receivedAt: r.received_at,
-      status: r.status,
-      message: r.message,
-      email: r.email,
-      payload: r.payload,
-    }));
+  async sendPasswordReset(email) {
+    await invoke({ action: "send_reset", email: normalizeEmail(email) });
+  },
+
+  async resendAccess(email) {
+    const res = await invoke<{ password: string; emailed: boolean; emailError: string }>({ action: "resend_access", email: normalizeEmail(email) });
+    return { password: res.password, emailed: !!res.emailed, emailError: res.emailError || "" };
+  },
+
+  async setMemberBlocked(email, blocked) {
+    await invoke({ action: "set_blocked", email: normalizeEmail(email), blocked });
+  },
+
+  async updateMember(email, patch) {
+    const res = await invoke<{ email: string }>({ action: "update_member", email: normalizeEmail(email), name: patch.name, newEmail: patch.newEmail ? normalizeEmail(patch.newEmail) : undefined });
+    return res.email;
+  },
+
+  async listWebhookLogs(filter = {}): Promise<WebhookLog[]> {
+    let query = client().from("member_webhook_logs").select("*").order("received_at", { ascending: false }).limit(filter.limit || 50);
+    if (filter.status) query = query.eq("status", filter.status);
+    if (filter.before) query = query.lt("received_at", filter.before);
+    const term = searchTerm(filter.search || "");
+    if (term) query = query.or(`email.ilike.%${term}%,buyer_name.ilike.%${term}%,order_id.ilike.%${term}%`);
+    return (check(await query) as DbRow[]).map(toWebhookLog);
+  },
+
+  async replayWebhook(id) {
+    return invoke<{ ok: boolean; result: unknown }>({ action: "webhook_replay", id });
+  },
+
+  async clearWebhookLogs() {
+    check(await client().from("member_webhook_logs").delete().gte("received_at", "1970-01-01"));
+  },
+
+  async listEmailLogs(filter = {}) {
+    let query = client()
+      .from("member_email_logs")
+      .select("id, created_at, kind, to_email, subject, status, provider, error, message_id, webhook_log_id, meta")
+      .order("created_at", { ascending: false })
+      .limit(filter.limit || 50);
+    if (filter.status) query = query.eq("status", filter.status);
+    if (filter.kind) query = query.eq("kind", filter.kind);
+    if (filter.before) query = query.lt("created_at", filter.before);
+    const term = searchTerm(filter.search || "");
+    if (term) query = query.or(`to_email.ilike.%${term}%,subject.ilike.%${term}%`);
+    return (check(await query) as DbRow[]).map(toEmailLog);
+  },
+
+  async getEmailHtml(id) {
+    const data = check(await client().from("member_email_logs").select("html").eq("id", id).maybeSingle()) as DbRow | null;
+    return (data?.html as string) || "";
+  },
+
+  async resendEmail(id, to) {
+    await invoke({ action: "email_resend", id, to: to ? normalizeEmail(to) : undefined });
+  },
+
+  async clearEmailLogs() {
+    check(await client().from("member_email_logs").delete().gte("created_at", "1970-01-01"));
+  },
+
+  async listCheckoutItems() {
+    const data = check(await client().from("member_checkout_items").select("*").order("last_seen_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }));
+    return (data as DbRow[]).map(toCheckoutItem);
+  },
+
+  async saveCheckoutItem(item) {
+    const row = {
+      id: item.id,
+      external_id: item.externalId.trim(),
+      title: item.title.trim(),
+      platform: item.platform,
+      product_ids: item.productIds,
+      ignored: item.ignored,
+      email: item.email,
+    };
+    const { data, error } = await client().from("member_checkout_items").upsert(row).select().single();
+    if (error) {
+      if (error.code === "23505") throw new Error("Já existe um produto do checkout com esse ID.");
+      throw new Error(error.message);
+    }
+    return toCheckoutItem(data as DbRow);
+  },
+
+  async deleteCheckoutItem(id) {
+    check(await client().from("member_checkout_items").delete().eq("id", id));
+  },
+
+  async getAutomationStatus() {
+    return invoke<{ hasFixedPassword: boolean }>({ action: "automation_status" });
+  },
+
+  async saveFixedPassword(password) {
+    return invoke<{ hasFixedPassword: boolean }>({ action: "automation_save_password", password });
+  },
+
+  async simulateSale(input) {
+    return invoke<{ ok: boolean; result: unknown }>({ action: "webhook_simulate", ...input, email: normalizeEmail(input.email) });
   },
 
   async getStats() {
@@ -688,15 +853,19 @@ export const supabaseRepo: MembersRepo = {
   },
 
   async getEmailStatus() {
-    return invoke<EmailStatus>({ action: "email_status" });
+    return invoke<EmailProviderStatus>({ action: "email_status" });
   },
 
-  async saveEmailKey(key) {
-    return invoke<EmailStatus>({ action: "email_save_key", key });
+  async saveEmailProvider(input) {
+    return invoke<EmailProviderStatus>({ action: "email_save_provider", ...input });
   },
 
-  async sendTestEmail(to, settings, existingAccount) {
-    await invoke({ action: "email_test", to, settings, existingAccount });
+  async testEmailConnection() {
+    return invoke<{ ok: boolean; message: string }>({ action: "email_test_connection" });
+  },
+
+  async sendTestEmail({ to, kind, template, settings, existingAccount }) {
+    await invoke({ action: "email_test", to: normalizeEmail(to), kind, template, settings, existingAccount });
   },
 
   async upload(file, { visibility, productId, folder, onProgress }) {

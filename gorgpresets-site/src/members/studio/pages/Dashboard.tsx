@@ -8,7 +8,7 @@ import { firstName, relativeDate, sortByOrder } from "../../lib/format";
 import { PosterArt } from "../../components/PosterArt";
 import { Avatar } from "../../components/ui";
 import { Badge, Button, Card, PageHeader } from "../ui";
-import { useMembersList, useStats, useStudioAction } from "../hooks";
+import { useMembersList, useStats, useStudioAction, useStudioQuery } from "../hooks";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -19,6 +19,8 @@ export default function Dashboard() {
   const repo = useRepo();
   const run = useStudioAction();
   const navigate = useNavigate();
+  const { data: checkoutItems } = useStudioQuery("checkout-items", () => repo.listCheckoutItems());
+  const { data: emailStatus } = useStudioQuery("email-status", () => repo.getEmailStatus());
 
   const createProduct = async () => {
     const draft = { ...blankProduct(catalog.products.length), title: "Nova coleção", slug: `nova-colecao-${Date.now().toString(36)}`, published: false };
@@ -31,7 +33,8 @@ export default function Dashboard() {
     { done: catalog.products.length > 0, label: "Crie sua primeira coleção", to: "/membros/studio/colecoes" },
     { done: catalog.lessons.length > 0, label: "Adicione módulos e aulas", to: "/membros/studio/colecoes" },
     { done: catalog.rows.length > 0, label: "Monte as seções da home", to: "/membros/studio/vitrines" },
-    { done: catalog.products.some((p) => p.externalIds.length > 0), label: "Conecte o checkout (webhook)", to: "/membros/studio/integracoes" },
+    { done: (checkoutItems?.some((i) => i.productIds.length > 0) ?? false) || catalog.products.some((p) => p.externalIds.length > 0), label: "Conecte o checkout (webhook)", to: "/membros/studio/automacoes" },
+    { done: !!emailStatus?.ready, label: "Configure o envio de e-mail", to: "/membros/studio/emails" },
     { done: (members?.length || 0) > 0, label: "Libere o acesso do primeiro membro", to: "/membros/studio/membros" },
   ];
   const doneSteps = steps.filter((s) => s.done).length;

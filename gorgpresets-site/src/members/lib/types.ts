@@ -2,9 +2,10 @@
 // Os nomes aqui são camelCase; o mapeamento para as colunas snake_case do
 // Supabase fica em supabaseRepo.ts.
 
-import type { EmailSettings } from "../../../supabase/functions/members-api/email";
+import type { EmailSettings, EmailTemplate, TemplateKind } from "../../../supabase/functions/members-api/email";
+import type { AutomationSettings, PasswordMode } from "../../../supabase/functions/members-api/automation";
 
-export type { EmailSettings };
+export type { AutomationSettings, EmailSettings, EmailTemplate, PasswordMode, TemplateKind };
 export type ID = string;
 
 export interface HeroSlide {
@@ -54,8 +55,10 @@ export interface PortalSettings {
     faq: FaqItem[];
   };
   footerText: string;
-  /** E-mail de boas-vindas enviado a cada compra aprovada. */
+  /** Envio de e-mails (remetente, provedor) e modelos de boas-vindas e reembolso. */
   email: EmailSettings;
+  /** O que fazer a cada venda, reembolso e chargeback do checkout. */
+  automation: AutomationSettings;
 }
 
 export interface Product {
@@ -168,6 +171,8 @@ export interface MemberUser {
   email: string;
   name: string;
   isAdmin: boolean;
+  /** Precisa criar uma senha nova antes de ver o conteúdo. */
+  mustChangePassword: boolean;
 }
 
 export interface AuthSnapshot {
@@ -192,15 +197,36 @@ export interface MemberSummary {
   grants: Grant[];
   createdAt: string;
   lastSeenAt: string | null;
+  phone: string;
+  document: string;
+  blocked: boolean;
+  /** Ainda precisa trocar a senha provisória/padrão. */
+  mustChangePassword: boolean;
 }
 
 export interface WebhookLog {
   id: ID;
   receivedAt: string;
+  /** granted | revoked | unmatched | ignored | paused | error */
   status: string;
   message: string;
   email: string;
   payload: unknown;
+  event: string;
+  platform: string;
+  orderId: string;
+  buyerName: string;
+  buyerPhone: string;
+  buyerDocument: string;
+  amount: number | null;
+  paymentMethod: string;
+  items: WebhookLogItem[];
+  /** Coleções afetadas. */
+  productIds: ID[];
+  /** "" | sent | failed | skipped */
+  emailStatus: string;
+  emailLogId: ID | null;
+  replayOf: ID | null;
 }
 
 export interface PortalStats {
@@ -218,15 +244,100 @@ export interface AddMemberInput {
   productIds: ID[];
 }
 
-/** Situação da conexão com o Resend (provedor de e-mail). */
-export interface EmailStatus {
-  configured: boolean;
-  /** "env" = segredo no Supabase; "studio" = chave salva pelo Studio. */
-  source: "env" | "studio" | null;
-  hint: string | null;
-  /** ok = chave completa; send_only = chave só de envio (válida); invalid; unreachable. */
-  keyCheck: "ok" | "send_only" | "invalid" | "unreachable" | null;
-  domains: Array<{ name: string; status: string }> | null;
+/** Situação do envio de e-mails (SMTP ou Resend). Senhas e chaves nunca voltam para o navegador. */
+export interface EmailProviderStatus {
+  provider: "smtp" | "resend";
+  /** Pronto para enviar com o provedor escolhido. */
+  ready: boolean;
+  /** Remetente efetivo. */
+  from: { name: string; email: string };
+  smtp: { configured: boolean; host: string; port: number; security: SmtpSecurity; username: string; hasPassword: boolean };
+  resend: {
+    configured: boolean;
+    /** "env" = segredo no Supabase; "studio" = chave salva pelo Studio. */
+    source: "env" | "studio" | null;
+    hint: string | null;
+    keyCheck: "ok" | "send_only" | "invalid" | "unreachable" | null;
+    domains: Array<{ name: string; status: string }> | null;
+  };
+}
+
+export type SmtpSecurity = "ssl" | "starttls" | "none";
+
+export interface SmtpInput {
+  host: string;
+  port: number;
+  security: SmtpSecurity;
+  username: string;
+  /** Vazio mantém a senha já salva. */
+  password?: string;
+}
+
+/** Produto como o checkout o envia (aprendido pelo webhook ou cadastrado à mão). */
+export interface CheckoutItem {
+  id: ID;
+  externalId: string;
+  title: string;
+  platform: string;
+  /** Coleções que este produto libera. */
+  productIds: ID[];
+  /** Ignorado (ex: o produto "carrinho" do checkout). */
+  ignored: boolean;
+  /** E-mail de boas-vindas próprio (null = usa o geral). */
+  email: EmailTemplate | null;
+  salesCount: number;
+  lastSeenAt: string | null;
+  createdAt: string;
+}
+
+export interface WebhookLogItem {
+  id: string;
+  title: string;
+  type: string;
+  matched: boolean;
+  ignored: boolean;
+  collections: ID[];
+}
+
+export interface WebhookLogFilter {
+  status?: string;
+  search?: string;
+  limit?: number;
+  /** Paginação: só eventos anteriores a esta data. */
+  before?: string;
+}
+
+export interface EmailLog {
+  id: ID;
+  createdAt: string;
+  /** welcome | refund | access | reset | test */
+  kind: string;
+  to: string;
+  subject: string;
+  status: "sent" | "failed";
+  provider: string;
+  error: string;
+  messageId: string;
+  webhookLogId: ID | null;
+  meta: Record<string, unknown>;
+}
+
+export interface EmailLogFilter {
+  status?: string;
+  kind?: string;
+  search?: string;
+  limit?: number;
+  before?: string;
+}
+
+export interface SimulateSaleInput {
+  email: string;
+  name: string;
+  phone?: string;
+  document?: string;
+  /** IDs (CheckoutItem.id) dos produtos da venda de teste. */
+  items: ID[];
+  event: "approved" | "refunded";
 }
 
 export interface AddMemberResult {

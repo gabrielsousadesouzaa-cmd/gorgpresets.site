@@ -1,8 +1,10 @@
 import { lazy, Suspense, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
-import { Database, LogOut, PlayCircle, ShieldCheck } from "lucide-react";
+import { motion } from "framer-motion";
+import { Database, Eye, EyeOff, KeyRound, LogOut, PlayCircle, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import "./members.css";
-import { enableDemoMode, MembersProvider, useAuth, useCatalog, useRepo, useSettings } from "./context/MembersContext";
+import { enableDemoMode, MembersProvider, useAuth, useCatalog, useRefreshPortal, useRepo, useSettings } from "./context/MembersContext";
 import { SetupRequiredError } from "./lib/repo";
 import { BRAND_RED } from "./lib/defaults";
 import { hexToRgbTriplet } from "./lib/format";
@@ -95,6 +97,7 @@ function RequireMember() {
   if (error instanceof SetupRequiredError) return <SetupRequired />;
   if (!user) return <Navigate to={`/membros/entrar?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   if (needsMfa) return <MfaScreen />;
+  if (user.mustChangePassword) return <ForcePasswordChange />;
   return <Outlet />;
 }
 
@@ -207,6 +210,93 @@ function MfaScreen() {
           <LogOut size={14} /> Sair
         </button>
       </form>
+    </div>
+  );
+}
+
+/** Senha provisória/padrão: o membro cria a dele antes de ver o conteúdo. */
+function ForcePasswordChange() {
+  const repo = useRepo();
+  const { user, refresh } = useAuth();
+  const refreshPortal = useRefreshPortal();
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (password.length < 6) return setError("A senha precisa ter pelo menos 6 caracteres.");
+    if (password !== confirm) return setError("As duas senhas não são iguais.");
+    setBusy(true);
+    try {
+      await repo.completePasswordChange(password);
+      await refresh();
+      await refreshPortal();
+      toast.success("Senha criada! Bom proveito ✨");
+    } catch (err) {
+      setError((err as Error).message || "Não foi possível salvar a senha.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden px-4 py-16">
+      <div className="absolute -right-40 -top-40 h-[560px] w-[560px] rounded-full bg-ma opacity-25 blur-[160px]" />
+      <motion.form
+        onSubmit={submit}
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="ma-glass relative w-full max-w-[420px] rounded-[2rem] p-8 ring-1 ring-white/10 md:p-10"
+      >
+        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-ma/15 text-ma">
+          <KeyRound />
+        </span>
+        <h1 className="mt-6 text-[1.7rem] font-semibold uppercase leading-[1.02] tracking-[-0.03em]">Crie sua senha</h1>
+        <p className="mt-3 text-sm leading-relaxed text-white/55">
+          {user?.name ? `${user.name.split(" ")[0]}, antes` : "Antes"} de começar, troque a senha provisória por uma só sua. É rapidinho.
+        </p>
+        <div className="mt-7 space-y-3">
+          <div className="relative">
+            <input
+              type={show ? "text" : "password"}
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Nova senha (mín. 6 caracteres)"
+              className={`${darkInput} pr-12`}
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={() => setShow((v) => !v)}
+              className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-white/45 transition-colors hover:text-white"
+              aria-label={show ? "Ocultar senha" : "Mostrar senha"}
+            >
+              {show ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
+          <input
+            type={show ? "text" : "password"}
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Repita a nova senha"
+            className={darkInput}
+          />
+        </div>
+        {error && <p className="mt-3 rounded-xl bg-ma/15 px-4 py-3 text-[13px] text-red-200 ring-1 ring-ma/30">{error}</p>}
+        <Btn type="submit" size="lg" className="mt-6 w-full" loading={busy}>
+          Salvar e entrar
+        </Btn>
+        <button type="button" onClick={() => repo.signOut()} className="mx-auto mt-5 flex items-center gap-1.5 text-[13px] text-white/50 hover:text-white">
+          <LogOut size={14} /> Sair
+        </button>
+      </motion.form>
     </div>
   );
 }
