@@ -154,10 +154,13 @@ const safeUrl = (value?: string) => {
 /** Controles e caracteres invisíveis de direção/largura zero (mantém ZWJ/ZWNJ, usados nos emojis). */
 const INVISIBLE = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u0084\u0086-\u009f\u00ad\u200b\u200e\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/g;
 
+/** Quebras de linha de todo tipo, inclusive as do Unicode (em string: o separador de linha não pode ir cru num /regex/). */
+const LINE_BREAKS = new RegExp("[\t\n\r\u0085\u2028\u2029]+", "g");
+
 /** Uma linha só (sem CR/LF, controles nem caracteres invisíveis), com limite de tamanho. */
 function oneLine(value: unknown, max = 200): string {
   const text = str(value)
-    .replace(/[\t\n\r\u0085\u2028\u2029]+/g, " ")
+    .replace(LINE_BREAKS, " ")
     .replace(INVISIBLE, "")
     .replace(/\s{2,}/g, " ")
     .trim();
