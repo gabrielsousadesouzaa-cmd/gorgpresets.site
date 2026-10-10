@@ -43,6 +43,7 @@ import { Badge, Button, ButtonLink, Card, CopyButton, EmptyState, Field, IconBut
 import { useStudioAction, useStudioQuery } from "../hooks";
 import { Tabs } from "../components/Tabs";
 import { EmailPreview } from "../components/EmailPreview";
+import { EMAIL_LOGO_URL, emailPortalUrl, mp, STORE_CONTACT_URL } from "../../lib/paths";
 
 // ── Constantes ──────────────────────────────────────────────────────
 type TabId = "envio" | "boas-vindas" | "acesso-retirado";
@@ -54,8 +55,8 @@ type RenderContext = Parameters<typeof renderEmail>[2];
 type Tone = "amber" | "red" | "green" | "blue" | "neutral";
 
 const STATUS_KEY = ["ma", "studio", "email-status"];
-const LOGS_URL = "/membros/studio/registros?aba=emails";
-const AUTOMATIONS_URL = "/membros/studio/automacoes";
+const LOGS_URL = mp("/studio/registros?aba=emails");
+const AUTOMATIONS_URL = mp("/studio/automacoes");
 const BLOCKED_PORTS = [25, 587];
 const MAX_BCC = 5;
 
@@ -118,7 +119,6 @@ const DOMAIN_STATUS: Record<string, { label: string; tone: "green" | "amber" | "
 // ── Utilidades ──────────────────────────────────────────────────────
 const splitEmails = (value: string) => String(value || "").split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
 const sameEmail = (a: string, b: string) => normalizeEmail(a) === normalizeEmail(b);
-const origin = () => (typeof window !== "undefined" ? window.location.origin : "https://gorgpresets.site");
 
 /** Insere texto no cursor mantendo o “desfazer” (Ctrl+Z) do navegador. */
 function insertAtCursor(el: Editable, text: string, fallback: (value: string, caret: number) => void) {
@@ -1595,7 +1595,7 @@ function TemplateTab({
   // Prévia ao vivo com dados de exemplo (o mesmo modelo que o servidor envia).
   const previewTemplate = useDeferredValue(template);
   const ctx = useMemo<RenderContext>(() => {
-    const base = origin();
+    const portal = emailPortalUrl();
     const email = isValidEmail(testTo) ? normalizeEmail(testTo) : "ana@exemplo.com";
     const whatsapp = String(settings.support.whatsapp || "").replace(/\D/g, "");
     return {
@@ -1605,12 +1605,12 @@ function TemplateTab({
       phone: "5511999999999",
       orderId: "TESTE-123",
       products: sampleProducts,
-      link: `${base}/membros/entrar?email=${encodeURIComponent(email)}`,
+      link: `${portal}/entrar?email=${encodeURIComponent(email)}`,
       password: kind === "welcome" && audience === "new" ? "Exemplo-7Kq2" : undefined,
       mustChangePassword: automation.forcePasswordChange,
-      logoUrl: `${base}/logo.png`,
+      logoUrl: EMAIL_LOGO_URL,
       accent: settings.accentColor,
-      supportUrl: whatsapp ? `https://wa.me/${whatsapp}` : `${base}/membros/suporte`,
+      supportUrl: whatsapp ? `https://wa.me/${whatsapp}` : STORE_CONTACT_URL,
     };
   }, [testTo, settings.support.whatsapp, settings.brandName, settings.accentColor, sampleProducts, kind, audience, automation.forcePasswordChange]);
   const preview = useMemo(() => safeRender(kind, previewTemplate, ctx), [kind, previewTemplate, ctx]);

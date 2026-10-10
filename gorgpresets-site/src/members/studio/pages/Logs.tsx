@@ -50,6 +50,7 @@ import { useStudioAction, useStudioQuery } from "../hooks";
 import { Tabs } from "../components/Tabs";
 import { EmailPreview } from "../components/EmailPreview";
 import { blankCheckoutItem, MapItemModal } from "../components/MapItemModal";
+import { mp } from "../../lib/paths";
 
 // ── Constantes e utilidades ─────────────────────────────────────────
 type Tone = "neutral" | "green" | "amber" | "red" | "blue" | "dark";
@@ -61,9 +62,9 @@ type FilterOption = { value: string; label: string; dot?: string };
 
 const PAGE = 50;
 const RECENT = 200;
-const AUTOMATIONS_URL = "/membros/studio/automacoes";
-const EMAILS_URL = "/membros/studio/emails";
-const MEMBERS_URL = "/membros/studio/membros";
+const AUTOMATIONS_URL = mp("/studio/automacoes");
+const EMAILS_URL = mp("/studio/emails");
+const MEMBERS_URL = mp("/studio/membros");
 const ITEMS_KEY = ["ma", "studio", "checkout-items"];
 /** Avisos que ainda não são uma venda (ex: PIX gerado): reprocessar não libera nada. */
 const NOT_FINAL = /generat|pending|waiting|aguard|gerad|abandon|created/i;

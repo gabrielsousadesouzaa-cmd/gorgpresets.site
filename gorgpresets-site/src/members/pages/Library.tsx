@@ -9,6 +9,7 @@ import { sortByOrder } from "../lib/format";
 import type { Product } from "../lib/types";
 import { PosterArt } from "../components/PosterArt";
 import { ProgressBar, Skeleton } from "../components/ui";
+import { mp } from "../lib/paths";
 
 type Filter = "todas" | "andamento" | "concluidas" | "novas";
 
@@ -88,7 +89,7 @@ export default function Library() {
           <p className="mt-1 text-sm text-white/50">Estéticas que ainda não fazem parte da sua biblioteca.</p>
           <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
             {others.map(({ product }) => (
-              <Link key={product.id} to={`/membros/colecao/${product.slug}`} className="group relative block aspect-[2/3] overflow-hidden rounded-xl opacity-80 ring-1 ring-white/10 transition duration-500 hover:scale-[1.03] hover:opacity-100 hover:ring-white/30">
+              <Link key={product.id} to={mp(`/colecao/${product.slug}`)} className="group relative block aspect-[2/3] overflow-hidden rounded-xl opacity-80 ring-1 ring-white/10 transition duration-500 hover:scale-[1.03] hover:opacity-100 hover:ring-white/30">
                 <PosterArt product={product} />
                 <span className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-ma backdrop-blur">
                   <ShoppingBag size={12} />
@@ -118,7 +119,7 @@ function Stat({ value, label }: { value: number; label: string }) {
 function LibraryCard({ product, percent, done, total, index }: { product: Product; percent: number; done: number; total: number; index: number }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index, 10) * 0.04, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
-      <Link to={`/membros/colecao/${product.slug}`} className="group block">
+      <Link to={mp(`/colecao/${product.slug}`)} className="group block">
         <div className="relative aspect-[2/3] overflow-hidden rounded-2xl ring-1 ring-white/[0.08] transition duration-500 ease-expo group-hover:-translate-y-1.5 group-hover:shadow-[0_30px_60px_-20px_rgba(0,0,0,0.9)] group-hover:ring-white/25">
           <PosterArt product={product} />
           {percent === 100 && (

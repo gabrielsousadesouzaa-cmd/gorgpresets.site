@@ -7,6 +7,7 @@ import { PosterArt } from "../../components/PosterArt";
 import { Badge, Button, Card, EmptyState, PageHeader } from "../ui";
 import { SortableList } from "../Sortable";
 import { useAllMaterials, useStudioAction } from "../hooks";
+import { mp } from "../../lib/paths";
 
 export default function ProductsPage() {
   const { catalog, isLoading } = useCatalog();
@@ -19,7 +20,7 @@ export default function ProductsPage() {
   const create = async () => {
     const draft = { ...blankProduct(products.length), title: "Nova coleção", slug: `nova-colecao-${Date.now().toString(36)}`, published: false };
     const saved = await run(() => repo.saveProduct(draft), { success: "Coleção criada" });
-    if (saved) navigate(`/membros/studio/colecoes/${saved.id}`);
+    if (saved) navigate(mp(`/studio/colecoes/${saved.id}`));
   };
 
   return (
@@ -51,7 +52,7 @@ export default function ProductsPage() {
               return (
                 <div className="flex items-center gap-3 px-3 py-3 md:gap-4 md:px-5">
                   {handle}
-                  <Link to={`/membros/studio/colecoes/${p.id}`} className="group flex min-w-0 flex-1 items-center gap-4">
+                  <Link to={mp(`/studio/colecoes/${p.id}`)} className="group flex min-w-0 flex-1 items-center gap-4">
                     <div className="relative aspect-[2/3] w-12 shrink-0 overflow-hidden rounded-lg ring-1 ring-black/10 md:w-14">
                       <PosterArt product={p} />
                     </div>

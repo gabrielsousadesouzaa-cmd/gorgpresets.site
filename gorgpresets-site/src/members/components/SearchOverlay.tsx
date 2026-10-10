@@ -6,6 +6,7 @@ import { useAccess, useCatalog } from "../context/MembersContext";
 import { formatDuration } from "../lib/format";
 import { PosterArt } from "./PosterArt";
 import { SafeImg } from "./ui";
+import { mp } from "../lib/paths";
 
 const normalize = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -84,7 +85,7 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
                   <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">{query ? "Coleções" : "Sugestões"}</p>
                   <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
                     {results.products.map((p) => (
-                      <Link key={p.id} to={`/membros/colecao/${p.slug}`} onClick={onClose} className="group relative block aspect-[2/3] overflow-hidden rounded-xl ring-1 ring-white/10 transition duration-500 hover:scale-[1.03] hover:ring-white/30">
+                      <Link key={p.id} to={mp(`/colecao/${p.slug}`)} onClick={onClose} className="group relative block aspect-[2/3] overflow-hidden rounded-xl ring-1 ring-white/10 transition duration-500 hover:scale-[1.03] hover:ring-white/30">
                         <PosterArt product={p} />
                         {!owned.has(p.id) && (
                           <span className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white backdrop-blur"><Lock size={12} /></span>
@@ -102,7 +103,7 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
                     {results.lessons.map(({ lesson, product }) => (
                       <Link
                         key={lesson.id}
-                        to={`/membros/colecao/${product.slug}/aula/${lesson.id}`}
+                        to={mp(`/colecao/${product.slug}/aula/${lesson.id}`)}
                         onClick={onClose}
                         className="group flex items-center gap-4 p-3 transition-colors hover:bg-white/[0.05]"
                       >

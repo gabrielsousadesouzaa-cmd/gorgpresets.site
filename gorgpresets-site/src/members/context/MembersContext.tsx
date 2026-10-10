@@ -6,6 +6,7 @@ import { localRepo } from "../lib/localRepo";
 import { supabaseRepo } from "../lib/supabaseRepo";
 import type { Catalog, Progress } from "../lib/types";
 import type { ProgressMap } from "../lib/catalog";
+import { mp } from "../lib/paths";
 
 const DEMO_FLAG = "gorg-members-demo-mode";
 
@@ -28,7 +29,7 @@ export function enableDemoMode() {
   } catch {
     /* ignore */
   }
-  window.location.assign("/membros");
+  window.location.assign(mp("/"));
 }
 
 const RepoContext = createContext<MembersRepo>(localRepo);

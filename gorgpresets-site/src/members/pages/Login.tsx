@@ -9,6 +9,7 @@ import { DEFAULT_SETTINGS } from "../lib/defaults";
 import { isValidEmail } from "../lib/format";
 import { DEMO_ADMIN_EMAIL, DEMO_MEMBER_EMAIL } from "../lib/localRepo";
 import { Btn, darkInput, SafeImg } from "../components/ui";
+import { mp } from "../lib/paths";
 
 type View = "login" | "first" | "forgot" | "sent";
 
@@ -21,7 +22,8 @@ export default function Login() {
   const [params] = useSearchParams();
   // Só volta para páginas da própria área (evita redirecionar para outro site).
   const nextParam = params.get("next") || "";
-  const next = nextParam.startsWith("/membros") && !nextParam.startsWith("//") ? nextParam : "/membros";
+  // Só caminhos desta área ("//x" e "/\x" apontariam para outro site).
+  const next = nextParam.startsWith(mp("/")) && !nextParam.startsWith("//") && !nextParam.includes("\\") ? nextParam : mp("/");
 
   const [view, setView] = useState<View>("login");
   const [email, setEmail] = useState(() => (params.get("email") || "").trim().slice(0, 200));
@@ -47,7 +49,7 @@ export default function Login() {
         if (password.length < 6) throw new Error("A senha precisa ter pelo menos 6 caracteres.");
         await repo.firstAccess(email, password, name.trim());
         toast.success("Conta criada! Bem-vindo(a) 🎉");
-        navigate("/membros", { replace: true });
+        navigate(mp("/"), { replace: true });
       } else if (view === "forgot") {
         await repo.requestPasswordReset(email);
         setView("sent");

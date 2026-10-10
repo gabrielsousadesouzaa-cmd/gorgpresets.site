@@ -5,6 +5,7 @@ import { Info, Play, ShoppingBag, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { HeroSlide, Product } from "../lib/types";
 import { Btn, SafeImg } from "./ui";
+import { mp } from "../lib/paths";
 
 interface HeroCarouselProps {
   slides: HeroSlide[];
@@ -60,7 +61,7 @@ export function HeroCarousel({ slides, products, owned, interval, autoPlay = tru
       window.open(slide.ctaUrl, "_blank", "noopener");
       return;
     }
-    if (product) navigate(`/membros/colecao/${product.slug}${isLocked ? "" : "?play=1"}`);
+    if (product) navigate(mp(`/colecao/${product.slug}${isLocked ? "" : "?play=1"}`));
   };
 
   return (
@@ -182,7 +183,7 @@ export function HeroCarousel({ slides, products, owned, interval, autoPlay = tru
                     size="lg"
                     variant={light ? "outline" : "glass"}
                     className={light ? "text-black ring-black/20 hover:bg-black/5 hover:ring-black/40" : undefined}
-                    onClick={() => navigate(`/membros/colecao/${product.slug}`)}
+                    onClick={() => navigate(mp(`/colecao/${product.slug}`))}
                     icon={<Info size={16} />}
                   >
                     Mais informações

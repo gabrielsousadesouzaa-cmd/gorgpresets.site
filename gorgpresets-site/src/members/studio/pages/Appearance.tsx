@@ -10,6 +10,7 @@ import { SafeImg } from "../../components/ui";
 import { Badge, Button, ButtonLink, Card, ColorField, EmptyState, Field, IconButton, ImageField, Input, Modal, PageHeader, Segmented, Select, Textarea, Toggle, UploadProgress, useConfirm, useUploader } from "../ui";
 import { SortableList } from "../Sortable";
 import { useStudioAction } from "../hooks";
+import { mp } from "../../lib/paths";
 
 export default function AppearancePage() {
   const { data: settings } = useSettings();
@@ -76,7 +77,7 @@ export default function AppearancePage() {
           description="Os destaques que rodam no topo da home. Sem banners, a home destaca automaticamente as coleções do membro."
           actions={
             <>
-              <ButtonLink to="/membros?editar=1" size="sm" variant="secondary" icon={<MousePointerClick size={14} />} className="hidden sm:inline-flex">
+              <ButtonLink to={mp("/?editar=1")} size="sm" variant="secondary" icon={<MousePointerClick size={14} />} className="hidden sm:inline-flex">
                 Editar na página
               </ButtonLink>
               <Button size="sm" icon={<Plus size={14} />} onClick={() => setEditingSlide({ slide: blankSlide(), isNew: true })}>

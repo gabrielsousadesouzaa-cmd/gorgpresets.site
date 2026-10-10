@@ -9,6 +9,7 @@ import { PosterArt } from "../../components/PosterArt";
 import { Avatar } from "../../components/ui";
 import { Badge, Button, Card, PageHeader } from "../ui";
 import { useMembersList, useStats, useStudioAction, useStudioQuery } from "../hooks";
+import { mp } from "../../lib/paths";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -25,17 +26,17 @@ export default function Dashboard() {
   const createProduct = async () => {
     const draft = { ...blankProduct(catalog.products.length), title: "Nova coleção", slug: `nova-colecao-${Date.now().toString(36)}`, published: false };
     const saved = await run(() => repo.saveProduct(draft), { success: "Coleção criada" });
-    if (saved) navigate(`/membros/studio/colecoes/${saved.id}`);
+    if (saved) navigate(mp(`/studio/colecoes/${saved.id}`));
   };
 
   const steps = [
-    { done: !!settings && (settings.logoUrl !== "/members/logo-white.png" || settings.heroSlides.length > 0), label: "Personalize marca e banner", to: "/membros/studio/aparencia" },
-    { done: catalog.products.length > 0, label: "Crie sua primeira coleção", to: "/membros/studio/colecoes" },
-    { done: catalog.lessons.length > 0, label: "Adicione módulos e aulas", to: "/membros/studio/colecoes" },
-    { done: catalog.rows.length > 0, label: "Monte as seções da home", to: "/membros/studio/vitrines" },
-    { done: (checkoutItems?.some((i) => i.productIds.length > 0) ?? false) || catalog.products.some((p) => p.externalIds.length > 0), label: "Conecte o checkout (webhook)", to: "/membros/studio/automacoes" },
-    { done: !!emailStatus?.ready, label: "Configure o envio de e-mail", to: "/membros/studio/emails" },
-    { done: (members?.length || 0) > 0, label: "Libere o acesso do primeiro membro", to: "/membros/studio/membros" },
+    { done: !!settings && (settings.logoUrl !== "/members/logo-white.png" || settings.heroSlides.length > 0), label: "Personalize marca e banner", to: mp("/studio/aparencia") },
+    { done: catalog.products.length > 0, label: "Crie sua primeira coleção", to: mp("/studio/colecoes") },
+    { done: catalog.lessons.length > 0, label: "Adicione módulos e aulas", to: mp("/studio/colecoes") },
+    { done: catalog.rows.length > 0, label: "Monte as seções da home", to: mp("/studio/vitrines") },
+    { done: (checkoutItems?.some((i) => i.productIds.length > 0) ?? false) || catalog.products.some((p) => p.externalIds.length > 0), label: "Conecte o checkout (webhook)", to: mp("/studio/automacoes") },
+    { done: !!emailStatus?.ready, label: "Configure o envio de e-mail", to: mp("/studio/emails") },
+    { done: (members?.length || 0) > 0, label: "Libere o acesso do primeiro membro", to: mp("/studio/membros") },
   ];
   const doneSteps = steps.filter((s) => s.done).length;
 
@@ -55,7 +56,7 @@ export default function Dashboard() {
         subtitle="Tudo o que acontece na sua área de membros, em um só lugar."
         actions={
           <>
-            <Button variant="secondary" icon={<ExternalLink size={15} />} onClick={() => window.open("/membros", "_blank")}>Ver como membro</Button>
+            <Button variant="secondary" icon={<ExternalLink size={15} />} onClick={() => window.open(mp("/"), "_blank")}>Ver como membro</Button>
             <Button icon={<Plus size={16} />} onClick={createProduct}>Nova coleção</Button>
           </>
         }
@@ -109,7 +110,7 @@ export default function Dashboard() {
 
         <Card
           title="Membros recentes"
-          actions={<Link to="/membros/studio/membros" className="text-[13px] font-semibold text-ma hover:underline">Ver todos</Link>}
+          actions={<Link to={mp("/studio/membros")} className="text-[13px] font-semibold text-ma hover:underline">Ver todos</Link>}
         >
           {members?.length ? (
             <ul className="-mx-2 space-y-0.5">
@@ -137,13 +138,13 @@ export default function Dashboard() {
         <Card
           className="mt-6"
           title="Suas coleções"
-          actions={<Link to="/membros/studio/colecoes" className="text-[13px] font-semibold text-ma hover:underline">Gerenciar</Link>}
+          actions={<Link to={mp("/studio/colecoes")} className="text-[13px] font-semibold text-ma hover:underline">Gerenciar</Link>}
         >
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
             {sortByOrder(catalog.products).slice(0, 12).map((p) => {
               const lessons = catalog.lessons.filter((l) => l.productId === p.id).length;
               return (
-                <Link key={p.id} to={`/membros/studio/colecoes/${p.id}`} className="group">
+                <Link key={p.id} to={mp(`/studio/colecoes/${p.id}`)} className="group">
                   <div className="relative aspect-[2/3] overflow-hidden rounded-xl ring-1 ring-black/10 transition duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
                     <PosterArt product={p} />
                     {!p.published && <span className="absolute left-2 top-2 rounded bg-amber-400 px-1.5 py-0.5 text-[8px] font-black uppercase text-black">Rascunho</span>}

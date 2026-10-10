@@ -19,6 +19,7 @@ import { ContinueCard, LANDSCAPE_WIDTH, POSTER_WIDTH, RowProductCard } from "../
 import { ConfirmProvider, useConfirm } from "../ui";
 import { RowModal } from "../pages/Rows";
 import { SlideModal } from "../pages/Appearance";
+import { mp } from "../../lib/paths";
 
 const KIND_LABEL: Record<RowKind, string> = {
   curated: "Seleção manual",
@@ -423,7 +424,7 @@ function Editor({ model, onExit }: { model: HomeModel; onExit: () => void }) {
             Banner
           </DockButton>
           <Link
-            to="/membros/studio"
+            to={mp("/studio")}
             className="hidden h-9 items-center gap-1.5 rounded-full px-3.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/75 transition hover:bg-white/10 hover:text-white sm:inline-flex"
           >
             <LayoutDashboard size={15} /> Studio

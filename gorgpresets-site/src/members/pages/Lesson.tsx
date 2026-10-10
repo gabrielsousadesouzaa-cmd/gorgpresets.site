@@ -10,6 +10,7 @@ import { formatDuration } from "../lib/format";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { AttachmentList } from "../components/MaterialsList";
 import { Btn, BtnLink, Eyebrow, ProgressBar, SafeImg, Skeleton } from "../components/ui";
+import { mp } from "../lib/paths";
 
 export default function LessonPage() {
   const { slug, lessonId } = useParams();
@@ -72,7 +73,7 @@ export default function LessonPage() {
     if (!autoNext || !product) return;
     if (autoNext.seconds <= 0) {
       setAutoNext(null);
-      navigate(`/membros/colecao/${product.slug}/aula/${autoNext.lessonId}`);
+      navigate(mp(`/colecao/${product.slug}/aula/${autoNext.lessonId}`));
       return;
     }
     const t = setTimeout(() => setAutoNext((a) => (a ? { ...a, seconds: a.seconds - 1 } : a)), 1000);
@@ -80,8 +81,8 @@ export default function LessonPage() {
   }, [autoNext, product, navigate]);
 
   if (isLoading || accessLoading) return <LessonSkeleton />;
-  if (!product || (!product.published && !user?.isAdmin)) return <Navigate to="/membros" replace />;
-  if (!owned.has(product.id) || !lesson) return <Navigate to={`/membros/colecao/${product.slug}`} replace />;
+  if (!product || (!product.published && !user?.isAdmin)) return <Navigate to={mp("/")} replace />;
+  if (!owned.has(product.id) || !lesson) return <Navigate to={mp(`/colecao/${product.slug}`)} replace />;
 
   const completed = !!entry?.completed;
 
@@ -98,7 +99,7 @@ export default function LessonPage() {
   return (
     <div className="pb-28 pt-16 md:pb-16 md:pt-[72px]">
       <div className="ma-gutter flex items-center gap-2 py-4 text-[13px] text-white/55">
-        <Link to={`/membros/colecao/${product.slug}`} className="inline-flex min-w-0 items-center gap-1.5 font-medium transition-colors hover:text-white">
+        <Link to={mp(`/colecao/${product.slug}`)} className="inline-flex min-w-0 items-center gap-1.5 font-medium transition-colors hover:text-white">
           <ChevronLeft size={16} className="shrink-0" />
           <span className="truncate uppercase tracking-[0.12em]">{product.title}</span>
         </Link>
@@ -165,12 +166,12 @@ export default function LessonPage() {
                 {completed ? "Concluída" : "Concluir aula"}
               </Btn>
               {prev && (
-                <BtnLink variant="glass" to={`/membros/colecao/${product.slug}/aula/${prev.id}`} aria-label="Aula anterior" className="w-11 px-0">
+                <BtnLink variant="glass" to={mp(`/colecao/${product.slug}/aula/${prev.id}`)} aria-label="Aula anterior" className="w-11 px-0">
                   <ChevronLeft size={18} />
                 </BtnLink>
               )}
               {next && (
-                <BtnLink variant="glass" to={`/membros/colecao/${product.slug}/aula/${next.id}`} icon={<ChevronRight size={16} />} className="flex-row-reverse">
+                <BtnLink variant="glass" to={mp(`/colecao/${product.slug}/aula/${next.id}`)} icon={<ChevronRight size={16} />} className="flex-row-reverse">
                   Próxima
                 </BtnLink>
               )}
@@ -245,7 +246,7 @@ export default function LessonPage() {
                             return (
                               <li key={l.id}>
                                 <Link
-                                  to={`/membros/colecao/${product.slug}/aula/${l.id}`}
+                                  to={mp(`/colecao/${product.slug}/aula/${l.id}`)}
                                   className={cn(
                                     "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
                                     current ? "bg-white/[0.08]" : "hover:bg-white/[0.04]",

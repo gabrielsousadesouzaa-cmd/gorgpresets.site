@@ -23,7 +23,7 @@ import { generatePassword, normalizeEmail, uid } from "./format";
 
 const DB_KEY = "gorg-members-demo-v4";
 const SESSION_KEY = "gorg-members-demo-session";
-export const DEMO_ADMIN_EMAIL = "produtor@gorgpresets.site";
+export const DEMO_ADMIN_EMAIL = "produtor@gorgpresets.com";
 export const DEMO_MEMBER_EMAIL = "ana@exemplo.com";
 
 interface DemoDB extends DemoAutomationState {

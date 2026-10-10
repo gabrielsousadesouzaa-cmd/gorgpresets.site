@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth, useRepo, useRefreshPortal } from "../context/MembersContext";
 import { Avatar, Btn, DarkField, darkInput } from "../components/ui";
+import { mp } from "../lib/paths";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -44,7 +45,7 @@ export default function Profile() {
       setPassword("");
       setConfirm("");
       toast.success("Senha alterada com sucesso");
-      if (recovering) navigate("/membros", { replace: true });
+      if (recovering) navigate(mp("/"), { replace: true });
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -97,7 +98,7 @@ export default function Profile() {
         <button
           onClick={async () => {
             await repo.signOut();
-            navigate("/membros/entrar", { replace: true });
+            navigate(mp("/entrar"), { replace: true });
           }}
           className="flex w-full items-center justify-center gap-2 rounded-[1.75rem] py-5 text-[11px] font-bold uppercase tracking-[0.18em] text-white/60 ring-1 ring-white/[0.07] transition-colors hover:bg-white/[0.04] hover:text-white"
         >

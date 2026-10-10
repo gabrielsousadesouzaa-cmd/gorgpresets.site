@@ -8,11 +8,12 @@ import { useAuth, useRefreshPortal, useRepo, useSettings } from "../context/Memb
 import { resetDemo } from "../lib/localRepo";
 import { firstName } from "../lib/format";
 import { Avatar, SafeImg } from "./ui";
+import { mp } from "../lib/paths";
 
 const NAV = [
-  { to: "/membros", label: "Início", icon: Home, end: true },
-  { to: "/membros/minha-colecao", label: "Minha coleção", icon: Library, end: false },
-  { to: "/membros/suporte", label: "Suporte", icon: LifeBuoy, end: false },
+  { to: mp("/"), label: "Início", icon: Home, end: true },
+  { to: mp("/minha-colecao"), label: "Minha coleção", icon: Library, end: false },
+  { to: mp("/suporte"), label: "Suporte", icon: LifeBuoy, end: false },
 ];
 
 export function MembersHeader({ onSearch }: { onSearch: () => void }) {
@@ -43,7 +44,7 @@ export function MembersHeader({ onSearch }: { onSearch: () => void }) {
   const signOut = async () => {
     setMenuOpen(false);
     await repo.signOut();
-    navigate("/membros/entrar", { replace: true });
+    navigate(mp("/entrar"), { replace: true });
   };
 
   return (
@@ -54,7 +55,7 @@ export function MembersHeader({ onSearch }: { onSearch: () => void }) {
       )}
     >
       <div className="ma-gutter flex h-16 items-center gap-6 md:h-[72px] lg:gap-10">
-        <Link to="/membros" className="shrink-0" aria-label="Início">
+        <Link to={mp("/")} className="shrink-0" aria-label="Início">
           <SafeImg src={settings?.logoUrl || "/members/logo-white.png"} alt={settings?.brandName || "Gorg"} className="h-7 w-auto md:h-8" loading="eager" />
         </Link>
 
@@ -100,7 +101,7 @@ export function MembersHeader({ onSearch }: { onSearch: () => void }) {
 
           {user?.isAdmin && (
             <Link
-              to="/membros/studio"
+              to={mp("/studio")}
               className="hidden h-9 items-center gap-2 rounded-full bg-white/10 px-4 text-[10px] font-bold uppercase tracking-[0.14em] text-white ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/20 sm:flex"
             >
               <Settings2 size={14} /> Studio
@@ -128,11 +129,11 @@ export function MembersHeader({ onSearch }: { onSearch: () => void }) {
                     <p className="truncate text-xs text-white/50">{user?.email}</p>
                   </div>
                   <div className="my-1 h-px bg-white/10" />
-                  <MenuLink to="/membros/perfil" icon={<User size={16} />} onClick={() => setMenuOpen(false)}>Meu perfil</MenuLink>
-                  <MenuLink to="/membros/minha-colecao" icon={<Library size={16} />} onClick={() => setMenuOpen(false)}>Minha coleção</MenuLink>
-                  <MenuLink to="/membros/suporte" icon={<LifeBuoy size={16} />} onClick={() => setMenuOpen(false)}>Suporte</MenuLink>
+                  <MenuLink to={mp("/perfil")} icon={<User size={16} />} onClick={() => setMenuOpen(false)}>Meu perfil</MenuLink>
+                  <MenuLink to={mp("/minha-colecao")} icon={<Library size={16} />} onClick={() => setMenuOpen(false)}>Minha coleção</MenuLink>
+                  <MenuLink to={mp("/suporte")} icon={<LifeBuoy size={16} />} onClick={() => setMenuOpen(false)}>Suporte</MenuLink>
                   {user?.isAdmin && (
-                    <MenuLink to="/membros/studio" icon={<Settings2 size={16} />} onClick={() => setMenuOpen(false)}>Studio do produtor</MenuLink>
+                    <MenuLink to={mp("/studio")} icon={<Settings2 size={16} />} onClick={() => setMenuOpen(false)}>Studio do produtor</MenuLink>
                   )}
                   <div className="my-1 h-px bg-white/10" />
                   <button onClick={signOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/80 transition-colors hover:bg-white/10 hover:text-white">
@@ -159,10 +160,10 @@ function MenuLink({ to, icon, children, onClick }: { to: string; icon: React.Rea
 
 export function MobileTabBar({ onSearch }: { onSearch: () => void }) {
   const tabs = [
-    { to: "/membros", label: "Início", icon: Home, end: true },
-    { to: "/membros/minha-colecao", label: "Coleção", icon: Library, end: false },
-    { to: "/membros/suporte", label: "Suporte", icon: LifeBuoy, end: false },
-    { to: "/membros/perfil", label: "Perfil", icon: User, end: false },
+    { to: mp("/"), label: "Início", icon: Home, end: true },
+    { to: mp("/minha-colecao"), label: "Coleção", icon: Library, end: false },
+    { to: mp("/suporte"), label: "Suporte", icon: LifeBuoy, end: false },
+    { to: mp("/perfil"), label: "Perfil", icon: User, end: false },
   ];
   return (
     <nav className="ma-glass fixed inset-x-0 bottom-0 z-50 border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)] md:hidden">

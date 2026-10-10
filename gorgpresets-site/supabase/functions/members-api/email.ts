@@ -34,6 +34,100 @@ export interface EmailSettings {
   refund: EmailTemplate;
 }
 
+/**
+ * "Reembolso processado": o modelo que a Gorg já usava, refeito para funcionar em
+ * todos os leitores (Gmail, Outlook, Apple Mail, celular), com as coleções
+ * encerradas, o número do pedido e o botão do suporte.
+ */
+const REFUND_HTML = `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light">
+<title>Reembolso processado</title>
+<style>
+  @media (max-width: 600px) {
+    .card { padding: 32px 22px !important; }
+    .titulo { font-size: 21px !important; }
+  }
+</style>
+<!--[if mso]><style>table,td,div,p,a,span,h1{font-family:Arial,Helvetica,sans-serif !important;}</style><![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#f4f7f9;word-spacing:normal;">
+<!-- Pré-cabeçalho: aparece só na lista de e-mails -->
+<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;">O valor foi enviado para a operadora do seu meio de pagamento.&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f7f9" style="background-color:#f4f7f9;">
+<tr><td align="center" style="padding:48px 16px;">
+<!--[if mso]><table role="presentation" align="center" width="550" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:550px;">
+<tr><td class="card" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #eaeaea;border-radius:12px;padding:40px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#333333;">
+
+<!-- Logo (fundo branco fixo: no modo escuro do Gmail o logo preto continua visível) -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td align="center" style="padding:0 0 24px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="padding:4px 10px;border-radius:10px;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);">
+<img src="{logo_url}" width="157" alt="{marca}" style="display:block;width:157px;max-width:157px;height:auto;border:0;outline:none;text-decoration:none;font-size:18px;font-weight:800;color:#111111;">
+</td>
+</tr></table>
+</td></tr>
+<tr><td style="border-top:1px solid #eaeaea;font-size:0;line-height:0;">&nbsp;</td></tr>
+</table>
+
+<!-- Título -->
+<h1 class="titulo" style="margin:30px 0 0;font-size:23px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:#d82828;text-align:center;">Reembolso processado</h1>
+
+<!-- Mensagem -->
+<p style="margin:28px 0 0;font-size:16px;line-height:1.6;color:#444444;">Olá, <strong style="color:#222222;">{primeiro_nome}</strong>.</p>
+<p style="margin:14px 0 0;font-size:16px;line-height:1.6;color:#444444;">Informamos que a sua solicitação de reembolso foi concluída com sucesso. Conforme o procedimento padrão, o seu acesso à <strong style="color:#222222;">Área de Membros da {marca}</strong> foi encerrado.</p>
+
+<!-- Destaque -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="height:26px;line-height:26px;font-size:1px;">&nbsp;</td></tr>
+<tr><td bgcolor="#fff5f5" style="background-color:#fff5f5;border:1px solid #feb2b2;border-radius:8px;padding:18px 20px;text-align:center;">
+<p style="margin:0;font-size:15px;line-height:1.5;font-weight:600;color:#c53030;">O reembolso foi enviado para a operadora do seu meio de pagamento.</p>
+</td></tr>
+</table>
+
+<!-- Coleções encerradas e número do pedido (somem quando não há) -->
+{lista_produtos}
+
+<p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#666666;">Dependendo do seu banco ou da operadora do cartão, o valor pode aparecer na sua fatura em até 1 ou 2 ciclos de cobrança.</p>
+
+<!-- Botão do suporte -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="height:30px;line-height:30px;font-size:1px;">&nbsp;</td></tr>
+<tr><td align="center">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td align="center" bgcolor="#d82828" style="border-radius:999px;background-color:#d82828;mso-padding-alt:14px 30px;">
+<a href="{suporte}" target="_blank" style="display:inline-block;padding:14px 30px;border-radius:999px;font-size:14px;font-weight:700;line-height:1;color:#ffffff;text-decoration:none;">Falar com o suporte</a>
+</td>
+</tr></table>
+</td></tr>
+</table>
+
+<!-- Rodapé -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="height:36px;line-height:36px;font-size:1px;">&nbsp;</td></tr>
+<tr><td style="border-top:1px solid #eeeeee;padding:22px 0 0;text-align:center;font-size:14px;line-height:1.6;color:#999999;">
+Se tiver qualquer dúvida, é só responder este e-mail ou falar com o nosso suporte.<br><br>
+<strong style="color:#555555;">Equipe {marca}</strong>
+</td></tr>
+</table>
+
+</td></tr>
+<tr><td align="center" style="padding:20px 12px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.6;color:#a0a7ae;">Você recebeu este e-mail porque houve uma atualização em um pedido seu na {marca}.</td></tr>
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr>
+</table>
+</body>
+</html>
+`;
+
 export const DEFAULT_EMAIL: EmailSettings = {
   provider: "smtp",
   fromName: "Gorg Presets",
@@ -53,14 +147,14 @@ export const DEFAULT_EMAIL: EmailSettings = {
   },
   refund: {
     enabled: false,
-    subject: "Seu acesso foi retirado, {primeiro_nome}",
+    subject: "Seu reembolso foi processado, {primeiro_nome}",
     heading: "Reembolso processado",
     message:
-      "Confirmamos o reembolso da sua compra e ele já foi concluído.\n\nCom isso, o seu acesso às coleções {produtos} na Área de Membros foi encerrado. Se ficou alguma dúvida ou se você acredita que houve um engano, é só falar com a gente: vamos te ajudar.",
+      "Informamos que a sua solicitação de reembolso foi concluída com sucesso. Conforme o procedimento padrão, o seu acesso à Área de Membros da {marca} foi encerrado.\n\nO reembolso foi enviado para a operadora do seu meio de pagamento. Dependendo do seu banco ou da operadora do cartão, o valor pode aparecer na sua fatura em até 1 ou 2 ciclos de cobrança.",
     buttonLabel: "Falar com o suporte",
-    signature: "Um abraço,\nEquipe {marca}",
-    mode: "visual",
-    html: "",
+    signature: "Se tiver qualquer dúvida, é só responder este e-mail.\nEquipe {marca}",
+    mode: "html",
+    html: REFUND_HTML,
   },
 };
 
@@ -76,6 +170,7 @@ export const EMAIL_VARIABLES: Array<{ key: string; label: string; html?: boolean
   { key: "{link}", label: "Link da área" },
   { key: "{suporte}", label: "Link do suporte" },
   { key: "{marca}", label: "Sua marca" },
+  { key: "{logo_url}", label: "Endereço do logo" },
   { key: "{lista_produtos}", label: "Caixa das coleções", html: true },
   { key: "{bloco_acesso}", label: "Caixa de acesso", html: true },
   { key: "{botao}", label: "Botão", html: true },
@@ -231,6 +326,7 @@ function variableValues(ctx: EmailContext, kind: TemplateKind): Record<string, s
     link: safeUrl(ctx.link),
     suporte: safeUrl(ctx.supportUrl),
     marca: oneLine(ctx.brand, 80),
+    logo_url: safeUrl(ctx.logoUrl),
   };
 }
 
@@ -251,6 +347,8 @@ function fill(text: string, ctx: EmailContext, kind: TemplateKind, blocks: Recor
   let out = normalizeVariables(text);
   if (!prettyName(ctx.name)) {
     out = out
+      // "Olá, <strong>{nome}</strong>." → "Olá." (nome em negrito no modo código)
+      .replace(/,[ \t]*<(strong|b|em|span)\b[^<>]*>[ \t]*\{(?:primeiro_nome|nome)\}[ \t]*<\/\1>/g, "")
       // "Olá, {nome}!" → "Olá!"
       .replace(/,[ \t]*\{(?:primeiro_nome|nome)\}/g, "")
       // "Oi {nome}!" e "Oi {nome}" no fim da linha → "Oi!" e "Oi"

@@ -59,7 +59,7 @@ export function buildDemoProducts(): Product[] {
     logoUrl: "",
     accentColor: s.accent,
     badge: s.badge || "",
-    checkoutUrl: "https://gorgpresets.site/catalog",
+    checkoutUrl: "https://www.gorgpresets.com/catalog",
     priceLabel: "R$ 19,90",
     externalIds: [],
     isFree: false,
@@ -208,7 +208,7 @@ export function buildDemoSettings(): PortalSettings {
     support: {
       ...DEFAULT_SETTINGS.support,
       whatsapp: "5511999999999",
-      email: "suporte@gorgpresets.site",
+      email: "suporte@gorgpresets.com",
       instagram: "gorgpresets",
       faq: [
         { id: "faq-1", question: "Preciso pagar pelo Lightroom?", answer: "Não. Os presets funcionam no Lightroom Mobile gratuito (iPhone e Android). No computador, use o Lightroom Classic ou CC." },

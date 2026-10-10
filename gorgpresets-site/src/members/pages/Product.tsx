@@ -9,6 +9,7 @@ import { formatDuration } from "../lib/format";
 import { Btn, BtnLink, ProgressBar, SafeImg, Skeleton } from "../components/ui";
 import { MaterialsGrid } from "../components/MaterialsList";
 import { PosterArt } from "../components/PosterArt";
+import { mp } from "../lib/paths";
 
 type Tab = "aulas" | "materiais" | "sobre";
 
@@ -44,14 +45,14 @@ export default function ProductPage() {
   // Vindo do botão "Assistir" do banner: abre direto a aula certa.
   useEffect(() => {
     if (params.get("play") && product && resume && !locked) {
-      navigate(`/membros/colecao/${product.slug}/aula/${resume.id}`, { replace: true });
+      navigate(mp(`/colecao/${product.slug}/aula/${resume.id}`), { replace: true });
     } else if (params.get("play")) {
       setParams({}, { replace: true });
     }
   }, [params, product, resume, locked, navigate, setParams]);
 
   if (isLoading) return <ProductSkeleton />;
-  if (!product || (!product.published && !user?.isAdmin)) return <Navigate to="/membros" replace />;
+  if (!product || (!product.published && !user?.isAdmin)) return <Navigate to={mp("/")} replace />;
 
   const activeModule = modules.find((m) => m.id === moduleId) || modules[0];
   const activeLessons = activeModule ? moduleLessons(catalog, activeModule.id) : [];
@@ -60,7 +61,7 @@ export default function ProductPage() {
 
   const unlock = () => {
     if (product.checkoutUrl) window.open(product.checkoutUrl, "_blank", "noopener");
-    else navigate("/membros/suporte");
+    else navigate(mp("/suporte"));
   };
 
   return (
@@ -76,7 +77,7 @@ export default function ProductPage() {
         </div>
 
         <div className="ma-gutter relative z-10 flex min-h-[640px] flex-col pb-10 pt-20 md:h-full md:pb-16 md:pt-24">
-          <Link to="/membros" className="inline-flex w-fit items-center gap-2 rounded-full py-2 pr-3 text-[13px] font-medium text-white/70 transition-colors hover:text-white">
+          <Link to={mp("/")} className="inline-flex w-fit items-center gap-2 rounded-full py-2 pr-3 text-[13px] font-medium text-white/70 transition-colors hover:text-white">
             <ArrowLeft size={16} /> Voltar
           </Link>
 
@@ -136,14 +137,14 @@ export default function ProductPage() {
                     <Btn size="lg" variant="accent" onClick={unlock} icon={<ShoppingBag size={16} />}>
                       {product.priceLabel ? `Desbloquear · ${product.priceLabel}` : "Desbloquear coleção"}
                     </Btn>
-                    <BtnLink size="lg" variant="glass" to="/membros/suporte" icon={<MessageCircle size={16} />}>
+                    <BtnLink size="lg" variant="glass" to={mp("/suporte")} icon={<MessageCircle size={16} />}>
                       Já comprei
                     </BtnLink>
                   </>
                 ) : (
                   <>
                     {resume && (
-                      <BtnLink size="lg" to={`/membros/colecao/${product.slug}/aula/${resume.id}`} icon={<Play size={16} fill="currentColor" />}>
+                      <BtnLink size="lg" to={mp(`/colecao/${product.slug}/aula/${resume.id}`)} icon={<Play size={16} fill="currentColor" />}>
                         {started ? `Continuar · Aula ${resumeIndex}` : "Começar agora"}
                       </BtnLink>
                     )}
@@ -234,7 +235,7 @@ export default function ProductPage() {
                       const done = progress.get(lesson.id)?.completed;
                       return (
                         <li key={lesson.id}>
-                          <Link to={`/membros/colecao/${product.slug}/aula/${lesson.id}`} className="group flex items-center gap-4 p-3 transition-colors hover:bg-white/[0.04] md:gap-6 md:p-5">
+                          <Link to={mp(`/colecao/${product.slug}/aula/${lesson.id}`)} className="group flex items-center gap-4 p-3 transition-colors hover:bg-white/[0.04] md:gap-6 md:p-5">
                             <span className="hidden w-6 shrink-0 text-center text-lg font-semibold tabular-nums text-white/30 md:block">{i + 1}</span>
                             <div className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10 sm:w-44 md:w-56">
                               <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${product.accentColor}, #0b0b0c)` }} />

@@ -9,6 +9,7 @@ import { PosterArt } from "../../components/PosterArt";
 import { Badge, Button, ButtonLink, Card, EmptyState, Field, IconButton, Input, Modal, PageHeader, Toggle, useConfirm } from "../ui";
 import { SortableList } from "../Sortable";
 import { useStudioAction } from "../hooks";
+import { mp } from "../../lib/paths";
 
 const KINDS: Array<{ id: RowKind; label: string; text: string; icon: typeof Library }> = [
   { id: "curated", label: "Seleção manual", text: "Você escolhe quais coleções e em que ordem.", icon: LayoutGrid },
@@ -68,7 +69,7 @@ export default function RowsPage() {
         subtitle="As fileiras horizontais da página inicial, no estilo Netflix. Arraste para definir a ordem — ou edite tudo direto na página inicial."
         actions={
           <>
-            <ButtonLink to="/membros?editar=1" variant="secondary" icon={<MousePointerClick size={16} />}>Editar na página inicial</ButtonLink>
+            <ButtonLink to={mp("/?editar=1")} variant="secondary" icon={<MousePointerClick size={16} />}>Editar na página inicial</ButtonLink>
             <Button icon={<Plus size={16} />} onClick={() => setEditing({ row: { ...blankRow(rows.length), title: "Nova seção" }, isNew: true })}>Nova seção</Button>
           </>
         }

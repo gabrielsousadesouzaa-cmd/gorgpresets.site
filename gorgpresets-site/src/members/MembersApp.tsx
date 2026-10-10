@@ -13,6 +13,7 @@ import { SearchOverlay } from "./components/SearchOverlay";
 import { Btn, darkInput, FullScreenLoader, SafeImg } from "./components/ui";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import { mp, storeHref } from "./lib/paths";
 
 const ProductPage = lazy(() => import("./pages/Product"));
 const LessonPage = lazy(() => import("./pages/Lesson"));
@@ -45,7 +46,7 @@ export default function MembersApp() {
               <Route path="colecao/:slug/aula/:lessonId" element={<LessonPage />} />
               <Route path="suporte" element={<Support />} />
               <Route path="perfil" element={<Profile />} />
-              <Route path="*" element={<Navigate to="/membros" replace />} />
+              <Route path="*" element={<Navigate to={mp("/")} replace />} />
             </Route>
           </Route>
         </Routes>
@@ -95,7 +96,7 @@ function RequireMember() {
   const location = useLocation();
   if (loading) return <FullScreenLoader />;
   if (error instanceof SetupRequiredError) return <SetupRequired />;
-  if (!user) return <Navigate to={`/membros/entrar?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
+  if (!user) return <Navigate to={mp(`/entrar?next=${encodeURIComponent(location.pathname + location.search)}`)} replace />;
   if (needsMfa) return <MfaScreen />;
   if (user.mustChangePassword) return <ForcePasswordChange />;
   return <Outlet />;
@@ -109,7 +110,7 @@ function RequireProducer({ children }: { children: ReactNode }) {
         <ShieldCheck className="h-12 w-12 text-ma" />
         <h1 className="text-2xl font-bold uppercase tracking-tighter">Acesso restrito</h1>
         <p className="max-w-sm text-sm text-white/55">O Studio é exclusivo do produtor. Entre com a conta de administrador para editar a área de membros.</p>
-        <a href="/membros" className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/70 hover:text-white">Voltar para a área de membros</a>
+        <a href={mp("/")} className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/70 hover:text-white">Voltar para a área de membros</a>
       </div>
     );
   }
@@ -158,7 +159,7 @@ function MembersFooter() {
       <div className="flex items-center justify-between gap-6 text-xs text-white/35">
         <SafeImg src="/members/mark-white.png" alt="" className="h-7 w-auto opacity-60" />
         <p>{settings?.footerText}</p>
-        <a href="/" className="font-semibold uppercase tracking-[0.18em] transition-colors hover:text-white">Ir para a loja</a>
+        <a href={storeHref()} className="font-semibold uppercase tracking-[0.18em] transition-colors hover:text-white">Ir para a loja</a>
       </div>
     </footer>
   );

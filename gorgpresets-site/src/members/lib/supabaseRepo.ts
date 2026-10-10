@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { MembersRepo } from "./repo";
 import { SetupRequiredError } from "./repo";
+import { portalUrl } from "./paths";
 import type {
   Attachment,
   AuthSnapshot,
@@ -442,7 +443,7 @@ export const supabaseRepo: MembersRepo = {
   },
 
   async requestPasswordReset(email) {
-    const redirectTo = `${window.location.origin}/membros/perfil?nova-senha=1`;
+    const redirectTo = `${portalUrl()}/perfil?nova-senha=1`;
     try {
       const res = await invoke<{ fallback?: boolean }>({ action: "recover", email: normalizeEmail(email), redirectTo });
       if (!res?.fallback) return;

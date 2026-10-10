@@ -6,6 +6,7 @@ import type { CardStyle, Lesson, Product } from "../lib/types";
 import { formatDuration } from "../lib/format";
 import { LandscapeArt, PosterArt } from "./PosterArt";
 import { ProgressBar } from "./ui";
+import { mp } from "../lib/paths";
 
 export const POSTER_WIDTH = "w-[40vw] sm:w-[27vw] md:w-[21vw] lg:w-[17vw] 2xl:w-[14.5vw]";
 export const RANKED_WIDTH = "w-[54vw] sm:w-[37vw] md:w-[29vw] lg:w-[23.5vw] 2xl:w-[20vw]";
@@ -61,7 +62,7 @@ function HoverInfo({ locked, percent, label }: { locked: boolean; percent?: numb
 
 export const PosterCard = memo(function PosterCard({ product, locked, percent, className }: ProductCardProps) {
   return (
-    <Link to={`/membros/colecao/${product.slug}`} className={cn(cardBase, "aspect-[2/3]", POSTER_WIDTH, className)} aria-label={product.title}>
+    <Link to={mp(`/colecao/${product.slug}`)} className={cn(cardBase, "aspect-[2/3]", POSTER_WIDTH, className)} aria-label={product.title}>
       <PosterArt product={product} />
       <CardBadges product={product} locked={locked} />
       <HoverInfo locked={locked} percent={percent} />
@@ -87,7 +88,7 @@ export const RankedCard = memo(function RankedCard({ product, locked, percent, r
 
 export const LandscapeCard = memo(function LandscapeCard({ product, locked, percent, className }: ProductCardProps) {
   return (
-    <Link to={`/membros/colecao/${product.slug}`} className={cn(cardBase, "aspect-video", LANDSCAPE_WIDTH, className)} aria-label={product.title}>
+    <Link to={mp(`/colecao/${product.slug}`)} className={cn(cardBase, "aspect-video", LANDSCAPE_WIDTH, className)} aria-label={product.title}>
       <LandscapeArt product={product} />
       <CardBadges product={product} locked={locked} />
       <HoverInfo locked={locked} percent={percent} label={locked && product.priceLabel ? `Desbloquear · ${product.priceLabel}` : undefined} />
@@ -104,7 +105,7 @@ export function RowProductCard({ style, product, locked, percent, rank }: Produc
 
 export const ContinueCard = memo(function ContinueCard({ product, lesson, percent }: { product: Product; lesson: Lesson; percent: number }) {
   return (
-    <Link to={`/membros/colecao/${product.slug}/aula/${lesson.id}`} className={cn("group/card block", LANDSCAPE_WIDTH)}>
+    <Link to={mp(`/colecao/${product.slug}/aula/${lesson.id}`)} className={cn("group/card block", LANDSCAPE_WIDTH)}>
       <div className={cn(cardBase, "aspect-video w-full")}>
         <LandscapeArt product={product} image={lesson.thumbnailUrl} showTitle={false} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />

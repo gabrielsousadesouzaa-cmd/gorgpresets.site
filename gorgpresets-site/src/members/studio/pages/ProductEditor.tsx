@@ -13,6 +13,7 @@ import { blankCheckoutItem } from "../components/MapItemModal";
 import { toast } from "sonner";
 import { CurriculumEditor } from "../editor/CurriculumEditor";
 import { MaterialsEditor } from "../editor/MaterialsEditor";
+import { mp } from "../../lib/paths";
 
 type Tab = "aulas" | "detalhes" | "materiais" | "vendas";
 
@@ -41,7 +42,7 @@ export default function ProductEditor() {
 
   const dirty = useMemo(() => !!draft && !!product && JSON.stringify(draft) !== JSON.stringify(product), [draft, product]);
 
-  if (!isLoading && !product) return <Navigate to="/membros/studio/colecoes" replace />;
+  if (!isLoading && !product) return <Navigate to={mp("/studio/colecoes")} replace />;
   if (!draft || !product) return null;
 
   const set = (patch: Partial<Product>) => setDraft((d) => (d ? { ...d, ...patch } : d));
@@ -69,12 +70,12 @@ export default function ProductEditor() {
     });
     if (!ok) return;
     await run(() => repo.deleteProduct(product.id), { success: "Coleção excluída" });
-    navigate("/membros/studio/colecoes", { replace: true });
+    navigate(mp("/studio/colecoes"), { replace: true });
   };
 
   return (
     <div className="pb-24">
-      <Link to="/membros/studio/colecoes" className="mb-6 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#6e6e73] hover:text-[#1d1d1f]">
+      <Link to={mp("/studio/colecoes")} className="mb-6 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#6e6e73] hover:text-[#1d1d1f]">
         <ArrowLeft size={15} /> Coleções
       </Link>
 
@@ -92,7 +93,7 @@ export default function ProductEditor() {
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <Button variant="secondary" icon={<ExternalLink size={15} />} onClick={() => window.open(`/membros/colecao/${product.slug}`, "_blank")}>Visualizar</Button>
+          <Button variant="secondary" icon={<ExternalLink size={15} />} onClick={() => window.open(mp(`/colecao/${product.slug}`), "_blank")}>Visualizar</Button>
           <Button icon={<Save size={15} />} onClick={save} loading={saving} disabled={!dirty}>Salvar</Button>
         </div>
       </div>
@@ -131,7 +132,7 @@ export default function ProductEditor() {
                 <Field label="Descrição" className="md:col-span-2">
                   <Textarea value={draft.description} onChange={(e) => set({ description: e.target.value })} placeholder="Conte o que a coleção entrega e para quem ela é." />
                 </Field>
-                <Field label="Endereço" hint={`/membros/colecao/${draft.slug || toSlug(draft.title)}`} className="md:col-span-2">
+                <Field label="Endereço" hint={mp(`/colecao/${draft.slug || toSlug(draft.title)}`)} className="md:col-span-2">
                   <Input value={draft.slug} onChange={(e) => set({ slug: toSlug(e.target.value) })} placeholder={toSlug(draft.title)} />
                 </Field>
                 <Field label="Cor da coleção" hint="Usada no cartão de vidro da capa automática e nos fundos." className="md:col-span-2">
@@ -434,7 +435,7 @@ function CheckoutLinksCard({ product, isFree, onLegacyConverted }: { product: Pr
         </>
       )}
 
-      <Link to="/membros/studio/automacoes#produtos" className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1d1d1f] hover:underline">
+      <Link to={mp("/studio/automacoes#produtos")} className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1d1d1f] hover:underline">
         Ver todos os produtos do checkout em Automações <ArrowRight size={14} />
       </Link>
     </Card>

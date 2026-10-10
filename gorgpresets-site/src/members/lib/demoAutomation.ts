@@ -6,6 +6,7 @@ import { documentPassword, mergeAutomation } from "../../../supabase/functions/m
 import { parseSale } from "../../../supabase/functions/members-api/sale";
 import type { CheckoutItem, EmailLog, EmailProviderStatus, EmailTemplate, Grant, PortalSettings, Product, SmtpInput, WebhookLog, WebhookLogItem } from "./types";
 import { generatePassword, uid } from "./format";
+import { EMAIL_LOGO_URL, portalUrl, STORE_CONTACT_URL } from "./paths";
 
 export interface DemoMember {
   email: string;
@@ -33,8 +34,8 @@ export interface DemoAutomationState {
   fixedPassword?: string;
 }
 
-const PORTAL = typeof window !== "undefined" ? `${window.location.origin}/membros` : "https://gorgpresets.site/membros";
-const LOGO = typeof window !== "undefined" ? `${window.location.origin}/logo.png` : "https://gorgpresets.site/logo.png";
+const PORTAL = portalUrl();
+const LOGO = EMAIL_LOGO_URL;
 const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 // ── Envio (simulado) ────────────────────────────────────────────────
@@ -50,7 +51,7 @@ export function demoProviderStatus(state: DemoAutomationState): EmailProviderSta
       ? { configured: true, host: smtp.host, port: smtp.port, security: smtp.security, username: smtp.username, hasPassword: !!smtp.password }
       : { configured: false, host: "", port: 465, security: "ssl", username: "", hasPassword: false },
     resend: key
-      ? { configured: true, source: "studio", hint: `${key.slice(0, 3)}…${key.slice(-4)}`, keyCheck: "ok", domains: [{ name: "gorgpresets.site", status: "verified" }] }
+      ? { configured: true, source: "studio", hint: `${key.slice(0, 3)}…${key.slice(-4)}`, keyCheck: "ok", domains: [{ name: "gorgpresets.com", status: "verified" }] }
       : { configured: false, source: null, hint: null, keyCheck: null, domains: null },
   };
 }
@@ -99,7 +100,7 @@ export function demoRender(state: DemoAutomationState, kind: TemplateKind, templ
     orderId,
     logoUrl: LOGO,
     accent: state.settings.accentColor,
-    supportUrl: whatsapp ? `https://wa.me/${whatsapp}` : `${PORTAL}/suporte`,
+    supportUrl: whatsapp ? `https://wa.me/${whatsapp}` : STORE_CONTACT_URL,
   });
 }
 

@@ -48,6 +48,7 @@ import { Badge, Button, Card, CopyButton, Drawer, EmptyState, Field, IconButton,
 import { useMembersList, useStudioAction, useStudioQuery } from "../hooks";
 import { CollectionPicker } from "../components/CollectionPicker";
 import { Tabs } from "../components/Tabs";
+import { emailPortalUrl, mp } from "../../lib/paths";
 
 // ── Tipos e utilidades ──────────────────────────────────────────────
 type Situation = "ativo" | "sem-conta" | "senha" | "bloqueado";
@@ -72,7 +73,7 @@ function situationOf(m: MemberSummary): Situation {
   return "ativo";
 }
 
-const STUDIO = "/membros/studio";
+const STUDIO = mp("/studio");
 const NO_COLLECTION = "__sem-colecao__";
 const PAGE_SIZE = 60;
 
@@ -81,7 +82,6 @@ const fold = (value: string) => (value || "").normalize("NFD").replace(/[̀-ͯ]/
 const fullDate = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : undefined);
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const displayName = (m: { name: string; email: string }) => m.name || m.email.split("@")[0];
-const portalUrl = () => `${window.location.origin}/membros`;
 const money = (value: number | null) => (typeof value === "number" ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "");
 
 function formatPhone(raw: string): string {
@@ -164,7 +164,7 @@ interface AccessInfo {
 }
 
 function accessMessage(info: AccessInfo, brand: string, allowFirstAccess: boolean): string {
-  const lines = [`Olá${info.name ? `, ${firstName(info.name)}` : ""}! 💫`, `Seu acesso à Área de Membros ${brand} está liberado.`, "", `🔗 ${portalUrl()}`, `📧 E-mail: ${info.email}`];
+  const lines = [`Olá${info.name ? `, ${firstName(info.name)}` : ""}! 💫`, `Seu acesso à Área de Membros ${brand} está liberado.`, "", `🔗 ${emailPortalUrl()}`, `📧 E-mail: ${info.email}`];
   if (info.password) {
     lines.push(`🔑 Senha: ${info.password}`);
     if (info.mustChange) lines.push("", "No primeiro login você cria uma senha só sua.");

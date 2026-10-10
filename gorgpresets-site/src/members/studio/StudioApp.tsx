@@ -8,6 +8,7 @@ import { DemoBadge } from "../components/MembersHeader";
 import { Avatar } from "../components/ui";
 import { ConfirmProvider } from "./ui";
 import Dashboard from "./pages/Dashboard";
+import { mp } from "../lib/paths";
 
 const ProductsPage = lazy(() => import("./pages/Products"));
 const ProductEditor = lazy(() => import("./pages/ProductEditor"));
@@ -19,14 +20,14 @@ const EmailsPage = lazy(() => import("./pages/Emails"));
 const LogsPage = lazy(() => import("./pages/Logs"));
 
 const NAV = [
-  { to: "/membros/studio", label: "Visão geral", icon: Gauge, end: true },
-  { to: "/membros/studio/colecoes", label: "Coleções e aulas", icon: LayoutTemplate, end: false },
-  { to: "/membros/studio/vitrines", label: "Seções da home", icon: Rows3, end: false },
-  { to: "/membros/studio/aparencia", label: "Aparência", icon: Palette, end: false },
-  { to: "/membros/studio/membros", label: "Membros", icon: Users, end: false },
-  { to: "/membros/studio/automacoes", label: "Automações", icon: Workflow, end: false },
-  { to: "/membros/studio/emails", label: "E-mails", icon: Mail, end: false },
-  { to: "/membros/studio/registros", label: "Registros", icon: History, end: false },
+  { to: mp("/studio"), label: "Visão geral", icon: Gauge, end: true },
+  { to: mp("/studio/colecoes"), label: "Coleções e aulas", icon: LayoutTemplate, end: false },
+  { to: mp("/studio/vitrines"), label: "Seções da home", icon: Rows3, end: false },
+  { to: mp("/studio/aparencia"), label: "Aparência", icon: Palette, end: false },
+  { to: mp("/studio/membros"), label: "Membros", icon: Users, end: false },
+  { to: mp("/studio/automacoes"), label: "Automações", icon: Workflow, end: false },
+  { to: mp("/studio/emails"), label: "E-mails", icon: Mail, end: false },
+  { to: mp("/studio/registros"), label: "Registros", icon: History, end: false },
 ];
 
 export default function StudioApp() {
@@ -54,7 +55,7 @@ export default function StudioApp() {
             <Menu size={20} />
           </button>
           <img src="/logo.png" alt="Gorg" className="h-8 w-auto" />
-          <Link to="/membros" className="grid h-10 w-10 place-items-center rounded-full hover:bg-black/5" aria-label="Ver área de membros">
+          <Link to={mp("/")} className="grid h-10 w-10 place-items-center rounded-full hover:bg-black/5" aria-label="Ver área de membros">
             <ExternalLink size={18} />
           </Link>
         </header>
@@ -96,7 +97,7 @@ export default function StudioApp() {
                 <Route path="aparencia" element={<AppearancePage />} />
                 <Route path="membros" element={<MembersPage />} />
                 <Route path="automacoes" element={<AutomationsPage />} />
-                <Route path="integracoes" element={<Navigate to="/membros/studio/automacoes" replace />} />
+                <Route path="integracoes" element={<Navigate to={mp("/studio/automacoes")} replace />} />
                 <Route path="emails" element={<EmailsPage />} />
                 <Route path="registros" element={<LogsPage />} />
                 <Route path="*" element={<Dashboard />} />
@@ -116,7 +117,7 @@ function Sidebar() {
   return (
     <div className="flex h-full flex-col">
       <div className="px-6 pb-6 pt-7">
-        <Link to="/membros/studio" className="flex items-center gap-3">
+        <Link to={mp("/studio")} className="flex items-center gap-3">
           <img src="/logo.png" alt="Gorg Presets" className="h-9 w-auto" />
           <span className="rounded-md bg-[#1d1d1f] px-2 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-white">Studio</span>
         </Link>
@@ -152,7 +153,7 @@ function Sidebar() {
 
       <div className="space-y-2 border-t border-black/[0.06] p-3">
         <Link
-          to="/membros"
+          to={mp("/")}
           className="flex items-center justify-between rounded-xl bg-[#f5f5f7] px-3 py-3 text-[13px] font-semibold transition-colors hover:bg-black/[0.06]"
         >
           Ver área de membros
@@ -167,7 +168,7 @@ function Sidebar() {
           <button
             onClick={async () => {
               await repo.signOut();
-              navigate("/membros/entrar", { replace: true });
+              navigate(mp("/entrar"), { replace: true });
             }}
             className="grid h-8 w-8 place-items-center rounded-full text-[#86868b] transition-colors hover:bg-black/5 hover:text-ma"
             aria-label="Sair"

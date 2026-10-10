@@ -18,7 +18,7 @@
 // Segredos ficam em member_private_settings (só o servidor lê): token do
 // webhook, chave do Resend, SMTP e senha padrão. Segredos opcionais do
 // Supabase têm prioridade: MEMBERS_WEBHOOK_TOKEN, RESEND_API_KEY,
-// MEMBERS_EMAIL_FROM, MEMBERS_PORTAL_URL.
+// MEMBERS_EMAIL_FROM, MEMBERS_PORTAL_URL, MEMBERS_STORE_URL.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { type EmailContext, type EmailSettings, type EmailTemplate, escapeHtml, htmlToText, mergeEmailSettings, renderEmail, renderNoticeEmail, type TemplateKind } from "./email.ts";
@@ -32,9 +32,11 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const ENV_WEBHOOK_TOKEN = Deno.env.get("MEMBERS_WEBHOOK_TOKEN") || "";
 const ENV_RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const ENV_EMAIL_FROM = Deno.env.get("MEMBERS_EMAIL_FROM") || "";
-const PORTAL_URL = (Deno.env.get("MEMBERS_PORTAL_URL") || "https://gorgpresets.site/membros").replace(/\/$/, "");
-const SITE_ORIGIN = new URL(PORTAL_URL).origin;
-const LOGO_URL = `${SITE_ORIGIN}/logo.png`;
+// A área de membros tem endereço próprio, separado da loja (www.gorgpresets.com).
+const PORTAL_URL = (Deno.env.get("MEMBERS_PORTAL_URL") || "https://area.gorgpresets.com").replace(/\/$/, "");
+const STORE_URL = (Deno.env.get("MEMBERS_STORE_URL") || "https://www.gorgpresets.com").replace(/\/$/, "");
+// Logo dos e-mails: o da loja (fundo transparente, escrito em preto).
+const LOGO_URL = `${STORE_URL}/logo.png`;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -131,7 +133,8 @@ async function loadConfig(): Promise<Config> {
   return {
     brand: String(d.brandName || "Gorg Presets"),
     accent: String(d.accentColor || "#d82828"),
-    supportUrl: whatsapp ? `https://wa.me/${whatsapp}` : `${PORTAL_URL}/suporte`,
+    // Sem WhatsApp, a página de contato da loja (aberta para todos, inclusive quem foi reembolsado).
+    supportUrl: whatsapp ? `https://wa.me/${whatsapp}` : `${STORE_URL}/contact`,
     email: mergeEmailSettings(d.email),
     automation: mergeAutomation(d.automation),
     smtp: parseSmtp(secret("smtp")),

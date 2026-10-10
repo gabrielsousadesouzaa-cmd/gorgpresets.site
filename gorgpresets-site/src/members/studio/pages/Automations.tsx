@@ -55,6 +55,7 @@ import { useStudioAction, useStudioQuery } from "../hooks";
 import { Tabs } from "../components/Tabs";
 import { EmailPreview } from "../components/EmailPreview";
 import { blankCheckoutItem, MapItemModal } from "../components/MapItemModal";
+import { EMAIL_LOGO_URL, emailPortalUrl, mp, STORE_CONTACT_URL } from "../../lib/paths";
 
 // ── Utilidades ──────────────────────────────────────────────────────
 type Tone = "neutral" | "green" | "amber" | "red" | "blue" | "dark";
@@ -118,7 +119,7 @@ export default function AutomationsPage() {
     if (settings && !draft) setDraft(settings.automation);
   }, [settings, draft]);
 
-  // Link direto para uma seção (ex: /membros/studio/automacoes#produtos).
+  // Link direto para uma seção (ex: /studio/automacoes#produtos).
   const ready = !!draft;
   useEffect(() => {
     const id = location.hash.replace("#", "");
@@ -203,7 +204,7 @@ export default function AutomationsPage() {
         subtitle="O checkout avisa cada venda e a área de membros faz o resto: libera o acesso, cria a conta e envia o e-mail. Reembolso e chargeback retiram o acesso."
         actions={
           <>
-            <ButtonLink to="/membros/studio/registros" variant="secondary" icon={<History size={15} />}>Registros</ButtonLink>
+            <ButtonLink to={mp("/studio/registros")} variant="secondary" icon={<History size={15} />}>Registros</ButtonLink>
             <Button icon={<FlaskConical size={15} />} onClick={() => scrollToId("teste")}>Venda de teste</Button>
           </>
         }
@@ -300,7 +301,7 @@ function StatusHero({
     { label: "Acessos liberados", value: loading ? null : stats.granted, icon: <CircleCheck size={17} className="text-emerald-600" /> },
     { label: "Reembolsos e chargebacks", value: loading ? null : stats.revoked, icon: <Undo2 size={17} /> },
     { label: "Produtos sem coleção", value: pendingCount, icon: <Package size={17} />, tone: pendingCount ? "amber" : undefined, onClick: onShowPending },
-    { label: "E-mails com falha", value: loading ? null : stats.failedEmails, icon: <MailX size={17} />, tone: stats.failedEmails ? "red" : undefined, to: "/membros/studio/registros?aba=emails" },
+    { label: "E-mails com falha", value: loading ? null : stats.failedEmails, icon: <MailX size={17} />, tone: stats.failedEmails ? "red" : undefined, to: mp("/studio/registros?aba=emails") },
   ];
 
   return (
@@ -390,7 +391,7 @@ function WebhookCard() {
   const confirm = useConfirm();
   const webhook = useStudioQuery("webhook-url", () => repo.getWebhookUrl());
   const [rotating, setRotating] = useState(false);
-  const portalUrl = `${window.location.origin}/membros`;
+  const portalUrl = emailPortalUrl();
 
   const token = useMemo(() => {
     try {
@@ -1145,7 +1146,6 @@ function ItemEmailModal({ item, products, settings, onClose }: { item: CheckoutI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemId]);
 
-  const origin = window.location.origin;
   const template = useMemo<EmailTemplate>(() => (own && draft ? { ...draft, enabled: true } : general), [own, draft, general]);
   const preview = useMemo(() => {
     if (!item) return null;
@@ -1159,17 +1159,17 @@ function ItemEmailModal({ item, products, settings, onClose }: { item: CheckoutI
         email: to,
         phone: "11999998888",
         products: titles.length ? titles : [item.title || "Coleção de exemplo"],
-        link: `${origin}/membros/entrar?email=${encodeURIComponent(to)}`,
+        link: `${emailPortalUrl()}/entrar?email=${encodeURIComponent(to)}`,
         password: account === "new" ? "Exemplo-7Kq2" : undefined,
         orderId: "gg-70123",
-        logoUrl: `${origin}/logo.png`,
+        logoUrl: EMAIL_LOGO_URL,
         accent: settings.accentColor,
-        supportUrl: whatsapp ? `https://wa.me/${whatsapp}` : `${origin}/membros/suporte`,
+        supportUrl: whatsapp ? `https://wa.me/${whatsapp}` : STORE_CONTACT_URL,
       });
     } catch (err) {
       return { subject: template.subject, html: `<p style="font-family:sans-serif;padding:24px;color:#b91c1c">Não foi possível montar a prévia: ${(err as Error).message}</p>`, text: "" };
     }
-  }, [item, products, template, testTo, account, settings, origin]);
+  }, [item, products, template, testTo, account, settings]);
 
   if (!item) return <Modal open={false} onClose={onClose} title="">{null}</Modal>;
 
@@ -1372,7 +1372,7 @@ function ItemEmailModal({ item, products, settings, onClose }: { item: CheckoutI
               <div className="rounded-2xl p-4 ring-1 ring-inset ring-black/[0.08]">
                 <p className="text-[13px] leading-relaxed text-[#6e6e73]">
                   A prévia ao lado é o e-mail geral, que você edita em{" "}
-                  <Link to="/membros/studio/emails" className="font-semibold text-[#1d1d1f] underline decoration-black/25 underline-offset-2">E-mails</Link>. Ligue a opção acima para escrever um texto só para este produto.
+                  <Link to={mp("/studio/emails")} className="font-semibold text-[#1d1d1f] underline decoration-black/25 underline-offset-2">E-mails</Link>. Ligue a opção acima para escrever um texto só para este produto.
                 </p>
               </div>
             )}
@@ -1597,7 +1597,7 @@ function TestResultPanel({ result, items, products, onMap }: { result: TestResul
         <Badge tone="green"><Check size={11} /> Processada</Badge>
         <p className="mt-3 text-[13px] text-[#424245]">A venda foi processada. Os detalhes completos ficam nos registros.</p>
         <pre className="mt-3 max-h-40 overflow-auto rounded-xl bg-[#1d1d1f] p-3 font-mono text-[11px] text-white/80">{JSON.stringify(result.raw, null, 2)}</pre>
-        <ButtonLink to="/membros/studio/registros?aba=webhook" size="sm" variant="secondary" className="mt-4" icon={<History size={13} />}>Abrir registros</ButtonLink>
+        <ButtonLink to={mp("/studio/registros?aba=webhook")} size="sm" variant="secondary" className="mt-4" icon={<History size={13} />}>Abrir registros</ButtonLink>
       </div>
     );
   }
@@ -1675,7 +1675,7 @@ function TestResultPanel({ result, items, products, onMap }: { result: TestResul
             </dd>
           </div>
           {log.emailLogId && (
-            <ButtonLink to={`/membros/studio/registros?aba=emails&email=${encodeURIComponent(log.emailLogId)}`} size="sm" variant="secondary" icon={email.icon} className="shrink-0">
+            <ButtonLink to={mp(`/studio/registros?aba=emails&email=${encodeURIComponent(log.emailLogId)}`)} size="sm" variant="secondary" icon={email.icon} className="shrink-0">
               Ver e-mail
             </ButtonLink>
           )}
@@ -1685,7 +1685,7 @@ function TestResultPanel({ result, items, products, onMap }: { result: TestResul
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-black/[0.05] px-5 py-3.5">
         <p className="text-[11.5px] text-[#86868b]">Pedido {log.orderId || "—"}</p>
         <Link
-          to={`/membros/studio/registros?aba=webhook&evento=${encodeURIComponent(log.id)}`}
+          to={mp(`/studio/registros?aba=webhook&evento=${encodeURIComponent(log.id)}`)}
           className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#1d1d1f] hover:underline"
         >
           Ver evento completo <ArrowRight size={13} />

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
+import { inMembersArea, inStudio, isMembersHost, isStoreHost, membersUrlFromStorePath } from "./members/lib/paths";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/store/cartStore";
@@ -10,7 +11,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { MenuProvider } from "@/store/MenuContext";
 import { SiteSettingsProvider } from "@/hooks/useSiteSettings";
 import { Skeleton } from "@/components/ui/skeleton";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { SiteTracker } from "@/components/SiteTracker";
 
 const Index = lazy(() => import("./pages/Index"));
@@ -33,12 +34,64 @@ import { FlyToCartProvider } from "@/components/FlyToCart";
 // A área de membros tem tema escuro; o Studio e a loja usam o tema claro.
 function AppToaster() {
   const { pathname } = useLocation();
-  const members = pathname.startsWith("/membros");
-  const dark = members && !pathname.startsWith("/membros/studio");
+  const members = inMembersArea(pathname);
+  const dark = members && !inStudio(pathname);
   return <Toaster position={members ? "top-center" : "top-right"} expand={true} richColors theme={dark ? "dark" : "light"} />;
 }
 
+const membersFallback = <div className="min-h-screen bg-black" />;
+
+/** Na loja, /membros leva para o endereço próprio da área (area.gorgpresets.com). */
+function MembersRedirect() {
+  const { pathname, search, hash } = useLocation();
+  useEffect(() => {
+    window.location.replace(membersUrlFromStorePath(pathname, search, hash));
+  }, [pathname, search, hash]);
+  return membersFallback;
+}
+
+/** No endereço próprio, links no formato antigo (/membros/colecao/x) abrem a página certa. */
+function DropMembersPrefix() {
+  const { pathname, search, hash } = useLocation();
+  const rest = pathname.replace(/^\/membros(?=\/|$)/, "") || "/";
+  return <Navigate to={`${rest}${search}${hash}`} replace />;
+}
+
+/**
+ * area.gorgpresets.com: só a área de membros, na raiz (/colecao/x, /studio),
+ * sem nada da loja (carrinho, cabeçalho, rastreio de visitas). Fora do Google.
+ */
+function MembersSite() {
+  useEffect(() => {
+    const robots = document.createElement("meta");
+    robots.name = "robots";
+    robots.content = "noindex, nofollow";
+    document.head.appendChild(robots);
+    return () => robots.remove();
+  }, []);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppToaster />
+        <ScrollToTop />
+        <Routes>
+          <Route path="/membros/*" element={<DropMembersPrefix />} />
+          <Route
+            path="/*"
+            element={
+              <Suspense fallback={membersFallback}>
+                <MembersApp />
+              </Suspense>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}
+
 function App() {
+  if (isMembersHost()) return <MembersSite />;
   return (
     <QueryClientProvider client={queryClient}>
       <SiteSettingsProvider>
@@ -62,12 +115,17 @@ function App() {
                         </Suspense>
                       } 
                     />
+                    {/* Área de membros: na loja vai para area.gorgpresets.com; nas prévias e no computador abre aqui. */}
                     <Route
                       path="/membros/*"
                       element={
-                        <Suspense fallback={<div className="min-h-screen bg-black" />}>
-                          <MembersApp />
-                        </Suspense>
+                        isStoreHost() ? (
+                          <MembersRedirect />
+                        ) : (
+                          <Suspense fallback={membersFallback}>
+                            <MembersApp />
+                          </Suspense>
+                        )
                       }
                     />
                     {/* Checkout próprio (BuckPay) removido: as vendas usam o GGCheckout pelo carrinho. */}

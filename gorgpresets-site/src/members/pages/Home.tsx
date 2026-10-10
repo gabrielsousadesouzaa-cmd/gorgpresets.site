@@ -11,6 +11,7 @@ import { HeroCarousel } from "../components/HeroCarousel";
 import { Rail } from "../components/Rail";
 import { ContinueCard, RowProductCard, POSTER_WIDTH } from "../components/Cards";
 import { BtnLink, Skeleton } from "../components/ui";
+import { mp } from "../lib/paths";
 
 // Editor da home: só é baixado quando o produtor liga o modo de edição.
 const HomeEditor = lazy(() => import("../studio/inline/HomeEditor"));
@@ -177,9 +178,9 @@ export default function Home() {
                   : "Assim que sua compra for confirmada, seus presets e aulas aparecem aqui."}
               </p>
               {user?.isAdmin ? (
-                <BtnLink to="/membros/studio/colecoes" className="mt-8">Abrir Studio</BtnLink>
+                <BtnLink to={mp("/studio/colecoes")} className="mt-8">Abrir Studio</BtnLink>
               ) : (
-                <BtnLink to="/membros/suporte" variant="glass" className="mt-8">Falar com o suporte</BtnLink>
+                <BtnLink to={mp("/suporte")} variant="glass" className="mt-8">Falar com o suporte</BtnLink>
               )}
             </div>
           </div>
