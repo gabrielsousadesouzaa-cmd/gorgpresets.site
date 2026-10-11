@@ -15,7 +15,7 @@ import type {
   Row,
   WebhookLog,
 } from "./types";
-import { mergeEmailSettings } from "../../../supabase/functions/members-api/email";
+import { compactEmailSettings, mergeEmailSettings } from "../../../supabase/functions/members-api/email";
 import { mergeAutomation } from "../../../supabase/functions/members-api/automation";
 import { demoDeliver, demoNotice, demoProviderStatus, demoReady, demoRender, ggPayload, processDemoSale, seedDemoAutomation, type DemoAutomationState, type DemoMember } from "./demoAutomation";
 import { buildDemoCurriculum, buildDemoProducts, buildDemoRows, buildDemoSettings, DEMO_OWNED_IDS } from "./demoData";
@@ -292,7 +292,8 @@ export const localRepo: MembersRepo = {
   },
 
   async saveSettings(settings) {
-    db.settings = clone(settings);
+    // Igual ao banco: os modelos de e-mail guardam só o que mudou.
+    db.settings = clone({ ...settings, email: compactEmailSettings(settings.email) as unknown as typeof settings.email });
     persist();
   },
 

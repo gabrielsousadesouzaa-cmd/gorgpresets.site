@@ -25,7 +25,7 @@ import type {
   WebhookLog,
 } from "./types";
 import { DEFAULT_SETTINGS } from "./defaults";
-import { mergeEmailSettings } from "../../../supabase/functions/members-api/email";
+import { compactEmailSettings, mergeEmailSettings } from "../../../supabase/functions/members-api/email";
 import { mergeAutomation } from "../../../supabase/functions/members-api/automation";
 import { normalizeEmail, uid } from "./format";
 
@@ -565,7 +565,9 @@ export const supabaseRepo: MembersRepo = {
   },
 
   async saveSettings(settings) {
-    check(await client().from("member_settings").upsert({ id: "main", data: settings, updated_at: new Date().toISOString() }));
+    // Modelos de e-mail: só o que o produtor mudou (o resto segue o padrão atual).
+    const data = { ...settings, email: compactEmailSettings(settings.email) };
+    check(await client().from("member_settings").upsert({ id: "main", data, updated_at: new Date().toISOString() }));
   },
 
   async saveProduct(product) {

@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, useCatalog, useRefreshPortal, useRepo, useSettings } from "../../context/MembersContext";
-import { DEFAULT_EMAIL, EMAIL_VARIABLES, mergeEmailSettings, renderEmail, templateToHtml } from "../../../../supabase/functions/members-api/email";
+import { DEFAULT_EMAIL, EMAIL_VARIABLES, mergeEmailSettings, normalizeVariables, renderEmail, templateToHtml } from "../../../../supabase/functions/members-api/email";
 import { mergeAutomation } from "../../../../supabase/functions/members-api/automation";
 import { formatBytes, isValidEmail, normalizeEmail, sortByOrder } from "../../lib/format";
 import type { EmailProviderStatus, EmailSettings, EmailTemplate, PortalSettings, SmtpInput, SmtpSecurity, TemplateKind } from "../../lib/types";
@@ -1907,11 +1907,13 @@ function HtmlEditor({
     const code = value.trim();
     if (!code) return ["O código está vazio: use “Gerar a partir do visual” para começar."];
     const keys = new Set(EMAIL_VARIABLES.map((v) => v.key));
+    // Como no envio: "{ Link }", "{{link}}" e os nomes da área antiga ({link_login_magico}) contam.
+    const normalized = normalizeVariables(code);
     if (kind === "welcome") {
       const linkKeys = ["{link}", "{botao}"].filter((k) => keys.has(k));
-      if (linkKeys.length && !linkKeys.some((k) => code.includes(k))) list.push(`Sem ${linkKeys.join(" ou ")}, o cliente fica sem o link da área de membros.`);
+      if (linkKeys.length && !linkKeys.some((k) => normalized.includes(k))) list.push(`Sem ${linkKeys.join(" ou ")}, o cliente fica sem o link da área de membros.`);
       const accessKeys = ["{bloco_acesso}", "{senha}"].filter((k) => keys.has(k));
-      if (accessKeys.length && !accessKeys.some((k) => code.includes(k))) list.push(`Sem ${accessKeys.join(" ou ")}, o cliente novo não recebe a senha provisória.`);
+      if (accessKeys.length && !accessKeys.some((k) => normalized.includes(k))) list.push(`Sem ${accessKeys.join(" ou ")}, o cliente novo não recebe a senha provisória.`);
     }
     if (/<script[\s>]/i.test(code)) list.push("Scripts não funcionam em e-mails e são removidos pelos provedores.");
     if (bytes > 100_000) list.push("O código passa de 100 KB: o Gmail corta e-mails grandes e esconde o final da mensagem.");

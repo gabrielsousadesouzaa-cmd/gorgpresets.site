@@ -43,23 +43,26 @@ export interface EmailSettings {
 const CLASSIC_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
 /** Esqueleto comum: cabeçalho com logo, conteúdo, rodapé com assinatura e aviso final. */
-function classicEmail(p: { title: string; preheader: string; body: string; help: string; smallPrint: string }): string {
+function classicEmail(p: { title: string; preheader: string; body: string; help: string; helpColor?: string; smallPrint: string }): string {
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="x-apple-disable-message-reformatting">
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
 <meta name="color-scheme" content="light only">
 <meta name="supported-color-schemes" content="light">
 <title>${p.title}</title>
 <style>
+  /* iPhone: senha com números (ex.: CPF) e e-mail não viram link de telefone/e-mail */
+  a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
   @media (max-width: 600px) {
     .card { padding: 32px 22px !important; }
     .titulo { font-size: 21px !important; }
   }
 </style>
-<!--[if mso]><style>table,td,div,p,a,span,h1{font-family:Arial,Helvetica,sans-serif !important;}</style><![endif]-->
+<!--[if mso]><style>table,td,div,p,a,span,h1{font-family:Arial,Helvetica,sans-serif !important;}.mono{font-family:Consolas,'Courier New',monospace !important;}</style><![endif]-->
 </head>
 <body style="margin:0;padding:0;background-color:#f4f7f9;word-spacing:normal;">
 <!-- Pré-cabeçalho: aparece só na lista de e-mails -->
@@ -87,14 +90,14 @@ ${p.body}
 <!-- Rodapé -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 <tr><td style="height:36px;line-height:36px;font-size:1px;">&nbsp;</td></tr>
-<tr><td style="border-top:1px solid #eeeeee;padding:22px 0 0;text-align:center;font-size:14px;line-height:1.6;color:#999999;">
+<tr><td style="border-top:1px solid #eeeeee;padding:22px 0 0;text-align:center;font-size:14px;line-height:1.6;color:${p.helpColor || "#999999"};">
 ${p.help}<br><br>
 <strong style="color:#555555;">Equipe {marca}</strong>
 </td></tr>
 </table>
 
 </td></tr>
-<tr><td align="center" style="padding:20px 12px 0;font-family:${CLASSIC_FONT};font-size:11px;line-height:1.6;color:#a0a7ae;">${p.smallPrint}</td></tr>
+<tr><td align="center" style="padding:20px 12px 0;font-family:${CLASSIC_FONT};font-size:11px;line-height:1.6;color:#7d858c;">${p.smallPrint}</td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
 </td></tr>
@@ -134,7 +137,7 @@ const CLASSIC_P = "font-size:16px;line-height:1.6;color:#444444;";
  */
 const WELCOME_HTML = classicEmail({
   title: "Acesso liberado",
-  preheader: "Sua compra foi aprovada e o seu acesso à Área de Membros já está liberado.",
+  preheader: "O seu acesso à Área de Membros da {marca} já está liberado.",
   body: `<!-- Saudação (sem nome, vira "Olá!") -->
 <h1 class="titulo" style="margin:30px 0 0;font-size:23px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:#1a1a1a;">Olá, {primeiro_nome}!</h1>
 
@@ -142,7 +145,7 @@ const WELCOME_HTML = classicEmail({
 <p style="margin:16px 0 0;${CLASSIC_P}">Parabéns pela sua nova aquisição na <strong style="color:#222222;">{marca}</strong>! Ficamos muito felizes por você ter escolhido os nossos presets: a partir de agora, suas edições ganham um novo nível de profissionalismo.</p>
 
 <!-- Destaque -->
-${classicNotice("&#10003;&nbsp; Pagamento aprovado: o seu acesso já está liberado.", { bg: "#f0faf4", border: "#b4e2c5", color: "#1f7a45" })}
+${classicNotice("&#10003;&nbsp; Tudo pronto: o seu acesso já está liberado.", { bg: "#f0faf4", border: "#b4e2c5", color: "#1f7a45" })}
 
 <p style="margin:24px 0 0;${CLASSIC_P}">Na nossa <strong style="color:#222222;">Área de Membros</strong> exclusiva você encontra todos os arquivos para download e vídeos tutoriais que mostram, passo a passo, como baixar, instalar e ajustar cada preset no seu dispositivo.</p>
 
@@ -155,7 +158,8 @@ ${classicNotice("&#10003;&nbsp; Pagamento aprovado: o seu acesso já está liber
 ${classicButton("Botão da área de membros", "{link}", "Acessar Área de Membros")}
 
 <p style="margin:18px 0 0;font-size:12px;line-height:1.6;color:#999999;text-align:center;">Se o botão não abrir, copie e cole no navegador:<br><a href="{link}" target="_blank" style="color:#d82828;text-decoration:underline;word-break:break-all;">{link}</a></p>`,
-  help: `Se tiver qualquer dúvida, é só responder este e-mail ou <a href="{suporte}" target="_blank" style="color:#555555;text-decoration:underline;">falar com o nosso suporte</a>.`,
+  help: `Se tiver qualquer dúvida, é só responder este e-mail ou <a href="{suporte}" target="_blank" style="color:#444444;text-decoration:underline;">falar com o nosso suporte</a>.`,
+  helpColor: "#666666",
   smallPrint: "Você recebeu este e-mail porque fez uma compra na {marca}.",
 });
 
@@ -388,7 +392,10 @@ function variableValues(ctx: EmailContext, kind: TemplateKind): Record<string, s
   };
 }
 
-/** Nomes usados nos modelos da área antiga (Wander Members): continuam funcionando se forem colados aqui. */
+/**
+ * Nomes usados nos modelos da área antiga (Wander Members): continuam funcionando se forem
+ * colados aqui. {cursos} vira a caixa das coleções no HTML e a lista em texto no resto.
+ */
 const VARIABLE_ALIASES: Record<string, string> = {
   site_nome: "marca",
   nome_site: "marca",
@@ -401,11 +408,12 @@ const VARIABLE_ALIASES: Record<string, string> = {
  * "{{ nome }}", "{ Nome }" e "{NOME}" viram "{nome}" (só as variáveis conhecidas; o resto fica igual).
  * Os nomes antigos viram os atuais, e "http://{link}" vira "{link}" (o link já vem completo).
  */
-function normalizeVariables(text: string): string {
+export function normalizeVariables(text: string, html = true): string {
   return str(text)
     .replace(/\{\{[ \t]*(\w+)[ \t]*\}\}|\{[ \t]*(\w+)[ \t]*\}/g, (match, a?: string, b?: string) => {
       const lower = (a ?? b ?? "").toLowerCase();
-      const key = own(VARIABLE_ALIASES, lower) ? VARIABLE_ALIASES[lower] : lower;
+      const alias = own(VARIABLE_ALIASES, lower) ? VARIABLE_ALIASES[lower] : lower;
+      const key = alias === "lista_produtos" && lower !== alias && !html ? "produtos" : alias;
       return KNOWN_KEYS.has(key) ? `{${key}}` : match;
     })
     .replace(/https?:\/\/(?=\{(?:link|suporte|logo_url)\})/gi, "");
@@ -417,7 +425,7 @@ function normalizeVariables(text: string): string {
  * Sem nome, some também a vírgula ou o espaço em volta dele.
  */
 function fill(text: string, ctx: EmailContext, kind: TemplateKind, blocks: Record<string, string> | null, opts: { subject?: boolean } = {}): string {
-  let out = normalizeVariables(text);
+  let out = normalizeVariables(text, !!blocks);
   if (!prettyName(ctx.name)) {
     out = out
       // "Olá, <strong>{nome}</strong>." → "Olá." (nome em negrito no modo código)
@@ -426,8 +434,12 @@ function fill(text: string, ctx: EmailContext, kind: TemplateKind, blocks: Recor
       .replace(/,[ \t]*\{(?:primeiro_nome|nome)\}/g, "")
       // "Oi {nome}!" e "Oi {nome}" no fim da linha → "Oi!" e "Oi"
       .replace(/(^|[^ \t])[ \t]+\{(?:primeiro_nome|nome)\}(?=[,.!?;:<]|[ \t]*$)/gm, "$1")
-      // "{primeiro_nome}, seu acesso chegou" → "Seu acesso chegou"
-      .replace(/(^|>)([ \t]*)\{(?:primeiro_nome|nome)\}[ \t]*[,;:]?[ \t]*(\p{Ll})?/gmu, (_m, pre: string, indent: string, ch?: string) => pre + indent + (ch ? ch.toUpperCase() : ""));
+      // "{primeiro_nome}, seu acesso chegou" → "Seu acesso chegou", também com o nome em
+      // negrito: "<span><strong>{nome}</strong>,</span> o seu acesso" → "O seu acesso"
+      .replace(
+        /(^|>)([ \t]*)((?:<(?:strong|b|em|span)\b[^<>]*>[ \t]*)*)\{(?:primeiro_nome|nome)\}((?:[ \t]*<\/(?:strong|b|em|span)>)*)[ \t]*[,;:]?((?:<\/(?:strong|b|em|span)>)*)[ \t]*(\p{Ll})?/gmu,
+        (_m, pre: string, indent: string, open: string, close: string, after: string, ch?: string) => pre + indent + open + close + after + (ch ? ch.toUpperCase() : ""),
+      );
   }
   const values = variableValues(ctx, kind);
   // A senha nunca vai no assunto: ele aparece em notificações e na lista de e-mails.
@@ -447,7 +459,7 @@ export function fillVariables(text: string, ctx: EmailContext, opts: { html?: bo
 }
 
 /** Tira as variáveis de bloco de um texto do modo visual. */
-const stripBlocks = (text: string) => normalizeVariables(text).replace(/\{(\w+)\}/g, (match, key: string) => (BLOCK_KEYS.has(key) ? "" : match));
+const stripBlocks = (text: string) => normalizeVariables(text, false).replace(/\{(\w+)\}/g, (match, key: string) => (BLOCK_KEYS.has(key) ? "" : match));
 
 // ── Peças do layout ─────────────────────────────────────────────────
 const font = (size: number, weight: number, lineHeight: number, color: string, extra = "") =>
@@ -693,6 +705,33 @@ export function mergeEmailSettings(raw: unknown): EmailSettings {
     welcome: mergeTemplate(DEFAULT_EMAIL.welcome, legacy ? d : null, d.welcome),
     refund: mergeTemplate(DEFAULT_EMAIL.refund, d.refund),
   };
+}
+
+/**
+ * O que vai para o banco: o remetente e, de cada modelo, só o que o produtor mudou.
+ * Um modelo igual ao padrão não é gravado (e o HTML pronto só é gravado se foi editado),
+ * então as melhorias nos modelos prontos continuam chegando aos clientes.
+ */
+export function compactEmailSettings(raw: unknown): Record<string, unknown> {
+  const merged = mergeEmailSettings(raw);
+  const out: Record<string, unknown> = {
+    provider: merged.provider,
+    fromName: merged.fromName,
+    fromEmail: merged.fromEmail,
+    replyTo: merged.replyTo,
+    bcc: merged.bcc,
+  };
+  for (const kind of ["welcome", "refund"] as const) {
+    const t = merged[kind];
+    const d = DEFAULT_EMAIL[kind];
+    const diff: Record<string, unknown> = {};
+    for (const key of ["enabled", "subject", "heading", "message", "buttonLabel", "signature", "html"] as const) {
+      if (t[key] !== d[key]) diff[key] = t[key];
+    }
+    // O modo vai sempre junto: sem ele, textos próprios fariam o modelo voltar ao visual.
+    if (Object.keys(diff).length || t.mode !== d.mode) out[kind] = { ...diff, mode: t.mode };
+  }
+  return out;
 }
 
 /** HTML do modo visual com as variáveis no lugar: ponto de partida para editar no modo código. */
