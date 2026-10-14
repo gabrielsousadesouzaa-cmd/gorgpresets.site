@@ -1,0 +1,159 @@
+/* ─── Área de Membros GORG ───────────────────────────────────────────
+   Tema "cinema": a identidade da loja (vermelho #d82828, Inter, títulos
+   em caixa alta com tracking apertado, pílulas, vidro fosco) aplicada a um
+   fundo preto no estilo Netflix / Apple TV. */
+
+.ma-root {
+  --ma-accent: 216 40 40;
+  --ma-bg: #000;
+  --ma-gutter: max(16px, 4vw);
+  --ma-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--ma-bg);
+  color: #f5f5f7;
+  min-height: 100vh;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+}
+
+.ma-root ::selection {
+  background: rgb(var(--ma-accent) / 0.85);
+  color: #fff;
+}
+
+.ma-gutter {
+  padding-left: var(--ma-gutter);
+  padding-right: var(--ma-gutter);
+}
+
+/* Vidro fosco (Apple) */
+.ma-glass {
+  background: rgba(22, 22, 24, 0.62);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+}
+
+.ma-glass-light {
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  backdrop-filter: saturate(180%) blur(18px);
+}
+
+/* Carrossel horizontal das vitrines */
+.ma-scroll {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: var(--ma-gutter);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+}
+.ma-scroll::-webkit-scrollbar {
+  display: none;
+}
+.ma-scroll > * {
+  scroll-snap-align: start;
+  flex: none;
+}
+
+/* Números gigantes do Top 10 */
+.ma-rank {
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -0.08em;
+  color: #000;
+  -webkit-text-stroke: 2px rgba(255, 255, 255, 0.5);
+  paint-order: stroke fill;
+  user-select: none;
+}
+
+/* Poster gerado automaticamente: o texto escala com a largura do card */
+.ma-poster {
+  container-type: inline-size;
+}
+
+/* Ken Burns suave no banner */
+@keyframes ma-kenburns {
+  from { transform: scale(1.08); }
+  to { transform: scale(1); }
+}
+.ma-kenburns {
+  animation: ma-kenburns 9s var(--ma-ease) both;
+}
+
+/* Barra de progresso dos indicadores do banner */
+@keyframes ma-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.ma-fill {
+  transform-origin: left;
+  animation-name: ma-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+@keyframes ma-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.ma-skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 800px 100%;
+  animation: ma-shimmer 1.6s linear infinite;
+}
+
+/* Slider do player */
+.ma-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 16px;
+}
+.ma-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, rgb(var(--ma-accent)) var(--ma-value, 0%), rgba(255, 255, 255, 0.25) var(--ma-value, 0%));
+}
+.ma-range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.ma-range::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--ma-accent));
+}
+.ma-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  margin-top: -5px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.15);
+  transition: transform 0.2s var(--ma-ease);
+}
+.ma-range:hover::-webkit-slider-thumb {
+  transform: scale(1.2);
+}
+.ma-range::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+}
+
+/* Studio: campo de cor */
+.ma-color::-webkit-color-swatch-wrapper { padding: 0; }
+.ma-color::-webkit-color-swatch { border: none; border-radius: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ma-kenburns, .ma-fill, .ma-skeleton { animation: none !important; }
+}

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useLocation } from 'react-router-dom';
+import { isMembersHost } from '@/members/lib/paths';
 
 // ─── Sistema de geolocalização com cache em sessão ──────────────────────────
 async function getGeoData(): Promise<{ ip: string; city: string }> {
@@ -45,7 +46,7 @@ export function SiteTracker() {
   useEffect(() => {
     const trackVisit = async () => {
       // Ignorar a página de admin
-      if (location.pathname.startsWith('/admin')) return;
+      if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/membros') || isMembersHost()) return;
 
       // Evita log duplo de páginas (apenas primeira entrada por sessão)
       if (sessionStorage.getItem('visit_tracked_main')) return;

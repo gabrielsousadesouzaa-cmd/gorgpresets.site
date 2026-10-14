@@ -377,6 +377,21 @@ export default function Admin() {
         setAuthLoading(false);
         return;
       }
+      // Alunos da área de membros também têm login no Supabase: só o produtor entra aqui.
+      if (!supabase) return;
+      const { data: producer, error: producerError } = await supabase
+        .from('member_admins')
+        .select('user_id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      const tableMissing = producerError && ['42P01', 'PGRST205'].includes(producerError.code);
+      if (!producer && !tableMissing) {
+        await supabase.auth.signOut();
+        setIsAuthenticated(false);
+        setLoginError("Esta conta não tem acesso ao painel.");
+        setAuthLoading(false);
+        return;
+      }
       try {
         const { data: factorsData } = await supabase.auth.mfa.listFactors();
         const totpFactors = factorsData?.totp || [];
