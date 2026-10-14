@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
-import { inMembersArea, inStudio, isMembersHost, isStoreHost, membersUrlFromStorePath } from "./members/lib/paths";
+import { inMembersArea, inStudio, isMembersHost, isStoreHost } from "./members/lib/paths";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/store/cartStore";
@@ -40,15 +40,6 @@ function AppToaster() {
 }
 
 const membersFallback = <div className="min-h-screen bg-black" />;
-
-/** Na loja, /membros leva para o endereço próprio da área (area.gorgpresets.com). */
-function MembersRedirect() {
-  const { pathname, search, hash } = useLocation();
-  useEffect(() => {
-    window.location.replace(membersUrlFromStorePath(pathname, search, hash));
-  }, [pathname, search, hash]);
-  return membersFallback;
-}
 
 /** No endereço próprio, links no formato antigo (/membros/colecao/x) abrem a página certa. */
 function DropMembersPrefix() {
@@ -115,19 +106,19 @@ function App() {
                         </Suspense>
                       } 
                     />
-                    {/* Área de membros: na loja vai para area.gorgpresets.com; nas prévias e no computador abre aqui. */}
-                    <Route
-                      path="/membros/*"
-                      element={
-                        isStoreHost() ? (
-                          <MembersRedirect />
-                        ) : (
+                    {/* Área de membros nova: só nas prévias e no computador. Na loja (gorgpresets.com) ainda não
+                        existe — ela fica em area.gorgpresets.com e o cabeçalho segue levando para a área antiga
+                        até todos os produtos estarem configurados. */}
+                    {!isStoreHost() && (
+                      <Route
+                        path="/membros/*"
+                        element={
                           <Suspense fallback={membersFallback}>
                             <MembersApp />
                           </Suspense>
-                        )
-                      }
-                    />
+                        }
+                      />
+                    )}
                     {/* Checkout próprio (BuckPay) removido: as vendas usam o GGCheckout pelo carrinho. */}
                     <Route path="/checkout" element={<Navigate to="/" replace />} />
 

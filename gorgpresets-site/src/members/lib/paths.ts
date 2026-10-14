@@ -3,8 +3,9 @@
 // A área tem endereço próprio (area.gorgpresets.com), separado da loja
 // (www.gorgpresets.com) e da área antiga (membros.gorgpresets.com, WordPress).
 // O mesmo projeto da Vercel atende os dois domínios: no endereço próprio as
-// rotas ficam na raiz (/colecao/x, /studio); na loja e nas prévias da Vercel,
-// sob /membros (/membros/colecao/x).
+// rotas ficam na raiz (/colecao/x, /studio); nas prévias da Vercel e no
+// computador, sob /membros (/membros/colecao/x). Na loja a área ainda não
+// aparece: o cabeçalho segue levando para a área antiga.
 
 /** Endereço oficial da área de membros (links de e-mail e da loja). */
 export const MEMBERS_ORIGIN = "https://area.gorgpresets.com";
@@ -15,7 +16,7 @@ export const STORE_ORIGIN = "https://www.gorgpresets.com";
 /** Logo dos e-mails (fundo transparente, escrito em preto): o da loja, que já está no ar. */
 export const EMAIL_LOGO_URL = `${STORE_ORIGIN}/logo.png`;
 
-/** Domínios da loja: lá, /membros leva para o endereço próprio. */
+/** Domínios da loja (lá a área nova ainda não é servida). */
 const STORE_HOSTS = new Set(["gorgpresets.com", "www.gorgpresets.com"]);
 
 /** "area." (e "membros.", quando a área antiga for desligada) abre direto a área de membros. */
@@ -64,9 +65,3 @@ export const emailPortalUrl = () => {
   const host = currentHost();
   return !host || isMembersHost(host) || isStoreHost(host) ? MEMBERS_ORIGIN : portalUrl();
 };
-
-/** Na loja, o caminho equivalente no endereço próprio: /membros/colecao/x → https://area.../colecao/x. */
-export function membersUrlFromStorePath(pathname: string, search = "", hash = ""): string {
-  const rest = pathname.replace(/^\/membros(?=\/|$)/, "") || "/";
-  return `${MEMBERS_ORIGIN}${rest}${search}${hash}`;
-}
