@@ -1,2 +1,5 @@
 # Projetos com repositórios git próprios - ignorados pelo repo raiz
 icleansolutions-site/
+
+# Segredos locais do Claude Code
+.claude/settings.local.json
